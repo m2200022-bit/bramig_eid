@@ -2129,6 +2129,25 @@
   table.sel-tbl th:nth-child(2), table.sel-tbl td:nth-child(2){text-align:right;}
   table.sel-tbl td:nth-child(3), table.sel-tbl td:nth-child(4),
   table.sel-tbl td:nth-child(5), table.sel-tbl td:nth-child(7){white-space:nowrap; direction:ltr; text-align:center;}
+  /* ══ التنقل بين الفعاليات ══ */
+  .ord-nav{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .ord-nav-btn{all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    padding:7px 13px; border-radius:10px; border:1px solid var(--line); background:#fff;
+    font-size:12.5px; font-weight:600; color:var(--ink); transition:border-color .18s, background .18s;}
+  .ord-nav-btn:hover:not([disabled]){border-color:var(--gold); background:var(--gold-l); color:var(--gold-d);}
+  .ord-nav-btn[disabled]{opacity:.4; cursor:not-allowed;}
+  .ord-nav-mid{flex:1; text-align:center; line-height:1.3;}
+  .ord-nav-mid b{display:block; font-size:13.5px; color:var(--heading-text);}
+  .ord-nav-mid i{display:block; font-style:normal; font-size:11px; color:var(--muted-text);}
+  @media (max-width:600px){ .ord-nav-btn span{display:none;} }
+  /* ══ أزرار تعديل/حذف صغيرة بجوار التسمية ══ */
+  .inl-acts{display:inline-flex; gap:3px; margin-inline-start:6px; vertical-align:middle;}
+  .inl-btn{all:unset; cursor:pointer; width:20px; height:20px; border-radius:6px;
+    display:inline-grid; place-items:center; color:var(--muted-text); background:var(--sand-100);}
+  .inl-btn:hover{background:var(--gold-l); color:var(--gold-d);}
+  .inl-btn.danger:hover{background:var(--danger-bg,#FBE7E5); color:var(--danger,#CF443A);}
+  .glow-card .form-table tbody td > label:has(.inl-acts),
+  .glow-card .form-table tbody td > label .inl-btn{pointer-events:auto !important;}
 </style>
 </head>
 <body>
@@ -5429,7 +5448,25 @@ function renderOrderForm(sub){
   const editing = editingOrderId ? state.orders.find(o=>o.id===editingOrderId) : null;
   const selectedTrainerIds = editing ? (editing.trainerIds||[]) : [];
 
+  /* ترتيب الفعاليات بالرقم للتنقل بينها */
+  const navList = (state.orders||[]).slice().sort((a,b)=>(Number(a.serial)||0)-(Number(b.serial)||0));
+  const navIdx  = editing ? navList.findIndex(o=>o.id===editing.id) : navList.length;
+  const navPrev = navIdx>0 ? navList[navIdx-1] : null;
+  const navNext = (editing && navIdx < navList.length-1) ? navList[navIdx+1] : null;
   sub.innerHTML = `
+  <div class="ord-nav">
+    <button type="button" class="ord-nav-btn" id="navPrevOrder" ${navPrev?'':'disabled'}
+      title="${navPrev?escapeHtml('الفعالية السابقة: '+navPrev.serial+' — '+(navPrev.title||'')):'لا توجد فعالية سابقة'}"
+      aria-label="الفعالية السابقة">${icon('arrowRight',16)}<span>السابقة</span></button>
+    <div class="ord-nav-mid">
+      ${editing
+        ? `<b>أمر رقم ${escapeHtml(String(editing.serial))}</b><i>${navIdx+1} من ${navList.length}</i>`
+        : `<b>طلب جديد</b><i>${navList.length} فعالية مسجّلة</i>`}
+    </div>
+    <button type="button" class="ord-nav-btn" id="navNextOrder" ${navNext?'':'disabled'}
+      title="${navNext?escapeHtml('الفعالية التالية: '+navNext.serial+' — '+(navNext.title||'')):'لا توجد فعالية تالية'}"
+      aria-label="الفعالية التالية"><span>التالية</span>${icon('arrowLeft',16)}</button>
+  </div>
   <div class="gv-progress">
     <span class="gv-pct-lb">${icon('checkCircle',15)} اكتمال الطلب</span>
     <span class="gv-bar"><i id="gvBar" style="width:0%"></i></span>
@@ -5535,7 +5572,11 @@ function renderOrderForm(sub){
             <option value="">-- الكل --</option>
             ${state.placeTypes.map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')}
           </select></td>
-        <td style="width:44%;" title="مكان المبادرة"><label>${icon('school',13)} الجهة</label>
+        <td style="width:44%;" title="مكان المبادرة"><label>${icon('school',13)} الجهة
+            <span class="inl-acts">
+              <button type="button" class="inl-btn" onclick="formEditSchool()" title="تعديل اسم الجهة" aria-label="تعديل الجهة">${icon('edit',12)}</button>
+              <button type="button" class="inl-btn danger" onclick="formDeleteSchool()" title="حذف الجهة" aria-label="حذف الجهة">${icon('trash',12)}</button>
+            </span></label>
           <select id="f_school" size="1" required style="width:100%;"><option value="" ${editing&&editing.schoolId?'':'selected'}>— اختر مكان المبادرة —</option>${state.schools.map(s=>`<option value="${s.id}" data-level="${escapeHtml(s.level||'')}" ${editing&&editing.schoolId===s.id?'selected':''}>${escapeHtml(s.name)} — ${escapeHtml(s.level)}</option>`).join('')}</select>
         </td>
         <td style="width:18%;" title="المرحلة الدراسية"><label>${icon('layers',13)} المرحلة</label>
@@ -5544,8 +5585,12 @@ function renderOrderForm(sub){
             ${['ابتدائي','إعدادي','ثانوي','جامعي'].map(s=>`<option value="${s}">${s}</option>`).join('')}
           </select>
         </td>
-        <td style="width:38%;" title="الجهة المشرفة"><label>${icon('users',13)} المشرف</label>
-          <select id="f_supervisor" required style="width:100%;"></select>
+        <td style="width:38%;" title="الجهة المشرفة"><label>${icon('users',13)} المشرف
+            <span class="inl-acts">
+              <button type="button" class="inl-btn" onclick="formEditSupervisor()" title="تعديل اسم المشرف أو هاتفه" aria-label="تعديل المشرف">${icon('edit',12)}</button>
+              <button type="button" class="inl-btn danger" onclick="formDeleteSupervisor()" title="حذف المشرف" aria-label="حذف المشرف">${icon('trash',12)}</button>
+            </span></label>
+          <select id="f_supervisor" style="width:100%;"></select>
         </td>
       </tr>
       <tr><td colspan="4"><div id="supervisorInfo" class="supervisor-info">${''}</div></td></tr>
@@ -5704,7 +5749,12 @@ function renderOrderForm(sub){
     const schId = document.getElementById('f_school').value;
     const sch = state.schools.find(s=>s.id===schId);
     const sel = document.getElementById('f_supervisor');
-    sel.innerHTML = (sch?sch.supervisors:[]).map(sv=>`<option value="${sv.id}" ${editing&&editing.supervisorId===sv.id?'selected':''}>${escapeHtml(sv.name)}</option>`).join('') || '<option value="">لا يوجد مشرفين</option>';
+    const svs = (sch && sch.supervisors) ? sch.supervisors : [];
+    /* المشرف اختياري — يمكن الحفظ الآن وإضافته لاحقًا */
+    sel.innerHTML = svs.length
+      ? svs.map(sv=>`<option value="${sv.id}" ${editing&&editing.supervisorId===sv.id?'selected':''}>${escapeHtml(sv.name)}${sv.phone?'':' (بلا رقم)'}</option>`).join('')
+        + `<option value="" ${editing&&!editing.supervisorId?'selected':''}>— بدون مشرف (يُضاف لاحقًا) —</option>`
+      : '<option value="">لا يوجد مشرف — يُضاف لاحقًا</option>';
     updateSupervisorInfo();
   }
   function updateSupervisorInfo(){
@@ -5838,6 +5888,11 @@ function renderOrderForm(sub){
   stageEl.addEventListener('change', ()=>{ stageEl.dataset.manual = stageEl.value ? '1' : '0'; });
   document.getElementById('f_school').addEventListener('change', syncStageFromSchool);
   syncStageFromSchool();
+  /* التنقل بين الفعاليات */
+  const _np = document.getElementById('navPrevOrder'), _nn = document.getElementById('navNextOrder');
+  if(_np && navPrev) _np.onclick = ()=>editOrder(navPrev.id);
+  if(_nn && navNext) _nn.onclick = ()=>editOrder(navNext.id);
+
   /* ══ فواصل ورقية: عرض قسم واحد في كل مرة ══ */
   (function(){
     const tabs   = sub.querySelectorAll('[data-ftab]');
@@ -6137,7 +6192,10 @@ function renderOrderForm(sub){
       }
     }
     if(!schoolId){ toast('يرجى اختيار مكان المبادرة'); return; }
-    if(!supervisorId){ toast('يرجى اختيار المشرف'); return; }
+    if(!supervisorId){
+      const ok = confirm('لم يُحدَّد مشرف لهذه الفعالية.\n\nسيتم الحفظ بدون مشرف، ويمكنك إضافته لاحقًا عند الحصول على رقمه.\n\nمتابعة؟');
+      if(!ok) return;
+    }
     if(!trainerIds.length){ toast('يرجى اختيار مقدم مبادرة واحد على الأقل'); return; }
     if(!checkedReqs.length){ toast('يرجى اختيار طلب إداري واحد على الأقل'); return; }
 
@@ -6381,6 +6439,54 @@ function restoreOrderForm(snap){
   const rBox=document.getElementById('reqHiddenChecks');
   if(rBox) snap.reqs.forEach(v=>{ const cb=rBox.querySelector(`input[value="${v}"]`); if(cb) cb.checked=true; });
 }
+/* ══ تعديل / حذف الجهة والمشرف من صفحة طلب الفعالية ══ */
+function formCurSchool(){
+  const id = (document.getElementById('f_school')||{}).value;
+  return id ? state.schools.find(s=>s.id===id) : null;
+}
+function formEditSchool(){
+  const s = formCurSchool();
+  if(!s){ toast('اختر الجهة أولًا'); return; }
+  editSchool(s.id);
+}
+async function formDeleteSchool(){
+  const s = formCurSchool();
+  if(!s){ toast('اختر الجهة أولًا'); return; }
+  const used = (state.orders||[]).filter(o=>o.schoolId===s.id && o.id!==editingOrderId).length;
+  const msg = `حذف الجهة: ${s.name}`
+    + ((s.supervisors||[]).length ? `\nومعها ${(s.supervisors||[]).length} مشرف` : '')
+    + (used ? `\n\n⚠ هذه الجهة مرتبطة بـ ${used} فعالية أخرى — ستبقى الفعاليات لكن بلا جهة.` : '')
+    + '\n\nهل تريد المتابعة؟';
+  if(!confirm(msg)) return;
+  state.schools = state.schools.filter(x=>x.id!==s.id);
+  await saveState(); toast('تم حذف الجهة');
+  const snap = snapshotOrderForm();
+  if(snap){ snap.vals.f_school=''; snap.vals.f_supervisor=''; }
+  render(); if(snap) setTimeout(()=>restoreOrderForm(snap), 0);
+}
+function formEditSupervisor(){
+  const s = formCurSchool();
+  if(!s){ toast('اختر الجهة أولًا'); return; }
+  const svId = (document.getElementById('f_supervisor')||{}).value;
+  if(!svId){ toast('لا يوجد مشرف محدد — استخدم "+ مشرف" لإضافته'); return; }
+  editSupervisor(s.id, svId);
+}
+async function formDeleteSupervisor(){
+  const s = formCurSchool();
+  if(!s){ toast('اختر الجهة أولًا'); return; }
+  const svId = (document.getElementById('f_supervisor')||{}).value;
+  const sv = (s.supervisors||[]).find(x=>x.id===svId);
+  if(!sv){ toast('لا يوجد مشرف محدد'); return; }
+  const used = (state.orders||[]).filter(o=>o.supervisorId===sv.id && o.id!==editingOrderId).length;
+  if(!confirm(`حذف المشرف: ${sv.name}`
+    + (used ? `\n\n⚠ مرتبط بـ ${used} فعالية أخرى — ستبقى بلا مشرف.` : '')
+    + '\n\nهل تريد المتابعة؟')) return;
+  s.supervisors = (s.supervisors||[]).filter(x=>x.id!==sv.id);
+  await saveState(); toast('تم حذف المشرف');
+  const snap = snapshotOrderForm();
+  if(snap) snap.vals.f_supervisor='';
+  render(); if(snap) setTimeout(()=>restoreOrderForm(snap), 0);
+}
 function renderKeepForm(){
   const snap = snapshotOrderForm();
   render();
@@ -6440,7 +6546,7 @@ function promptAddSupervisorFor(schoolId, schoolName){
   ], async v=>{
     const sch = state.schools.find(s=>s.id===schoolId); if(!sch) return;
     sch.supervisors.push({id:uid(), name:v.name, phone:v.phone, email:v.email});
-    await saveState(); toast('تم حفظ بيانات المشرف'); render();
+    await saveState(); toast('تم حفظ بيانات المشرف'); renderKeepForm();
     setTimeout(()=>{
       const s=document.getElementById('f_school'); if(s){ s.value=schoolId; s.dispatchEvent(new Event('change')); }
     },0);
@@ -10088,7 +10194,7 @@ function editSchool(id){
     {name:'name', label:'اسم المدرسة / الجهة', required:true},
     {name:'level', label:'المرحلة الدراسية', type:'select', options:LOCATION_TYPES.map(t=>({value:t,label:t}))},
     {name:'email', label:'البريد الإلكتروني للمدرسة (اختياري)'},
-  ], async v=>{ s.name=v.name; s.level=v.level; s.email=v.email||''; await saveState(); toast('تم الحفظ'); render(); });
+  ], async v=>{ s.name=v.name; s.level=v.level; s.email=v.email||''; await saveState(); toast('تم الحفظ'); renderKeepForm(); });
   setTimeout(()=>{ const f=document.getElementById('mf_name'); if(f) f.value=s.name; const l=document.getElementById('mf_level'); if(l) l.value=s.level; const em=document.getElementById('mf_email'); if(em) em.value=s.email||''; },0);
 }
 
@@ -10191,7 +10297,7 @@ function editSupervisor(schoolId, svId){
   ], async v=>{
     if(!v.name || !v.name.trim()){ toast('أدخل اسم المشرف'); return false; }
     sv.name = v.name.trim(); sv.phone = (v.phone||'').trim(); sv.email = (v.email||'').trim();
-    await saveState(); toast('تم حفظ بيانات المشرف'); render();
+    await saveState(); toast('تم حفظ بيانات المشرف'); renderKeepForm();
   });
   setTimeout(()=>{
     const n=document.getElementById('mf_name'), p=document.getElementById('mf_phone'), e=document.getElementById('mf_email');
