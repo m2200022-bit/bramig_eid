@@ -6780,12 +6780,39 @@ function repPeriodCell(o){
   return `<span class="prd2"><span class="p2"><b>من</b><i>${s||'—'}</i></span><span class="p2"><b>إلى</b><i>${e||'—'}</i></span></span>`;
 }
 /* المكان وهاتف المشرف في عمود واحد يفصلهما / */
+/* شارة صفراء لمكان التنفيذ الفعلي — أنماط مضمّنة لتظهر في الطباعة أيضًا */
+const VENUE_BADGE_STYLE = 'background:#FFF1A8;color:#5C4A00;border:1px solid #E8D46A;border-radius:4px;padding:1px 6px;font-weight:700;display:inline-block;font-size:.92em;line-height:1.5;';
+function venueBadge(o){
+  if(!o || !o.venue) return '';
+  return `<div style="margin-top:3px;"><span style="${VENUE_BADGE_STYLE}">مكان التنفيذ: ${escapeHtml(o.venue)}</span></div>`;
+}
+/* عنوان الفعالية + شارة مكان التنفيذ (للتقارير التي بلا عمود مكان) */
+function titleWithVenue(o){
+  const t = escapeHtml(o.title||'');
+  return o && o.venue ? `<span>${t}</span>${venueBadge(o)}` : (o.title||'');
+}
+/* أماكن التنفيذ الفعلية لمجموعة فعاليات — شارات صفراء مع العدد */
+function venuesSummary(list){
+  const m = {};
+  (list||[]).forEach(o=>{ if(o.venue) m[o.venue] = (m[o.venue]||0)+1; });
+  const e = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  if(!e.length) return '—';
+  return `<span>${e.map(([n,c])=>`<span style="${VENUE_BADGE_STYLE}margin:1px;">${escapeHtml(n)}${c>1?` (${c})`:''}</span>`).join(' ')}</span>`;
+}
+function venuesSummaryText(list){
+  const m = {};
+  (list||[]).forEach(o=>{ if(o.venue) m[o.venue] = (m[o.venue]||0)+1; });
+  const e = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  return e.length ? e.map(([n,c])=>c>1?`${n} (${c})`:n).join('، ') : '—';
+}
 function repPlacePhone(o){
   const school = state.schools.find(s=>s.id===o.schoolId);
-  const sup = school ? school.supervisors.find(s=>s.id===o.supervisorId) : null;
+  const sup = school ? (school.supervisors||[]).find(s=>s.id===o.supervisorId) : null;
   const nm = school ? escapeHtml(school.name) : '—';
   const ph = sup && sup.phone ? escapeHtml(sup.phone) : '';
-  return ph ? `${nm} / ${ph}` : nm;
+  const base = ph ? `${nm} / ${ph}` : nm;
+  /* مع مكان التنفيذ: نغلّف بوسم ليُعامل كـ HTML في الجداول */
+  return o.venue ? `<span>${base}</span>${venueBadge(o)}` : base;
 }
 /* مقدمو الفعالية: الاسم ورقمه أسفله، وكل مقدّم في سطر */
 function repTrainers(o){
@@ -7442,11 +7469,7 @@ function renderAdminRequestsReportPage(c){
     return rows;
   }
   /* المكان + مكان التنفيذ الفعلي بخلفية صفراء للتمييز */
-  function placeCell(o){
-    const base = repPlacePhone(o);
-    if(!o.venue) return base;
-    return `${base}<div style="margin-top:3px;"><span style="background:#FFF1A8;color:#5C4A00;border:1px solid #E8D46A;border-radius:4px;padding:1px 6px;font-weight:700;display:inline-block;">مكان التنفيذ: ${escapeHtml(o.venue)}</span></div>`;
-  }
+  function placeCell(o){ return repPlacePhone(o); }
   /* الطلبات الإدارية في مربع واحد — كل طلب في سطر */
   function reqsCell(r){
     return r.reqs.map(x=>`<div style="padding:1px 0;white-space:nowrap;">• ${escapeHtml(x)}</div>`).join('');
@@ -8054,9 +8077,9 @@ function renderReportsPage(c){
       list.forEach(o=>{
         const k = keyOf(o.date, g), sk = sortKey(o.date, g);
         if(!map.has(k)) map.set(k, {k, sk, n:0, days:0, hours:0, people:0,
-          reqs:0, schools:new Set(), trainers:new Set(), done:0, cancelled:0, postponed:0});
+          reqs:0, schools:new Set(), trainers:new Set(), done:0, cancelled:0, postponed:0, items:[]});
         const r = map.get(k);
-        r.n++;
+        r.n++; r.items.push(o);
         r.days   += daysCount(o.date, o.dateTo);
         r.hours  += computeHours(o.timeFrom, o.timeTo, o.date, o.dateTo);
         r.people += Number(o.participantsCount)||0;
@@ -8078,9 +8101,9 @@ function renderReportsPage(c){
       tot.trainers = new Set(list.flatMap(o=>o.trainerIds||[])).size;
       return {rows, tot, from, to, g, list};
     }
-    const HDR = ['الفترة','الفعاليات','الأيام','الساعات','المستهدفون','الطلبات الإدارية','الجهات','المنفذون','منجزة','مؤجلة','ملغاة'];
+    const HDR = ['الفترة','الفعاليات','الأيام','الساعات','المستهدفون','الطلبات الإدارية','الجهات','المنفذون','منجزة','مؤجلة','ملغاة','أماكن التنفيذ الفعلية'];
     function rowsOf(d){ return d.rows.map(r=>[r.k, r.n, r.days, r.hours, r.people, r.reqs,
-      r.schools.size, r.trainers.size, r.done, r.postponed, r.cancelled]); }
+      r.schools.size, r.trainers.size, r.done, r.postponed, r.cancelled, venuesSummaryText(r.items)]); }
     function render(){
       const d = gather();
       const el = document.getElementById('ps_result');
@@ -8109,12 +8132,14 @@ function renderReportsPage(c){
             <td><b>${r.n}</b></td><td>${r.days}</td><td>${r.hours}</td><td>${r.people}</td><td>${r.reqs}</td>
             <td>${r.schools.size}</td><td>${r.trainers.size}</td>
             <td>${r.done}</td><td>${r.postponed}</td><td>${r.cancelled}</td>
+            <td style="text-align:right;">${venuesSummary(r.items)}</td>
           </tr>`).join('')}
         </tbody><tfoot><tr style="font-weight:700;background:var(--sand-100);">
           <td style="text-align:right;">الإجمالي</td><td></td>
           <td>${d.tot.n}</td><td>${d.tot.days}</td><td>${d.tot.hours}</td><td>${d.tot.people}</td>
           <td>${d.tot.reqs}</td><td>${d.tot.schools}</td><td>${d.tot.trainers}</td>
           <td>${d.tot.done}</td><td>${d.tot.postponed}</td><td>${d.tot.cancelled}</td>
+          <td style="text-align:right;">${venuesSummary(d.list)}</td>
         </tr></tfoot></table>`;
       enhanceReportTable(el);
     }
@@ -8129,7 +8154,7 @@ function renderReportsPage(c){
         kpis:[{v:d.tot.n,l:'📋 الفعاليات'},{v:d.tot.hours,l:'⏱ الساعات'},
               {v:d.tot.people,l:'👥 المستهدفون'},{v:d.tot.reqs,l:'📄 الطلبات الإدارية'}],
         headers:HDR,
-        rows: rowsOf(d).map(r=>r.map(v=>escapeHtml(String(v))))
+        rows: d.rows.map((r,i)=>rowsOf(d)[i].slice(0,11).map(v=>escapeHtml(String(v))).concat([venuesSummary(r.items)]))
       }), true, 'A4');
     }
     document.getElementById('ps_print').onclick = printIt;
@@ -8341,7 +8366,7 @@ function renderReportsPage(c){
       <div id="fs_result" style="margin-top:14px;"></div>
     </div>`;
 
-    const COLS = ['مجال المبادرة','الأيام','الساعات','الفعاليات','المنفّذون','المستهدفون','الأماكن'];
+    const COLS = ['مجال المبادرة','الأيام','الساعات','الفعاليات','المنفّذون','المستهدفون','الأماكن','أماكن التنفيذ الفعلية'];
     function gen(){
       const from=document.getElementById('fs_from').value, to=document.getElementById('fs_to').value;
       const wDone=document.getElementById('fs_done').checked;
@@ -8367,6 +8392,7 @@ function renderReportsPage(c){
           trainers: new Set(list.flatMap(o=>o.trainerIds||[])).size,
           people: list.reduce((s,o)=>s+(Number(o.participantsCount)||0),0),
           places: new Set(list.map(o=>o.schoolId).filter(Boolean)).size,
+          venues: venuesSummary(list), venuesTxt: venuesSummaryText(list),
         };
       }).filter(r=>r.events>0).sort((a,b)=>b.events-a.events);
       const tot = {
@@ -8377,15 +8403,18 @@ function renderReportsPage(c){
         trainers: new Set(base.flatMap(o=>o.trainerIds||[])).size,
         people: rows.reduce((s,r)=>s+r.people,0),
         places: new Set(base.map(o=>o.schoolId).filter(Boolean)).size,
+        venues: venuesSummary(base), venuesTxt: venuesSummaryText(base),
       };
       return {rows, tot, from, to};
     }
-    const asArr = r => [r.name, r.days, r.hours, r.events, r.trainers, r.people, r.places];
+    const asArr = r => [r.name, r.days, r.hours, r.events, r.trainers, r.people, r.places, r.venuesTxt];
+    /* نسخة HTML: آخر عمود شارات صفراء */
+    const asHtml = r => [escapeHtml(String(r.name)), r.days, r.hours, r.events, r.trainers, r.people, r.places, r.venues].map(String);
     function tableHtml(rows, tot){
       if(!rows.length) return `<div class="empty-state">لا توجد فعاليات ضمن هذه الفترة</div>`;
       return `<table><thead><tr>${COLS.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>
-        ${rows.map(r=>`<tr>${asArr(r).map((v,i)=>`<td${i===0?' style="text-align:right;font-weight:700;"':''}>${escapeHtml(String(v))}</td>`).join('')}</tr>`).join('')}
-        <tr style="background:#FAF9F7;font-weight:700;">${asArr(tot).map((v,i)=>`<td${i===0?' style="text-align:right;"':''}>${escapeHtml(String(v))}</td>`).join('')}</tr>
+        ${rows.map(r=>`<tr>${asHtml(r).map((v,i)=>`<td${i===0?' style="text-align:right;font-weight:700;"':''}>${v}</td>`).join('')}</tr>`).join('')}
+        <tr style="background:#FAF9F7;font-weight:700;">${asHtml(tot).map((v,i)=>`<td${i===0?' style="text-align:right;"':''}>${v}</td>`).join('')}</tr>
       </tbody></table>`;
     }
     document.getElementById('fs_go').onclick=()=>{
@@ -8404,8 +8433,8 @@ function renderReportsPage(c){
           {v:tot.hours,l:'⏱️ الساعات'}, {v:tot.people,l:'👥 المستهدفون'},
         ],
         headers: COLS,
-        rows: rows.map(r=>asArr(r).map(v=>escapeHtml(String(v))))
-              .concat([asArr(tot).map(v=>`<b>${escapeHtml(String(v))}</b>`)])
+        rows: rows.map(r=>asHtml(r))
+              .concat([asHtml(tot).map((v,i)=>i===7?v:`<b>${v}</b>`)])
       }), true, 'A4');
     }
     document.getElementById('fs_print').onclick=printIt;
@@ -8618,7 +8647,7 @@ function renderReportsPage(c){
     const headers = ['أمر التكليف','عنوان الفعالية','التاريخ (من — إلى)','الوقت','المكان','مقدم المبادرة','رقم الهاتف','الإنجاز'];
     function rowOf(o){
       const school = state.schools.find(s=>s.id===o.schoolId);
-      return [o.serial, escapeHtml(o.title), dateRangeStr(o), escapeHtml(fullTimeRange(o.timeFrom,o.timeTo)), school?escapeHtml(school.name):'', escapeHtml(trainerNames(o))||'—', escapeHtml(trainerPhones(o)), o.completionStatus||'لم تنجز'];
+      return [o.serial, escapeHtml(o.title), dateRangeStr(o), escapeHtml(fullTimeRange(o.timeFrom,o.timeTo)), (school?escapeHtml(school.name):'') + venueBadge(o), escapeHtml(trainerNames(o))||'—', escapeHtml(trainerPhones(o)), o.completionStatus||'لم تنجز'];
     }
     function tableOf(list){
       return `<table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>
@@ -8864,7 +8893,7 @@ function renderReportsPage(c){
     /* اسم المشرف بجوار اسم المدرسة في العنوان — فاستُبعد عمود المكان/الهاتف */
     const columns = ['#','الفعالية','التاريخ','الوقت','مقدم الفعالية'];
     function rowOf(o){
-      return [o.serial, o.title, repPeriodCell(o), fullTimeRange(o.timeFrom,o.timeTo), repTrainers(o)];
+      return [o.serial, titleWithVenue(o), repPeriodCell(o), fullTimeRange(o.timeFrom,o.timeTo), repTrainers(o)];
     }
     /* مشرفو المدرسة المرتبطون بفعاليات الفترة */
     function supsOf(school, list){
@@ -10302,6 +10331,16 @@ async function importSchoolsExcel(file){
 function stripBidi(v){
   return (v===null||v===undefined) ? v : String(v).replace(/[\u2066-\u2069\u200E\u200F]/g,'');
 }
+/* يحوّل خلية HTML إلى نص نظيف قبل كتابتها في Excel */
+function xlText(v){
+  if(typeof v!=='string' || v.indexOf('<')===-1) return v;
+  return v.replace(/<br\s*\/?>/gi,' ')
+    .replace(/مكان التنفيذ:/g,'— مكان التنفيذ:')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+    .replace(/\s+/g,' ').trim();
+}
 function exportToExcel(filename, headers, rows, titleAr){
   const now = new Date();
   const dateStr = fmtDate(todayStr());
@@ -10309,7 +10348,7 @@ function exportToExcel(filename, headers, rows, titleAr){
   const aoa = [];
   if(titleAr){ aoa.push([titleAr]); aoa.push([stripBidi(`تاريخ التصدير: ${dateStr}    وقت التصدير: ${timeStr}`)]); aoa.push([]); }
   aoa.push(headers.map(stripBidi));
-  rows.forEach(r=>aoa.push(r.map(stripBidi)));
+  rows.forEach(r=>aoa.push(r.map(v=>stripBidi(xlText(v)))));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = headers.map(()=>({wch:18}));
   const wb = XLSX.utils.book_new();
@@ -10325,7 +10364,7 @@ function exportToExcelMultiSheet(filename, sheets, titleAr){
     const aoa = [];
     if(titleAr){ aoa.push([titleAr]); aoa.push([stripBidi(`تاريخ التصدير: ${dateStr}    وقت التصدير: ${timeStr}`)]); aoa.push([]); }
     aoa.push(s.headers.map(stripBidi));
-    s.rows.forEach(r=>aoa.push(r.map(stripBidi)));
+    s.rows.forEach(r=>aoa.push(r.map(v=>stripBidi(xlText(v)))));
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = s.headers.map(()=>({wch:18}));
     XLSX.utils.book_append_sheet(wb, ws, (s.name||'بيانات').slice(0,31));
