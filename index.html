@@ -7417,10 +7417,12 @@ function renderAdminRequestsReportPage(c){
     const fromInput = document.getElementById('arq_from').value;
     let from = fromInput, to = document.getElementById('arq_to').value;
     if(range && fromInput){
-      const d = new Date(fromInput+'T00:00:00');
-      if(range==='week') d.setDate(d.getDate()+6);
-      else if(range==='month') d.setMonth(d.getMonth()+1), d.setDate(d.getDate()-1);
-      to = d.toISOString().slice(0,10);
+      if(range==='week') to = addDaysISO(fromInput, 6);
+      else if(range==='month'){
+        const d = new Date(fromInput+'T00:00:00'); d.setMonth(d.getMonth()+1);
+        const nx = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        to = addDaysISO(nx, -1);                     // بدون toISOString (يزيح اليوم في توقيت قطر)
+      }
     }
     const list = state.orders.filter(o=> (o.adminRequests||[]).length>0 && (!from||o.date>=from) && (!to||o.date<=to))
       .sort((a,b)=> (a.date||'').localeCompare(b.date||'') || a.serial-b.serial);
@@ -7431,20 +7433,32 @@ function renderAdminRequestsReportPage(c){
     list.forEach(o=>{
       const school = state.schools.find(s=>s.id===o.schoolId);
       const dateStr = o.dateTo && o.dateTo!==o.date ? `${fmtDate(o.date)} — ${fmtDate(o.dateTo)}` : fmtDate(o.date);
-      const reqNames = (o.adminRequests||[]).map(id=>{ const r=state.adminRequestsList.find(x=>x.id===id); return r?r.name:''; }).filter(Boolean);
-      reqNames.forEach(reqName=>{
-        rows.push({o, school, dateStr, reqName});
-      });
+      const reqs = (o.adminRequests||[]).map(id=>{ const r=state.adminRequestsList.find(x=>x.id===id); return r?r.name:''; })
+        .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar'));
+      if(!reqs.length) return;
+      /* أمر التكليف الواحد = صف واحد، وطلباته مجمّعة في مربع واحد */
+      rows.push({o, school, dateStr, reqs, reqName: reqs.join('، ')});
     });
     return rows;
+  }
+  /* المكان + مكان التنفيذ الفعلي بخلفية صفراء للتمييز */
+  function placeCell(o){
+    const base = repPlacePhone(o);
+    if(!o.venue) return base;
+    return `${base}<div style="margin-top:3px;"><span style="background:#FFF1A8;color:#5C4A00;border:1px solid #E8D46A;border-radius:4px;padding:1px 6px;font-weight:700;display:inline-block;">مكان التنفيذ: ${escapeHtml(o.venue)}</span></div>`;
+  }
+  /* الطلبات الإدارية في مربع واحد — كل طلب في سطر */
+  function reqsCell(r){
+    return r.reqs.map(x=>`<div style="padding:1px 0;white-space:nowrap;">• ${escapeHtml(x)}</div>`).join('');
   }
   function draw(){
     const {list} = getList();
     const rows = rowsOf(list);
     const box = document.getElementById('arq_result');
-    box.innerHTML = `<h2>النتائج (${rows.length})</h2>
-      <table><thead><tr><th></th><th>#</th><th>عنوان الفعالية</th><th>التاريخ</th><th>الوقت</th><th>المدة</th><th>المكان / هاتف المشرف</th><th>مقدم الفعالية</th><th>مقدم المبادرة</th><th>الهاتف</th><th>الطلب</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr><td><input type="checkbox" class="arq-check" data-id="${r.o.id}"></td><td>${r.o.serial}</td><td style="text-align:right;">${escapeHtml(r.o.title||'')}</td><td>${repPeriodCell(r.o)}</td><td>${escapeHtml(fullTimeRange(r.o.timeFrom,r.o.timeTo))}</td><td>${daysCount(r.o.date,r.o.dateTo)} ي / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} س</td><td>${repPlacePhone(r.o)}</td><td>${repTrainers(r.o)}</td><td>${escapeHtml(r.reqName)}</td></tr>`).join('') || '<tr><td colspan="9" class="empty-state">لا توجد طلبات إدارية ضمن هذه الفترة</td></tr>'}
+    const reqTotal = rows.reduce((s,r)=>s+r.reqs.length, 0);
+    box.innerHTML = `<h2>النتائج — ${rows.length} ${eventWord(rows.length)} · ${reqTotal} طلب إداري</h2>
+      <table><thead><tr><th></th><th>#</th><th>عنوان الفعالية</th><th>التاريخ</th><th>الوقت</th><th>المدة</th><th>المكان / هاتف المشرف</th><th>مقدم الفعالية</th><th>الطلبات الإدارية</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td><input type="checkbox" class="arq-check" data-id="${r.o.id}"></td><td>${r.o.serial}</td><td style="text-align:right;">${escapeHtml(r.o.title||'')}</td><td>${repPeriodCell(r.o)}</td><td>${escapeHtml(fullTimeRange(r.o.timeFrom,r.o.timeTo))}</td><td>${daysCount(r.o.date,r.o.dateTo)} ي / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} س</td><td>${placeCell(r.o)}</td><td>${repTrainers(r.o)}</td><td style="text-align:right;">${reqsCell(r)}</td></tr>`).join('') || '<tr><td colspan="9" class="empty-state">لا توجد طلبات إدارية ضمن هذه الفترة</td></tr>'}
       </tbody></table>`;
     enhanceReportTable(box);
   }
@@ -7456,9 +7470,11 @@ function renderAdminRequestsReportPage(c){
     return rowsOf(list.filter(o=>ids.includes(o.id)));
   }
   function excelRowsOf(rows){
-    return rows.map(r=>[r.o.serial, r.o.title||'', r.dateStr, fullTimeRange(r.o.timeFrom,r.o.timeTo), `${daysCount(r.o.date,r.o.dateTo)} يوم / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} ساعة`, r.school?r.school.name:'', trainerNames(r.o)+(trainerPhones(r.o)?' — '+trainerPhones(r.o):''), r.reqName]);
+    return rows.map(r=>[r.o.serial, r.o.title||'', r.dateStr, fullTimeRange(r.o.timeFrom,r.o.timeTo), `${daysCount(r.o.date,r.o.dateTo)} يوم / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} ساعة`,
+      (r.school?r.school.name:'') + (r.o.venue ? ` — مكان التنفيذ: ${r.o.venue}` : ''),
+      trainerNames(r.o)+(trainerPhones(r.o)?' — '+trainerPhones(r.o):''), r.reqs.join('، ')]);
   }
-  const excelHeaders = ['#','عنوان الفعالية','التاريخ','الوقت','المدة','المكان','مقدم المبادرة','الطلب الإداري'];
+  const excelHeaders = ['#','عنوان الفعالية','التاريخ','الوقت','المدة','المكان','مقدم المبادرة','الطلبات الإدارية'];
 
   document.getElementById('arq_excel').onclick=()=>{
     const {list, from, to} = getList();
@@ -7471,13 +7487,13 @@ function renderAdminRequestsReportPage(c){
   };
 
   function buildPrintRows(rows){
-    return rows.map(r=>[r.o.serial, escapeHtml(r.o.title||''), repPeriodCell(r.o), escapeHtml(fullTimeRange(r.o.timeFrom,r.o.timeTo)), `${daysCount(r.o.date,r.o.dateTo)} ي / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} س`, repPlacePhone(r.o), repTrainers(r.o), escapeHtml(r.reqName)]);
+    return rows.map(r=>[r.o.serial, escapeHtml(r.o.title||''), repPeriodCell(r.o), escapeHtml(fullTimeRange(r.o.timeFrom,r.o.timeTo)), `${daysCount(r.o.date,r.o.dateTo)} ي / ${computeHours(r.o.timeFrom,r.o.timeTo,r.o.date,r.o.dateTo)} س`, placeCell(r.o), repTrainers(r.o), reqsCell(r)]);
   }
   async function printIt(){
     const {list, from, to} = getList();
     doPrintDoc(buildReportDoc({
       titleAr:'تقرير الطلبات الإدارية', subtitle:`من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'}`,
-      kpis:[{v:list.length,l:'عدد الفعاليات'}],
+      kpis:[{v:rowsOf(list).length,l:'عدد الفعاليات'},{v:rowsOf(list).reduce((s,r)=>s+r.reqs.length,0),l:'عدد الطلبات الإدارية'}],
       headers:excelHeaders,
       rows: buildPrintRows(rowsOf(list))
     }), true, 'A4');
