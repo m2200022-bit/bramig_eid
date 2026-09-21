@@ -6703,6 +6703,16 @@ function printDocOpen(theme){
     padding:1.1mm 0;font-size:11.5pt;line-height:1.25}
   .f-ar{font-weight:700;color:${theme};min-width:160px;font-size:16px;font-family:'Tajawal',Arial}
   .f-val{flex:1;text-align:center;font-weight:400;font-size:16px;font-family:'Tajawal',Arial}
+  /* جدول حقول أمر التكليف: محاذاة موحّدة لكل المدخلات */
+  .fr-tbl{width:100%;border-collapse:collapse;table-layout:auto;margin:0}
+  .fr-tbl>tbody>tr>td{border:none !important;background-color:transparent !important;
+    padding:1.1mm 0;vertical-align:middle;font-size:16px;font-family:'Tajawal',Arial;line-height:1.25;
+    background-image:repeating-linear-gradient(to right, rgba(138,21,56,.30) 0 1px, transparent 1px 5px) !important;
+    background-position:left bottom !important;background-size:100% 0.6px !important;background-repeat:no-repeat !important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .fr-tbl>tbody>tr>td.f-ar{width:1%;white-space:nowrap;min-width:0;text-align:right;
+    padding-inline-end:14px;font-weight:700;color:${theme}}
+  .fr-tbl>tbody>tr>td.f-val{text-align:right;font-weight:400}
   .ftr{border-top:2px solid ${theme};margin-top:5mm;padding-top:2mm;text-align:center;font-size:9.5pt;color:#666}
   /* @page rule is injected per-call by doPrintDoc() below, with the correct size+orientation+margin */
   .field-row{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -6936,8 +6946,9 @@ function qrTextForOrder(o){
 function dashedPeopleBox(people){
   const list = people.filter(Boolean);
   if(!list.length) return '—';
-  return `<div style="display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;width:100%;">
-    ${list.map((p,i)=>`<div style="flex:0 1 auto; padding:0 6px; text-align:center; ${i>0?`border-right:1px solid ${PRINT_LINE_COLOR};`:''}">
+  /* يبدأ من نفس خط بقية المدخلات (بداية السطر) بدل التوسيط */
+  return `<div style="display:flex;flex-wrap:wrap;align-items:stretch;justify-content:flex-start;width:100%;">
+    ${list.map((p,i)=>`<div style="flex:0 1 auto; padding:0 ${i>0?'10px':'0'} 0 10px; text-align:right; ${i>0?`border-right:1px solid ${PRINT_LINE_COLOR};`:''}">
       <div style="font-size:9pt; color:#161616; font-weight:400; line-height:1.1; white-space:nowrap;">${escapeHtml(p.name||'—')}</div>
       <div style="font-size:10pt; color:#111; font-weight:400; line-height:1.1; white-space:nowrap; margin-top:1.6mm;">${p.phone?phoneLinkWithIcons(p.phone):'-'}</div>
     </div>`).join('')}
@@ -7022,8 +7033,12 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
       ${isAdminCopy?'':`<div class="num-f" style="font-weight:700;font-size:9pt;line-height:1.2;color:${PRINT_LINE_COLOR};margin-top:0.6mm;">${o.serial}</div>`}
     </div>
   </div>`;
-  html += summaryRows.map(([label,val])=>`<div class="field-row"><span class="f-ar">${escapeHtml(label)} :</span><span class="f-val">${val}</span></div>`).join('');
-  html += rows.map(([label,val])=>`<div class="field-row"><span class="f-ar">${escapeHtml(label)} :</span><span class="f-val">${val}</span></div>`).join('');
+  /* كل الحقول في جدول واحد بعمودين: عمود التسميات يأخذ عرض أطول تسمية،
+     فتبدأ جميع المدخلات من خط رأسي واحد بمسافة موحّدة بعد العنوان */
+  html += `<table class="fr-tbl"><tbody>${
+    summaryRows.concat(rows).map(([label,val])=>
+      `<tr class="fr-row"><td class="f-ar">${escapeHtml(label)} :</td><td class="f-val">${val}</td></tr>`
+    ).join('')}</tbody></table>`;
   html += printDocFooter();
   html += printDocClose();
   return html;
@@ -10048,6 +10063,7 @@ function renderSettingsPage(c){
         <button class="icon-btn" onclick="quickAddSchoolSettings()" title="إضافة مدرسة" aria-label="إضافة مدرسة" style="width:28px;height:28px;padding:0;">${icon('plus',14)}</button>
         <button class="icon-btn" onclick="dedupeAll()" title="حذف المكرر (مدارس ومشرفين وأرقام وبريد)" aria-label="حذف المكرر" style="width:28px;height:28px;padding:0;">${icon('copy',14)}</button>
         <button class="icon-btn" onclick="mergeSameSchools()" title="دمج المدارس المتطابقة بالاسم" aria-label="دمج المدارس المتطابقة" style="width:28px;height:28px;padding:0;">${icon('layers',14)}</button>
+        <button class="icon-btn" onclick="mergeSelectedSchools()" title="دمج المدارس المحددة تحت اسم واحد" aria-label="دمج المحدد" style="width:auto;height:28px;padding:0 8px;font-size:11.5px;gap:4px;display:inline-flex;align-items:center;">${icon('checkCircle',13)} دمج المحدد</button>
         <button class="icon-btn danger" onclick="bulkDeleteSchoolRows()" title="حذف المحدد" aria-label="حذف المحدد" style="width:28px;height:28px;padding:0;">${icon('trash',14)}</button>
       </span></h2>
     <div class="tbl-scroll">
@@ -10442,71 +10458,112 @@ async function bulkDeleteSchoolRows(){
 }
 /* حذف المكرر: مدارس، مشرفون، أرقام، بريد */
 /* دمج المدارس التي تحمل الاسم نفسه مع مشرفيها — بلا تكرار */
+/* ══════════ دمج المدارس ══════════ */
+const _mzNz = s => String(s||'').replace(/[\u064B-\u0652\u0640]/g,'')
+  .replace(/[أإآا]/g,'ا').replace(/[ىي]/g,'ي').replace(/ة/g,'ه')
+  .replace(/[\-–—_.,،()]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
+const _mzDigits = s => String(s||'').replace(/\D/g,'');
+/* مفتاح المطابقة: الاسم بعد إزالة البادئات العامة (مدرسة / المدرسة / مدارس)
+   «مدرسة خالد بن أحمد» = «خالد بن أحمد»، أما «خالد بن أحمد الابتدائية» فتبقى مختلفة */
+function schoolKey(name){
+  let k = _mzNz(name);
+  k = k.replace(/^(المدرسه|مدرسه|مدارس|م)\s+/, '');
+  return k.trim();
+}
+/* يدمج سجلات مدارس في سجل واحد: الفعاليات والمشرفون والبريد */
+function mergeSchoolsInto(keep, dups, finalName){
+  const st = {schools:0, sups:0, orders:0};
+  keep.supervisors = keep.supervisors || [];
+  const same = (a,b)=>
+    (_mzNz(a.name) && _mzNz(a.name)===_mzNz(b.name)) ||
+    (_mzDigits(a.phone) && _mzDigits(a.phone)===_mzDigits(b.phone)) ||
+    (_mzNz(a.email) && _mzNz(a.email)===_mzNz(b.email));
+  dups.filter(d=>d.id!==keep.id).forEach(dup=>{
+    (dup.supervisors||[]).forEach(sv=>{
+      const twin = keep.supervisors.find(k=>same(k,sv));
+      if(twin){
+        /* نكمل الناقص من بيانات المشرف المكرر ثم نحوّل فعالياته */
+        if(!twin.phone && sv.phone) twin.phone = sv.phone;
+        if(!twin.email && sv.email) twin.email = sv.email;
+        (state.orders||[]).forEach(o=>{ if(o.supervisorId===sv.id) o.supervisorId = twin.id; });
+        st.sups++;
+      } else keep.supervisors.push(sv);
+    });
+    (state.orders||[]).forEach(o=>{ if(o.schoolId===dup.id){ o.schoolId = keep.id; st.orders++; } });
+    if(!keep.level || keep.level==='غير ذلك'){ if(dup.level && dup.level!=='غير ذلك') keep.level = dup.level; }
+    if(!keep.email && dup.email) keep.email = dup.email;
+    state.schools = state.schools.filter(x=>x.id!==dup.id);
+    st.schools++;
+  });
+  if(finalName && finalName.trim()) keep.name = finalName.trim();
+  return st;
+}
+/* الاسم المقترح للمجموعة: الأكثر اكتمالًا (الأطول) */
+function bestSchoolName(g){
+  return g.map(s=>s.name||'').sort((a,b)=>b.length-a.length)[0] || '';
+}
+/* دمج تلقائي للمدارس المتطابقة بالاسم */
 async function mergeSameSchools(){
-  const nz = s => String(s||'').replace(/[\u064B-\u0652\u0640]/g,'')
-    .replace(/[أإآا]/g,'ا').replace(/[ىي]/g,'ي').replace(/ة/g,'ه')
-    .replace(/\s+/g,' ').trim().toLowerCase();
-  const digits = s => String(s||'').replace(/\D/g,'');
-  /* تجميع المدارس حسب الاسم المطبَّع */
   const groups = new Map();
   (state.schools||[]).forEach(s=>{
-    const k = nz(s.name);
+    const k = schoolKey(s.name); if(!k) return;
     if(!groups.has(k)) groups.set(k, []);
     groups.get(k).push(s);
   });
   const dupGroups = Array.from(groups.values()).filter(g=>g.length>1);
   if(!dupGroups.length){ toast('لا توجد مدارس متطابقة بالاسم'); return; }
-  /* معاينة قبل الدمج */
   const preview = dupGroups.map(g=>{
     const svN = g.reduce((s,x)=>s+((x.supervisors||[]).length), 0);
     const evN = g.reduce((s,x)=>s+(state.orders||[]).filter(o=>o.schoolId===x.id).length, 0);
-    return `• ${g[0].name}\n   ${g.length} سجلات · ${svN} مشرفًا · ${evN} فعالية`;
-  }).join('\n');
+    return `• ${g.map(x=>x.name).join('  +  ')}\n   ← تُدمج باسم: ${bestSchoolName(g)}\n   ${svN} مشرفًا · ${evN} فعالية`;
+  }).join('\n\n');
   if(!confirm(`سيتم دمج ${dupGroups.length} مجموعة مدارس متطابقة:\n\n${preview}\n\n`
-    + `تُنقل كل الفعاليات والمشرفين إلى سجل واحد، وتُحذف المشرفون المكررون (بالاسم أو الجوال أو البريد).\n\nمتابعة؟`)) return;
-  let mergedSchools = 0, mergedSups = 0, movedOrders = 0;
+    + `تُنقل الفعاليات والمشرفون والبريد إلى سجل واحد، ويُحذف المشرفون المكررون.\n\nمتابعة؟`)) return;
+  const tot = {schools:0, sups:0, orders:0};
   dupGroups.forEach(g=>{
-    /* نُبقي السجل الأكثر اكتمالًا: الأكثر مشرفين ثم الأقدم */
     const keep = g.slice().sort((a,b)=>((b.supervisors||[]).length - (a.supervisors||[]).length))[0];
-    keep.supervisors = keep.supervisors || [];
-    g.filter(s=>s.id!==keep.id).forEach(dup=>{
-      /* نقل المشرفين غير المكررين */
-      (dup.supervisors||[]).forEach(sv=>{
-        const exists = keep.supervisors.some(k=>
-          (nz(k.name) && nz(k.name)===nz(sv.name)) ||
-          (digits(k.phone) && digits(k.phone)===digits(sv.phone)) ||
-          (nz(k.email) && nz(k.email)===nz(sv.email)));
-        if(exists){
-          /* نحوّل فعاليات هذا المشرف إلى نظيره المُبقى */
-          const twin = keep.supervisors.find(k=>
-            (nz(k.name) && nz(k.name)===nz(sv.name)) ||
-            (digits(k.phone) && digits(k.phone)===digits(sv.phone)) ||
-            (nz(k.email) && nz(k.email)===nz(sv.email)));
-          if(twin) (state.orders||[]).forEach(o=>{ if(o.supervisorId===sv.id) o.supervisorId = twin.id; });
-          mergedSups++;
-        } else keep.supervisors.push(sv);
-      });
-      /* نقل الفعاليات */
-      (state.orders||[]).forEach(o=>{ if(o.schoolId===dup.id){ o.schoolId = keep.id; movedOrders++; } });
-      /* توحيد البيانات الناقصة */
-      if(!keep.level && dup.level) keep.level = dup.level;
-      if(!keep.email && dup.email) keep.email = dup.email;
-      state.schools = state.schools.filter(x=>x.id!==dup.id);
-      mergedSchools++;
-    });
-    /* إزالة أي تكرار متبقٍ داخل قائمة المشرفين */
-    const seenN=new Set(), seenP=new Set(), seenE=new Set(), out=[];
-    keep.supervisors.forEach(sv=>{
-      const a=nz(sv.name), b=digits(sv.phone), c=nz(sv.email);
-      if((a&&seenN.has(a))||(b&&seenP.has(b))||(c&&seenE.has(c))){ mergedSups++; return; }
-      if(a)seenN.add(a); if(b)seenP.add(b); if(c)seenE.add(c);
-      out.push(sv);
-    });
-    keep.supervisors = out;
+    const r = mergeSchoolsInto(keep, g, bestSchoolName(g));
+    tot.schools+=r.schools; tot.sups+=r.sups; tot.orders+=r.orders;
   });
   await saveState();
-  toast(`دُمجت ${mergedSchools} مدرسة · ${mergedSups} مشرفًا مكررًا · نُقلت ${movedOrders} فعالية`);
+  toast(`دُمجت ${tot.schools} مدرسة · ${tot.sups} مشرفًا مكررًا · نُقلت ${tot.orders} فعالية`);
   render();
+}
+/* دمج المدارس المحددة يدويًا تحت اسم يختاره المستخدم */
+function mergeSelectedSchools(){
+  const ids = [...new Set(Array.from(document.querySelectorAll('#schoolsTable .schRow:checked')).map(c=>c.dataset.school))];
+  const picked = ids.map(id=>state.schools.find(s=>s.id===id)).filter(Boolean);
+  if(picked.length < 2){ toast('حدد مدرستين أو أكثر لدمجها'); return; }
+  const def = bestSchoolName(picked);
+  openModal(`دمج ${picked.length} مدارس تحت اسم واحد`, [
+    {name:'pick', label:'اختر الاسم النهائي', type:'select',
+     options: picked.map(s=>({value:s.id, label:s.name})).concat([{value:'__new', label:'— اسم آخر (أكتبه أدناه) —'}])},
+    {name:'newName', label:'الاسم الجديد (عند اختيار «اسم آخر»)'},
+  ], async v=>{
+    let finalName = '';
+    if(v.pick==='__new'){
+      finalName = (v.newName||'').trim();
+      if(!finalName){ toast('اكتب الاسم الجديد'); return false; }
+    } else {
+      const s = picked.find(x=>x.id===v.pick); finalName = s ? s.name : def;
+    }
+    /* السجل المُبقى: الذي اخترت اسمه، وإلا الأكثر مشرفين */
+    const keep = picked.find(x=>x.id===v.pick)
+      || picked.slice().sort((a,b)=>((b.supervisors||[]).length - (a.supervisors||[]).length))[0];
+    const svN = picked.reduce((s,x)=>s+((x.supervisors||[]).length), 0);
+    const evN = picked.reduce((s,x)=>s+(state.orders||[]).filter(o=>o.schoolId===x.id).length, 0);
+    if(!confirm(`سيتم دمج:\n\n${picked.map(s=>'• '+s.name).join('\n')}\n\nتحت اسم: ${finalName}\n\n`
+      + `${svN} مشرفًا · ${evN} فعالية — تُحذف المشرفون المكررون ويُحتفظ بالبريد.\n\nمتابعة؟`)) return false;
+    const r = mergeSchoolsInto(keep, picked, finalName);
+    await saveState();
+    toast(`دُمجت ${r.schools+1} مدارس باسم «${finalName}» · ${r.sups} مشرفًا مكررًا · نُقلت ${r.orders} فعالية`);
+    render();
+  });
+  setTimeout(()=>{
+    const p = document.getElementById('mf_pick');
+    const best = picked.find(s=>s.name===def);
+    if(p && best) p.value = best.id;
+  },0);
 }
 async function dedupeAll(){
   const norm = s => (s||'').replace(/\s+/g,' ').trim().toLowerCase();
