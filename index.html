@@ -2207,6 +2207,7 @@ function defaultState(){
     orgName:'إدارة الفعاليات', logo:'',
     printHeader:{ line1:'مؤسسة عيد الخيرية', line2:'مركز عيد الثقافي', line3:'قسم البرامج المجتمعية' },
     nextSerial:1,
+    venues:['مركز عيد الثقافي - دحل الحمام','مخيم أم العمد','عزبة سمسمة'].map(name=>({id:uid(), name})),
     fields:[
       {id:uid(), name:'طلب إداري'},{id:uid(), name:'ثقافي إجتماعي صحي'},{id:uid(), name:'البرامج القيمية الترفيهية'},
       {id:uid(), name:'ثقافي تنافسي'},{id:uid(), name:'ثقافي تطوير معرفي'},{id:uid(), name:'البرامج القيمية - المصلى المتنقل'},
@@ -2304,6 +2305,8 @@ async function loadState(){
       if(!state.adminNotifications) state.adminNotifications=[];
       if(!state.reminderFlags) state.reminderFlags={};
       if(!state.quranActivities) state.quranActivities=[];
+      /* أماكن التنفيذ الفعلية (حين يختلف مكان التنفيذ عن الجهة الطالبة) */
+      if(!Array.isArray(state.venues)) state.venues = ['مركز عيد الثقافي - دحل الحمام','مخيم أم العمد','عزبة سمسمة'].map(name=>({id:uid(), name}));
       if(!state.placeTypes || !state.placeTypes.length){
         state.placeTypes = ['مدرسة','مدارس حكومية','مدارس خاصة','نادي','مركز','استراحة','جامعة','مكان عام'].map(name=>({id:uid(), name}));
       }
@@ -5594,6 +5597,21 @@ function renderOrderForm(sub){
         </td>
       </tr>
       <tr><td colspan="4"><div id="supervisorInfo" class="supervisor-info">${''}</div></td></tr>
+      <tr>
+        <td colspan="4" title="يُترك فارغًا إذا كان التنفيذ في مقر الجهة الطالبة">
+          <label>${icon('school',13)} مكان التنفيذ الفعلي
+            <span class="inl-acts">
+              <button type="button" class="inl-btn" onclick="quickAddVenue()" title="إضافة مكان تنفيذ" aria-label="إضافة مكان تنفيذ">${icon('plus',12)}</button>
+            </span></label>
+          <select id="f_venue" style="width:100%;max-width:420px;">
+            <option value="">— في مقر الجهة الطالبة —</option>
+            ${(state.venues||[]).map(v=>`<option value="${escapeHtml(v.name)}" ${editing&&editing.venue===v.name?'selected':''}>${escapeHtml(v.name)}</option>`).join('')}
+            ${editing&&editing.venue&&!(state.venues||[]).some(v=>v.name===editing.venue)
+              ? `<option value="${escapeHtml(editing.venue)}" selected>${escapeHtml(editing.venue)}</option>` : ''}
+          </select>
+          <div class="helper" style="margin-top:4px;">اختره فقط إذا كان التنفيذ في مكان غير مقر الجهة الطالبة — يظهر في نسختَي أمر التكليف.</div>
+        </td>
+      </tr>
     </tbody></table>
   </div>
   </div>
@@ -5934,7 +5952,8 @@ function renderOrderForm(sub){
     const rows = [
       ['fileText','عنوان المبادرة', val('f_title') || dash],
       ['layers','المجال والمسار', [fd&&fd.name, pt&&pt.name].filter(Boolean).join(' · ') || dash],
-      ['school','مكان التنفيذ', sc ? sc.name : dash],
+      ['school', val('f_venue') ? 'الجهة الطالبة' : 'مكان التنفيذ', sc ? sc.name : dash],
+      ...(val('f_venue') ? [['school','مكان التنفيذ', val('f_venue')]] : []),
       ['users','المشرف', sv ? (sv.phone ? `${sv.name} — ${sv.phone}` : sv.name) : dash],
       ['calendar','التاريخ', d1 ? (d2!==d1 ? `${fmtDate(d1)} — ${fmtDate(d2)}` : fmtDate(d1)) : dash],
       ['clock','الوقت والمدة', (val('f_timeFrom')||val('f_timeTo'))
@@ -6226,6 +6245,7 @@ function renderOrderForm(sub){
       title, fieldId, participantsCount,
       date, dateTo: dateTo||'', timeFrom, timeTo, programTypeId: ptypeId,
       schoolId, supervisorId, trainerIds,
+      venue: ((document.getElementById('f_venue')||{}).value || '').trim(),
       requesterNote: document.getElementById('f_reqNote').value, adminNote: document.getElementById('f_adminNote').value,
       adminRequests: checkedReqs,
     };
@@ -6268,7 +6288,8 @@ function viewOrderReadOnly(id){
     ['calendar','التاريخ', d1 ? (d2!==d1 ? `${fmtDate(d1)} — ${fmtDate(d2)}` : fmtDate(d1)) : '—'],
     ['clock','الوقت', fullTimeRange(o.timeFrom,o.timeTo)||'—'],
     ['layers','المدة', `${daysCount(d1,d2)} ${dayWord(daysCount(d1,d2))} · ${computeHours(o.timeFrom,o.timeTo,d1,d2)} ساعة`],
-    ['school','المكان', sc?sc.name:'—'],
+    ['school', o.venue?'الجهة الطالبة':'المكان', sc?sc.name:'—'],
+    ...(o.venue ? [['school','مكان التنفيذ', o.venue]] : []),
     ['users','المشرف', sv ? (sv.phone?`${sv.name} — ${sv.phone}`:sv.name) : '—'],
     ['users','مقدّمو المبادرة', trs.length?trs.join('، '):'—'],
     ['clipboard','الطلبات الإدارية', rqs.length?rqs.join('، '):'—'],
@@ -6417,7 +6438,7 @@ async function toggleUserActive(id){
 /* ══ حفظ مدخلات نموذج الفعالية واستعادتها بعد أي إضافة سريعة ══ */
 const ORDER_FORM_IDS = ['f_field','f_ptype','f_title','f_date','f_dateTo','f_daysCount','f_timeFrom',
   'f_timeTo','f_count','f_hoursCount','f_placeType','f_placeTypeTop','f_school','f_stage','f_supervisor',
-  'f_period','f_reqNote','f_adminNote'];
+  'f_period','f_reqNote','f_adminNote','f_venue'];
 function snapshotOrderForm(){
   if(!document.getElementById('f_title')) return null;
   const snap = {vals:{}, trainers:[], reqs:[]};
@@ -6486,6 +6507,16 @@ async function formDeleteSupervisor(){
   const snap = snapshotOrderForm();
   if(snap) snap.vals.f_supervisor='';
   render(); if(snap) setTimeout(()=>restoreOrderForm(snap), 0);
+}
+function quickAddVenue(){
+  openModal('إضافة مكان تنفيذ', [{name:'name', label:'اسم مكان التنفيذ', required:true}], async v=>{
+    const name = (v.name||'').trim(); if(!name) return false;
+    state.venues = state.venues || [];
+    if(!state.venues.some(x=>x.name===name)) state.venues.push({id:uid(), name});
+    await saveState(); toast('تمت إضافة مكان التنفيذ');
+    const snap = snapshotOrderForm(); if(snap) snap.vals.f_venue = name;
+    render(); if(snap) setTimeout(()=>restoreOrderForm(snap), 0);
+  });
 }
 function renderKeepForm(){
   const snap = snapshotOrderForm();
@@ -6865,7 +6896,8 @@ function qrTextForOrder(o){
   L.push(`التاريخ: ${dateTxt}`);
   L.push(`الوقت: ${timeTxt}`);
   L.push(`عدد الأيام: ${daysCount(o.date,o.dateTo)} — الساعات: ${computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo)}`);
-  L.push(`المكان: ${school?school.name:'—'}`);
+  L.push(`${o.venue?'الجهة الطالبة':'المكان'}: ${school?school.name:'—'}`);
+  if(o.venue) L.push(`مكان التنفيذ: ${o.venue}`);
   if(sup) L.push(`المشرف: ${sup.name}${sup.phone?` — ${sup.phone}`:''}`);
   if(trainers.length) L.push(`مقدّم المبادرة: ${trainers.join('، ')}`);
   if(reqs.length)     L.push(`الطلبات الإدارية: ${reqs.join('، ')}`);
@@ -6926,11 +6958,13 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
         : ''],
     ['عدد الأيام والمدة', `عدد الأيام: (<span class="num-f">${daysCount(o.date, o.dateTo)}</span>)&nbsp;&nbsp;&nbsp;المدة بالساعات: (<span class="num-f">${computeHours(o.timeFrom, o.timeTo, o.date, o.dateTo)}</span>)`],
     ['مكان المبادرة والمشرف', `<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:0 14px;">
-      <span><b>المدرسة :</b> ${escapeHtml(school?school.name:'—')}</span>
+      <span><b>${o.venue?'الجهة الطالبة':'المدرسة'} :</b> ${escapeHtml(school?school.name:'—')}</span>
       <span><b>المشرف :</b> ${supervisor?escapeHtml(supervisor.name):'—'}</span>
       <span><b>الجوال :</b> ${supervisor&&supervisor.phone?phoneLinkWithIcons(supervisor.phone):'—'}</span>
     </span>`],
   ];
+  /* مكان التنفيذ الفعلي — يظهر فقط إذا اختلف عن الجهة الطالبة */
+  if(o.venue) summaryRows.push(['مكان التنفيذ', `<b>${escapeHtml(o.venue)}</b>`]);
   const trainerIds = (o.trainerIds||[]);
   const trainerPeople = trainerIds.map(id=>state.trainers.find(t=>t.id===id)).filter(Boolean).map(t=>({name:t.name, phone:t.phone}));
   let rows = [
@@ -9925,6 +9959,7 @@ function renderSettingsPage(c){
 
   <div class="card"><h2>مجالات المبادرة <button class="plus-btn" onclick="quickAddField()">+</button></h2>${simpleListTable(state.fields, 'fields')}</div>
   <div class="card"><h2>مسارات المبادرة <button class="plus-btn" onclick="quickAddPType()">+</button></h2>${simpleListTable(state.programTypes, 'programTypes')}</div>
+  <div class="card"><h2>أماكن التنفيذ الفعلية <button class="plus-btn" onclick="quickAddVenue()">+</button></h2>${simpleListTable(state.venues||[], 'venues')}</div>
   <div class="card"><h2>الطلبات الإدارية <button class="plus-btn" onclick="quickAddAdminRequest()">+</button></h2>${simpleListTable(state.adminRequestsList, 'adminRequestsList')}</div>
 
   <div class="card"><h2>مقدمو الفعاليات
