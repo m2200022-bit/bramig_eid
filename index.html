@@ -320,6 +320,50 @@
   .cal-c.free{background:var(--brand-100); color:var(--brand-800); border:1px solid var(--brand-300);}
   .cal-c.busy{background:var(--red-100); color:var(--red-700); border:1px solid #FDA29B;}
   .cal-tb tbody tr:hover .cal-c{filter:brightness(.97);}
+  /* ══ تضارب داخل تقويم الإتاحة ══ */
+  .cal-c.clash{background:#C0334D !important; color:#fff !important; font-weight:800;
+    border:1px solid #9E2840; cursor:pointer; animation:clashPulse 1.6s ease-in-out infinite;}
+  .cal-c.clash:hover{background:#9E2840 !important;}
+  .cal-tb .cal-cl{float:left; margin-inline-end:4px; background:#C0334D; color:#fff;
+    border-radius:20px; padding:0 6px; font-size:10px; font-weight:800;}
+  .cal-tb tr.cal-row-clash .cal-nm{border-color:#C0334D !important; background:#FFF5F5 !important;}
+  .clash-tbl,
+  .content .tbl-scroll table.clash-tbl{width:100% !important; min-width:100% !important;
+    border-collapse:collapse; font-size:12.5px; table-layout:fixed;}
+  .clash-tbl th{background:#FBE7E5; color:#8E2437; font-weight:800; padding:7px 9px;
+    border:1px solid #F0C9C6; text-align:right;}
+  .clash-tbl td{padding:6px 9px; border:1px solid var(--line); vertical-align:top;}
+  .clash-tbl tbody tr:nth-child(even){background:#FCFAF8;}
+  /* ══ شريط تنبيه التضارب أعلى صفحة طلب فعالية ══ */
+  #ordClashBar{margin-bottom:10px;}
+  .ord-clash{border:2px solid #C0334D; border-radius:12px; overflow:hidden;
+    background:#FFF7F7; box-shadow:0 2px 10px rgba(192,51,77,.13);}
+  .ord-clash-h{display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:#C0334D; color:#fff; padding:8px 13px; font-size:13.5px;}
+  .ord-clash-h b{font-weight:800;}
+  .ord-clash-h i{margin-inline-start:auto; font-style:normal; font-size:12px; opacity:.92;}
+  .ord-clash-b{display:flex; flex-direction:column; gap:6px; padding:9px 11px;}
+  .ord-clash-ev{all:unset; cursor:pointer; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    border:1px solid #F0C9C6; border-radius:9px; background:#fff; padding:7px 11px;
+    font-size:12.5px; color:#8E2437; transition:background .18s, border-color .18s;}
+  .ord-clash-ev:hover{background:#FBE7E5; border-color:#C0334D;}
+  .ord-clash-ev b{font-weight:800; white-space:nowrap;}
+  .ord-clash-ev .oc-when{background:#FBE7E5; border-radius:6px; padding:1px 8px;
+    font-weight:700; white-space:nowrap; font-size:12px;}
+  .ord-clash-ev .oc-what{color:#5B4A4E; font-size:12px;}
+  .ord-clash-ev.soft{border-color:#E8D46A; color:#6B5300; background:#FFFDF2;}
+  .ord-clash-ev.soft:hover{background:#FFF7CC; border-color:#D9BE33;}
+  .ord-clash-ev.soft .oc-when{background:#FFF1A8;}
+  .ord-clash-f{padding:6px 13px 9px; font-size:11.5px; color:#8E6B70;}
+  .ord-ok{display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:#EAF7F1; border:1px solid #A9DCC6; border-radius:10px;
+    padding:7px 12px; font-size:12.5px; color:#1F6B4C;}
+  .ord-ok .lu{flex:none;}
+  @media print{ #ordClashBar{display:none !important;} }
+  .ok-bar{display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+    background:#EAF7F1; border:1px solid #A9DCC6; border-radius:10px;
+    padding:9px 12px; margin-bottom:11px; font-size:12.5px; color:#1F6B4C;}
+  .ok-bar .lu{flex:none;}
 
   /* ══════════ قائمة أيقونات تتوسع عند المرور ══════════ */
   #sideNav{background:var(--side) !important;
@@ -2297,6 +2341,7 @@ async function loadState(){
       const raw = snap.data();
       // البيانات مخزّنة كنص JSON لتفادي قيود Firestore على المصفوفات المتداخلة
       state = raw && raw.json ? JSON.parse(raw.json) : null;
+      if(state){ __rememberBase(raw.json, raw.updatedAt); }
     }
     if(state){
       if(!state.printHeader) state.printHeader={line1:'مؤسسة عيد الخيرية',line2:'مركز عيد الثقافي',line3:'قسم البرامج المجتمعية'};
@@ -2335,6 +2380,8 @@ async function loadState(){
       state.trainerRequests.forEach(r=>{ if(!r.trainerId && r.trainerIds && r.trainerIds[0]) r.trainerId=r.trainerIds[0]; });
       state.users.forEach(u=>{ if(u.active===undefined) u.active=true; });
       state.tasks.forEach(t=>{ if(!t.status){ t.status = t.done ? 'مكتملة' : 'لم تبدأ'; } if(!t.priority){ t.priority='متوسطة'; } });
+      __rememberBase(JSON.stringify(state), __baseUpdatedAt);
+      __startLiveSync();
       return;
     }
   }catch(e){
@@ -2365,6 +2412,142 @@ async function loadState(){
 }
 /* أعلام حماية: تمنع الكتابة عند فشل القراءة */
 let __readFailed = false, __docExisted = false;
+
+/* ══════════════════════════════════════════════════════════════════
+   حماية من ضياع البيانات بين الأجهزة/التبويبات  (Last-Write-Wins fix)
+   ──────────────────────────────────────────────────────────────────
+   المشكلة التي كانت: كل النظام محفوظ في مستند واحد، وكل حفظ يكتب
+   الحالة كاملة فوق ما في القاعدة. فإذا كان النظام مفتوحًا على جهازين
+   (أو تبويبين، أو الجوال والحاسب) فإن الجهاز الذي فُتح أولًا يحمل
+   نسخة قديمة، وأي حفظ منه يمسح كل ما أضافه الجهاز الآخر بعده.
+   وهذا سبب اختفاء «معلومات اليوم» رغم أنها حُفظت فعليًا.
+
+   الحل: قبل كل كتابة نقرأ المستند داخل Transaction، وإن كان قد تغيّر
+   بعد قراءتنا، ندمج الجديد القادم من الأجهزة الأخرى مع تعديلاتنا
+   (دمج ثلاثي الاتجاه: الأساس / نسختنا / النسخة البعيدة) ثم نكتب.
+   إضافةً إلى مستمع حيّ يجلب تعديلات الأجهزة الأخرى فورًا.
+   ══════════════════════════════════════════════════════════════════ */
+let __baseJson = '', __baseUpdatedAt = null, __baseIds = {};
+let __liveUnsub = null, __ourLastWriteAt = 0, __mergeNoticeAt = 0;
+
+/* المجموعات التي تُدمج بالمعرّف id */
+const MERGE_COLLECTIONS = ['orders','schools','trainers','users','fields','programTypes',
+  'placeTypes','venues','adminRequestsList','trainerRequests','quranActivities','tasks',
+  'notifications','adminNotifications'];
+
+function __rememberBase(json, upAt){
+  __baseJson = json || '';
+  if(upAt != null) __baseUpdatedAt = upAt;
+  __baseIds = {};
+  let b = null;
+  try{ b = JSON.parse(__baseJson); }catch(e){ b = null; }
+  MERGE_COLLECTIONS.forEach(k=>{
+    const arr = (b && Array.isArray(b[k])) ? b[k] : [];
+    const s = Object.create(null);
+    arr.forEach(x=>{ if(x && x.id) s[x.id] = JSON.stringify(x); });
+    __baseIds[k] = s;
+  });
+}
+
+/* دمج ثلاثي الاتجاه: الأساس (ما قرأناه) + نسختنا + النسخة البعيدة.
+   النتيجة تُكتب في local وتُعاد إحصائية بما أُضيف من الأجهزة الأخرى. */
+function __mergeRemoteInto(local, remote){
+  const stats = { added:0, updated:0, collections:[] };
+  if(!remote || typeof remote !== 'object') return stats;
+
+  MERGE_COLLECTIONS.forEach(k=>{
+    const rArr = Array.isArray(remote[k]) ? remote[k] : null;
+    if(!rArr) return;
+    if(!Array.isArray(local[k])) local[k] = [];
+    const base   = __baseIds[k] || Object.create(null);
+    const lIndex = Object.create(null);
+    local[k].forEach((x,i)=>{ if(x && x.id) lIndex[x.id] = i; });
+
+    let addedHere = 0, updHere = 0;
+    rArr.forEach(r=>{
+      if(!r || !r.id) return;
+      const inBase = Object.prototype.hasOwnProperty.call(base, r.id);
+      const li = lIndex[r.id];
+      if(li === undefined){
+        /* غير موجود عندنا: إن لم يكن موجودًا في الأساس فهو سجل جديد
+           من جهاز آخر → نضيفه. وإن كان في الأساس فقد حُذف عندنا
+           عن قصد → لا نُعيده. */
+        if(!inBase){ local[k].push(r); addedHere++; }
+        return;
+      }
+      /* موجود في الجهتين: إن لم نُعدّله نحن (يطابق الأساس) وكان البعيد
+         مختلفًا → نأخذ البعيد. وإن عدّلناه نحن فتعديلنا هو الأحدث. */
+      const rs = JSON.stringify(r);
+      const ls = JSON.stringify(local[k][li]);
+      if(ls === rs) return;
+      if(inBase && base[r.id] === ls){ local[k][li] = r; updHere++; }
+    });
+    if(addedHere || updHere){
+      stats.added += addedHere; stats.updated += updHere;
+      stats.collections.push(k);
+    }
+  });
+
+  /* الترقيم التسلسلي: نأخذ الأكبر دائمًا لتفادي تكرار أرقام التكليف */
+  const rn = Number(remote.nextSerial||0), ln = Number(local.nextSerial||0);
+  if(rn > ln) local.nextSerial = rn;
+
+  /* حقول غير مصفوفية (الإعدادات والشعار...): نأخذ البعيد إن لم نُعدّله نحن */
+  let baseObj = null; try{ baseObj = JSON.parse(__baseJson||'null'); }catch(e){}
+  if(baseObj){
+    Object.keys(remote).forEach(k=>{
+      if(MERGE_COLLECTIONS.includes(k) || k==='nextSerial') return;
+      const rs = JSON.stringify(remote[k]);
+      const ls = JSON.stringify(local[k]);
+      if(rs === ls) return;
+      if(JSON.stringify(baseObj[k]) === ls) local[k] = remote[k];
+    });
+  }
+  return stats;
+}
+
+function __mergeNotice(stats, where){
+  if(!stats || (!stats.added && !stats.updated)) return;
+  const now = Date.now();
+  if(now - __mergeNoticeAt < 4000) return;
+  __mergeNoticeAt = now;
+  const parts = [];
+  if(stats.added)   parts.push('أُضيف ' + stats.added + ' سجلًا');
+  if(stats.updated) parts.push('حُدِّث ' + stats.updated + ' سجلًا');
+  toast('🔄 مزامنة من جهاز آخر: ' + parts.join(' و '));
+}
+
+/* مستمع حيّ: أي تعديل من جهاز آخر يظهر فورًا بلا إعادة تحميل */
+function __startLiveSync(){
+  if(__liveUnsub) return;
+  try{
+    __liveUnsub = STATE_DOC().onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const raw = snap.data();
+      if(!raw || !raw.json) return;
+      const upAt = raw.updatedAt;
+      if(upAt != null && __baseUpdatedAt != null && upAt === __baseUpdatedAt) return;
+      /* تجاهل صدى كتابتنا نحن */
+      if(Date.now() - __ourLastWriteAt < 2500) return;
+      let remote = null;
+      try{ remote = JSON.parse(raw.json); }catch(e){ return; }
+      const stats = __mergeRemoteInto(state, remote);
+      __rememberBase(raw.json, upAt);
+      if(stats.added || stats.updated){
+        __mergeNotice(stats, 'live');
+        if(!__isUserTyping()) { try{ render(); }catch(e){} }
+      }
+    }, err=>{ console.warn('live sync error', err); });
+  }catch(e){ console.warn('live sync unavailable', e); }
+}
+
+/* لا نُعِد رسم الصفحة أثناء كتابة المستخدم في حقل */
+function __isUserTyping(){
+  const a = document.activeElement;
+  if(!a) return false;
+  const t = (a.tagName||'').toLowerCase();
+  return t==='input' || t==='textarea' || t==='select' || a.isContentEditable === true;
+}
 const syncState = { ok:false, lastAt:null };
 let saving=false, pendingSave=false;
 /* ══════════════════════════════════════════════════════════════════
@@ -2374,7 +2557,7 @@ let saving=false, pendingSave=false;
    كاملة، فيبطؤ النظام مع كثرة السجلات. الآن تُجمَّع التعديلات المتتابعة
    في كتابة واحدة بعد 600ms، مع ضمان الحفظ عند إغلاق الصفحة.
    ══════════════════════════════════════════════════════════════════ */
-let __saveTimer = null;
+let __saveTimer = null, __pendingBase = null;
 function saveState(){
   return new Promise(resolve=>{
     if(__saveTimer) clearTimeout(__saveTimer);
@@ -2390,14 +2573,38 @@ async function flushSave(){
   if(saving){ pendingSave=true; return; }
   saving=true;
   try{
-    const payload = JSON.stringify(state);
     /* نسخة احتياطية محلية قبل كل كتابة — للاسترجاع عند أي خطأ */
     try{
+      const pre = JSON.stringify(state);
       localStorage.setItem('backup_prev', localStorage.getItem('backup_last') || '');
-      localStorage.setItem('backup_last', payload);
+      localStorage.setItem('backup_last', pre);
       localStorage.setItem('backup_at', new Date().toISOString());
     }catch(e){}
-    await STATE_DOC().set({ json: payload, updatedAt: Date.now() });
+
+    /* ⚠ الكتابة داخل Transaction: نقرأ آخر نسخة، وإن تغيّرت بعد قراءتنا
+       ندمج تعديلات الأجهزة الأخرى قبل الكتابة — بدل مسحها. */
+    let mergeStats = null;
+    await getDb().runTransaction(async tx=>{
+      const ref  = STATE_DOC();
+      const snap = await tx.get(ref);
+      if(snap.exists){
+        const raw = snap.data();
+        const upAt = raw && raw.updatedAt;
+        if(raw && raw.json && upAt != null && __baseUpdatedAt != null && upAt !== __baseUpdatedAt){
+          let remote = null;
+          try{ remote = JSON.parse(raw.json); }catch(e){ remote = null; }
+          if(remote) mergeStats = __mergeRemoteInto(state, remote);
+        }
+      }
+      const payload = JSON.stringify(state);
+      const stamp = Date.now();
+      tx.set(ref, { json: payload, updatedAt: stamp });
+      __ourLastWriteAt = stamp;
+      __pendingBase = { json: payload, at: stamp };
+    });
+    if(__pendingBase){ __rememberBase(__pendingBase.json, __pendingBase.at); __pendingBase = null; }
+    __mergeNotice(mergeStats, 'save');
+    __startLiveSync();
     syncState.ok = true; syncState.lastAt = Date.now(); renderUserBox();
   }catch(e){
     console.error('save error', e);
@@ -2501,7 +2708,16 @@ function toast(msg){
 }
 function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function fileToDataUrl(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+/* تحويل كائن Date إلى YYYY-MM-DD من المكوّنات المحلية — بديل آمن لـ toISOString */
+function dateToISO(d){
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+function todayStr(){
+  /* ⚠ لا نستخدم toISOString: يُحوّل إلى UTC فيُرجع تاريخ الأمس
+     في الساعات الأولى من اليوم بتوقيت قطر (+3). نبني من المكوّنات المحلية. */
+  return dateToISO(new Date());
+}
 /* يحوّل قيمة الشهر (YYYY-MM) إلى اسم الشهر بالعربية + السنة، مثل "يونيو 2026" */
 /* اسم الشهر فقط بدون سنة (لفلاتر من شهر / إلى شهر) */
 function monthOnlyAr(m){
@@ -3721,7 +3937,34 @@ function renderSchedulePage(c){
     </div>
     ${clashCount ? `<div class="clash-bar">${icon('alert',15)}
       <span><b>${clashCount}</b> حالة تضارب — مقدّم مرتبط بأكثر من فعالية في اليوم نفسه.</span>
-    </div>` : ''}
+    </div>
+    ${(function(){
+      /* تنبيه التضارب لكل مقدّم وتاريخ — جدول داخل بطاقة الإتاحة نفسها */
+      const items = [];
+      trainers.forEach(t=>{
+        const days = clashBy[t.id] || {};
+        Object.keys(days).sort().forEach(d=>items.push({t, d, evs:days[d]}));
+      });
+      if(!items.length) return '';
+      return `<div class="tbl-scroll" style="margin-bottom:12px;">
+        <table class="clash-tbl"><thead><tr>
+          <th style="width:20%;">مقدّم المبادرة</th><th style="width:14%;">التاريخ</th>
+          <th style="width:7%;">العدد</th><th>الفعاليات المتضاربة في اليوم نفسه</th>
+        </tr></thead><tbody>
+        ${items.map(it=>`<tr>
+          <td style="font-weight:700;">${escapeHtml(it.t.name)}${it.t.phone?`<span class="helper" style="display:block;font-size:10.5px;direction:ltr;text-align:right;">${escapeHtml(it.t.phone)}</span>`:''}</td>
+          <td style="white-space:nowrap;">${fmtDate(it.d)}</td>
+          <td style="text-align:center;"><span class="badge bad">${it.evs.length}</span></td>
+          <td>${it.evs.map(o=>{
+            const sc = state.schools.find(x=>x.id===o.schoolId);
+            return `<button class="clash-ev" onclick="viewOrderReadOnly('${o.id}')">
+              <b>#${o.serial||'—'}</b> ${escapeHtml(o.title||'بلا عنوان')}${sc?` · ${escapeHtml(sc.name)}`:''}
+              <span>${escapeHtml((o.timeFrom||'—')+' – '+(o.timeTo||'—'))}</span>
+            </button>`;
+          }).join('')}</td>
+        </tr>`).join('')}
+        </tbody></table></div>`;
+    })()}` : ''}
     <div class="tbl-scroll"><table class="sched-tbl"><thead><tr>
       <th style="text-align:right;min-width:150px;">المقدّم</th>
       ${days.map(d=>`<th class="${isOff(d)?'off':''}"><i>${DW[new Date(d+'T00:00:00').getDay()]}</i>${Number(d.slice(8,10))}</th>`).join('')}
@@ -4598,12 +4841,30 @@ function enhanceReportTable(container){
     toolbar.className = 'tbl-enhance-toolbar';
     toolbar.innerHTML = '';   // أُخفيت أزرار ضبط الأعمدة والعرض المضغوط
     toolbar.style.display = 'none';
-    tables[0].parentNode.insertBefore(toolbar, tables[0]);
-    const [resetBtn, wrapBtn] = toolbar.querySelectorAll('button');
-    resetBtn.onclick = ()=>{ container.querySelectorAll('th').forEach(th=>{ th.style.width=''; }); };
-    wrapBtn.onclick = ()=>{ container.querySelectorAll('.tbl-scroll').forEach(w=>w.classList.toggle('tbl-nowrap')); };
+    if(tables[0].parentNode) tables[0].parentNode.insertBefore(toolbar, tables[0]);
+    /* ⚠ الأزرار مُخفاة فعلًا، فلا نربط أحداثًا على عناصر غير موجودة —
+       كان ذلك يرفع استثناءً يقطع render() فلا تُرسم بقية الصفحة. */
+    const btns = toolbar.querySelectorAll('button');
+    if(btns[0]) btns[0].onclick = ()=>{ container.querySelectorAll('th').forEach(th=>{ th.style.width=''; }); };
+    if(btns[1]) btns[1].onclick = ()=>{ container.querySelectorAll('.tbl-scroll').forEach(w=>w.classList.toggle('tbl-nowrap')); };
   }
 
+  /* ضبط أعمدة الأرقام والمدة على الشاشة كما في الطباعة */
+  const SCR_W = [[/^#$/,'62px'],[/عدد الساعات|^الساعات$/,'72px'],[/^المدة$/,'104px'],
+                 [/عدد الأيام|^الأيام$/,'58px'],[/^عدد المستهدفين$|^المستهدفون$/,'74px']];
+  tables.forEach(table=>{
+    const ths = table.querySelectorAll(':scope > thead > tr > th');
+    ths.forEach((th,i)=>{
+      const t = (th.textContent||'').trim();
+      const hit = SCR_W.find(([re])=>re.test(t));
+      if(!hit) return;
+      th.style.width = hit[1]; th.style.minWidth = hit[1]; th.style.whiteSpace = 'nowrap';
+      table.querySelectorAll(':scope > tbody > tr').forEach(tr=>{
+        const td = tr.children[i];
+        if(td){ td.style.whiteSpace='nowrap'; td.style.textAlign='center'; }
+      });
+    });
+  });
   tables.forEach(table=>{
     if(!table.parentElement.classList.contains('tbl-scroll')){
       const scrollWrap = document.createElement('div');
@@ -4828,8 +5089,7 @@ function getWeekBounds(d){
   const dow = dt.getDay(); // 0=Sun
   const start = new Date(dt); start.setDate(dt.getDate()-dow);
   const end = new Date(start); end.setDate(start.getDate()+6);
-  const fmt=(x)=>x.toISOString().slice(0,10);
-  return {start:fmt(start), end:fmt(end)};
+  return {start:dateToISO(start), end:dateToISO(end)};
 }
 function renderOrderPage(c){
   const today = todayStr();
@@ -5457,6 +5717,7 @@ function renderOrderForm(sub){
   const navPrev = navIdx>0 ? navList[navIdx-1] : null;
   const navNext = (editing && navIdx < navList.length-1) ? navList[navIdx+1] : null;
   sub.innerHTML = `
+  <div id="ordClashBar"></div>
   <div class="ord-nav">
     <button type="button" class="ord-nav-btn" id="navPrevOrder" ${navPrev?'':'disabled'}
       title="${navPrev?escapeHtml('الفعالية السابقة: '+navPrev.serial+' — '+(navPrev.title||'')):'لا توجد فعالية سابقة'}"
@@ -5692,6 +5953,69 @@ function renderOrderForm(sub){
   function currentTimeFrom(){ return document.getElementById('f_timeFrom').value; }
   function currentTimeTo(){ return document.getElementById('f_timeTo').value; }
 
+  /* ══════════════════════════════════════════════════════════════
+     تنبيه التضارب أعلى الصفحة — يتحدّث لحظيًا مع التاريخ والوقت
+     والمقدّمين المختارين، ويبقى ظاهرًا قبل الحفظ.
+     ══════════════════════════════════════════════════════════════ */
+  function refreshOrderClashBar(){
+    const bar = document.getElementById('ordClashBar');
+    if(!bar) return;
+    const date = currentDate(), dateTo = currentDateTo() || currentDate();
+    const tf = currentTimeFrom(), tt = currentTimeTo();
+    const exclude = editing ? editing.id : null;
+    const box = document.getElementById('trainerChipList');
+    const chosen = box ? Array.from(box.querySelectorAll('input:checked')).map(i=>i.value) : [];
+
+    if(!date || !chosen.length){ bar.innerHTML=''; return; }
+
+    /* تضارب المقدّمين المختارين */
+    const hits = [];
+    chosen.forEach(tid=>{
+      const t = (state.trainers||[]).find(x=>x.id===tid);
+      const c = trainerConflictSingle(tid, date, tf, tt, exclude, dateTo);
+      if(c) hits.push({ t, c });
+    });
+
+    /* تضارب الجهة نفسها في اليوم نفسه */
+    const schId = (document.getElementById('f_school')||{}).value || '';
+    const sameDay = schId ? schoolSameDay(schId, date, exclude) : null;
+
+    if(!hits.length && !sameDay){
+      bar.innerHTML = `<div class="ord-ok">${icon('checkCircle',15)}
+        <span>لا يوجد تضارب — ${escapeHtml(fmtDate(date))}${tf?` · ${escapeHtml(tf)}${tt?' – '+escapeHtml(tt):''}`:''}
+        · ${chosen.length} مقدّم مختار.</span></div>`;
+      return;
+    }
+
+    let rows = '';
+    hits.forEach(({t,c})=>{
+      const sch = (state.schools||[]).find(x=>x.id===c.schoolId);
+      rows += `<button type="button" class="ord-clash-ev" onclick="openOrderDrawer('${c.id}')">
+        <b>⚠ ${escapeHtml(t?t.name:'')}</b>
+        <span class="oc-when">${escapeHtml(fmtDate(c.date))} · ${escapeHtml(c.timeFrom||'—')} – ${escapeHtml(c.timeTo||'—')}</span>
+        <span class="oc-what">أمر ${escapeHtml(String(c.serial||'—'))} — ${escapeHtml(c.title||'بلا عنوان')}${sch?` · ${escapeHtml(sch.name)}`:''}</span>
+      </button>`;
+    });
+    if(sameDay){
+      const sch = (state.schools||[]).find(x=>x.id===schId);
+      rows += `<button type="button" class="ord-clash-ev soft" onclick="openOrderDrawer('${sameDay.id}')">
+        <b>⚠ ${escapeHtml(sch?sch.name:'الجهة')}</b>
+        <span class="oc-when">${escapeHtml(fmtDate(sameDay.date))} · ${escapeHtml(sameDay.timeFrom||'—')} – ${escapeHtml(sameDay.timeTo||'—')}</span>
+        <span class="oc-what">لدى الجهة فعالية أخرى في اليوم نفسه — أمر ${escapeHtml(String(sameDay.serial||'—'))} — ${escapeHtml(sameDay.title||'')}</span>
+      </button>`;
+    }
+
+    const n = hits.length + (sameDay?1:0);
+    bar.innerHTML = `<div class="ord-clash">
+      <div class="ord-clash-h">${icon('alert',16)}
+        <b>تنبيه تضارب — ${n} حالة</b>
+        <i>${escapeHtml(fmtDate(date))}${dateTo&&dateTo!==date?` — ${escapeHtml(fmtDate(dateTo))}`:''}${tf?` · ${escapeHtml(tf)}${tt?' – '+escapeHtml(tt):''}`:''}</i>
+      </div>
+      <div class="ord-clash-b">${rows}</div>
+      <div class="ord-clash-f">التضارب تحذيري ولا يمنع الحفظ — اضغط أي بند لفتحه ومعالجته.</div>
+    </div>`;
+  }
+
   function refreshTrainerChips(){
     const date = currentDate(), dateTo = currentDateTo(), tf=currentTimeFrom(), tt=currentTimeTo();
     const box = document.getElementById('trainerChipList');
@@ -5738,9 +6062,11 @@ function renderOrderForm(sub){
       }).filter(Boolean).join('، ') : 'اختر مقدّمي الفعالية';
     }
     refreshMSLabel();
+    refreshOrderClashBar();
     box.querySelectorAll('input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', ()=>{ const c=cb.closest('.opt-row'); if(c) c.classList.toggle('on', cb.checked); });
       cb.addEventListener('change', refreshMSLabel);
+      cb.addEventListener('change', refreshOrderClashBar);
       cb.addEventListener('change', ()=>{
         if(cb.checked && cb.dataset.busy==='1'){
           const d = cb.dataset;
@@ -5785,6 +6111,7 @@ function renderOrderForm(sub){
     else { _si.style.display='none'; _si.innerHTML=''; }
   }
   document.getElementById('f_school').addEventListener('change', refreshSupervisors);
+  document.getElementById('f_school').addEventListener('change', ()=>{ try{ refreshOrderClashBar(); }catch(e){} });
   document.getElementById('f_supervisor').addEventListener('change', updateSupervisorInfo);
   /* المصدر: التواريخ ← عدد الأيام. وعند تعديل عدد الأيام ← تاريخ الانتهاء. */
   function recalcHoursOnly(){
@@ -7114,6 +7441,11 @@ const REQ_NOTE_CSS = `
     padding:1.5mm 2.5mm; font-weight:700; line-height:1.7;}
 `;
 const REPORT_STYLES = `<style>
+  /* أعمدة الأرقام والمدة: لا التفاف، والمحتوى داخل حدود العمود */
+  table.rep-tbl{table-layout:fixed;}
+  table.rep-tbl > thead > tr > th, table.rep-tbl > tbody > tr > td{overflow-wrap:anywhere;}
+  table.rep-tbl > thead > tr > th.rw-fit, table.rep-tbl > tbody > tr > td.rw-fit{
+    white-space:nowrap;text-align:center;overflow-wrap:normal;padding-left:3px;padding-right:3px;}
   ${SCH_TBL_CSS}
   /* تقرير طلبات المقدّمين: أعمدة مضبوطة والتاريخ داخل إطاره */
   table.trq-tbl{table-layout:fixed !important;}
@@ -7233,6 +7565,19 @@ const REPORT_FIT_SCRIPT = `<script>
   else window.addEventListener('load', fitTables);
 })();
 <\/script>`;
+/* أعراض قياسية لأعمدة التقارير — تُطبَّق تلقائيًا حسب عنوان العمود */
+const REP_COL_W = [
+  [/^#$/,                         '16mm'],   // رقم أمر التكليف: أوسع ليتسع الرقم
+  [/عدد الساعات|^الساعات$/,        '18mm'],
+  [/^المدة$/,                      '26mm'],
+  [/عدد الأيام|^الأيام$/,          '14mm'],
+  [/^عدد المستهدفين$|^المستهدفون$/,'18mm'],
+];
+function repColWidth(header){
+  const t = String(header||'').replace(/<[^>]+>/g,'').trim();
+  for(const [re,w] of REP_COL_W) if(re.test(t)) return w;
+  return 'auto';
+}
 function buildReportDoc(opts){
   // opts: {titleAr, subtitle, kpis:[{v,l}], headers:[...], rows:[[...]], theme}
   const theme = opts.theme || PRINT_THEME;
@@ -7269,10 +7614,13 @@ function buildReportDoc(opts){
   }
   if(opts.headers && opts.rows){
     /* أعراض أعمدة صريحة عند تمريرها — تتجاوز التوزيع التلقائي */
-    const colg = (opts.colWidths && opts.colWidths.length)
-      ? `<colgroup>${opts.colWidths.map(w=>`<col style="width:${w}">`).join('')}</colgroup>` : '';
-    html += `<table class="${opts.tableClass||''}">${colg}<thead><tr>${opts.headers.map(h=>`<th>${String(h).trim().startsWith('<') ? h : escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>`;
-    html += opts.rows.length ? opts.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${opts.headers.length}" style="text-align:center;color:#999;padding:16px;">لا توجد بيانات</td></tr>`;
+    /* أعراض صريحة عند تمريرها، وإلا تُحسب تلقائيًا من عناوين الأعمدة */
+    const widths = (opts.colWidths && opts.colWidths.length)
+      ? opts.colWidths : opts.headers.map(repColWidth);
+    const colg = `<colgroup>${widths.map(w=>`<col${w&&w!=='auto'?` style="width:${w}"`:''}>`).join('')}</colgroup>`;
+    const fit = i => (widths[i] && widths[i]!=='auto') ? ' class="rw-fit"' : '';
+    html += `<table class="rep-tbl ${opts.tableClass||''}">${colg}<thead><tr>${opts.headers.map((h,i)=>`<th${fit(i)}>${String(h).trim().startsWith('<') ? h : escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>`;
+    html += opts.rows.length ? opts.rows.map(r=>`<tr>${r.map((c,i)=>`<td${fit(i)}>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${opts.headers.length}" style="text-align:center;color:#999;padding:16px;">لا توجد بيانات</td></tr>`;
     html += `</tbody></table>`;
   }
   if(opts.extraHtml) html += opts.extraHtml;
@@ -8996,7 +9344,7 @@ function renderReportsPage(c){
       const rows = list.map(o=>{ let hrs=0; if(o.timeFrom && o.timeTo){ const s=parseDT(o.date,o.timeFrom), e=parseDT(o.date,o.timeTo); hrs = Math.max(0,(e-s)/3600000)*daysCount(o.date,o.dateTo); } totalHours+=hrs; return {o,hrs}; });
       const trainer=state.trainers.find(t=>t.id===tId);
       const table = `<table class="print-table"><thead><tr><th>م</th><th>عنوان الفعالية</th><th>التاريخ</th><th>الوقت</th><th>عدد الساعات</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${r.fmtDate(o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td><td>${r.hrs.toFixed(1)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">لا توجد بيانات</td></tr>'}
+        ${rows.map(r=>`<tr><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${fmtDate(r.o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td><td>${r.hrs.toFixed(1)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">لا توجد بيانات</td></tr>'}
         </tbody></table><div style="margin-top:10px;font-weight:700;color:var(--maroon-800);">إجمالي الساعات: ${totalHours.toFixed(1)} ساعة</div>`;
       return {table, title:`تقرير ساعات مقدم الفعالية: ${trainer?trainer.name:''}`, from, to};
     }
@@ -9271,7 +9619,7 @@ function renderResultsPage(c){
     const rows = rowsData(list);
     return `<table><thead><tr><th>م</th><th>أمر التكليف</th><th>عنوان الفعالية</th><th>التاريخ</th><th>الوقت</th><th>المكان</th><th>مقدم البرنامج</th><th>رقم هاتفه</th><th>الطلبات الإدارية للبرنامج</th><th>الإنجاز</th><th>من قيّم؟</th><th></th></tr></thead><tbody>
       ${rows.map(r=>`<tr>
-        <td>${r.i}</td><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${r.fmtDate(o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td>
+        <td>${r.i}</td><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${fmtDate(r.o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td>
         <td>${r.school?escapeHtml(r.school.name):''}</td><td>${escapeHtml(trainerNames(r.o))}</td><td>${escapeHtml(trainerPhones(r.o))}</td>
         <td>${r.reqs||'—'}</td><td>${r.o.completionStatus||'لم تنجز'}</td><td>${r.evalSrc}</td>
         <td><button class="icon-btn" title="تقييم / تعديل" onclick="openEvaluationModal('${r.o.id}')">📝</button></td>
@@ -9360,10 +9708,10 @@ function renderDistributionsTabContent(c){
     if(period==='month'){
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth()+1, 0);
-      return {start:start.toISOString().slice(0,10), end:end.toISOString().slice(0,10)};
+      return {start:dateToISO(start), end:dateToISO(end)};
     }
     const start = new Date(d.getFullYear(),0,1), end = new Date(d.getFullYear(),11,31);
-    return {start:start.toISOString().slice(0,10), end:end.toISOString().slice(0,10)};
+    return {start:dateToISO(start), end:dateToISO(end)};
   }
   const LEVEL_ORDER = LOCATION_TYPES;
   function sortedLevels(allLevels){
@@ -9525,31 +9873,50 @@ function renderAvailabilityCalendar(box){
     const MN = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     const QN = {1:'الربع الأول (يناير–مارس)',2:'الربع الثاني (أبريل–يونيو)',3:'الربع الثالث (يوليو–سبتمبر)',4:'الربع الرابع (أكتوبر–ديسمبر)'};
     const iso = (y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    /* المقدّم مشغول إذا كان لديه فعالية نشطة تغطي ذلك اليوم */
-    function busyOn(tid, dISO){
-      return state.orders.some(o=>{
+    /* فعاليات المقدّم في ذلك اليوم (نشطة فقط) */
+    function eventsOn(tid, dISO){
+      return (state.orders||[]).filter(o=>{
         if((o.status||'active')==='cancelled') return false;
         if(!(o.trainerIds||[]).includes(tid)) return false;
         const s=o.date||'', e=o.dateTo||o.date||'';
         return s && dISO>=s && dISO<=e;
       });
     }
+    function busyOn(tid, dISO){ return eventsOn(tid, dISO).length > 0; }
+    /* تضارب = أكثر من فعالية للمقدّم نفسه في اليوم نفسه */
+    const calClash = {};           // tid -> { dISO: [orders] }
+    let calClashDays = 0;
     const monthBlocks = months.map(({y,m})=>{
       const days = new Date(y, m+1, 0).getDate();
       const rows = state.trainers.map(t=>{
         const cells = Array.from({length:days},(_,i)=>{
           const d=i+1, dISO=iso(y,m,d), wd=new Date(y,m,d).getDay(), off=(wd===5||wd===6);
-          const busy=busyOn(t.id,dISO);
+          const evs = eventsOn(t.id, dISO);
+          const busy = evs.length > 0;
+          /* تضارب: فعاليتان أو أكثر في اليوم نفسه */
+          if(evs.length > 1){
+            calClash[t.id] = calClash[t.id] || {};
+            if(!calClash[t.id][dISO]){ calClash[t.id][dISO] = evs; calClashDays++; }
+            const tip = escapeHtml(t.name) + ' — ' + fmtDate(dISO) + ' — ⚠ تضارب: '
+              + evs.length + ' فعاليات\n'
+              + evs.map(o=>'• #'+(o.serial||'—')+' '+(o.title||'')+' ('+(o.timeFrom||'—')+'–'+(o.timeTo||'—')+')').join('\n');
+            return `<td class="cal-c clash" data-calclash="${t.id}|${dISO}" title="${escapeHtml(tip)}">${d}</td>`;
+          }
           const cls = off ? 'off' : (busy?'busy':'free');
           const lbl = off ? 'إجازة' : (busy?'غير متاح':'متاح');
-          return `<td class="cal-c ${cls}" title="${escapeHtml(t.name)} — ${fmtDate(dISO)} — ${lbl}">${d}</td>`;
+          const tip = escapeHtml(t.name) + ' — ' + fmtDate(dISO) + ' — ' + lbl
+            + (busy ? '\n• #'+(evs[0].serial||'—')+' '+(evs[0].title||'') : '');
+          return `<td class="cal-c ${cls}" title="${escapeHtml(tip)}">${d}</td>`;
         }).join('');
         /* أيام الإجازة لا تُحتسب ضمن الأيام المشغولة */
         const busyCount = Array.from({length:days},(_,i)=>{
           const wd=new Date(y,m,i+1).getDay();
           return (wd!==5 && wd!==6) && busyOn(t.id, iso(y,m,i+1));
         }).filter(Boolean).length;
-        return `<tr><th class="cal-nm">${escapeHtml(t.name)}<span class="cal-ct">${busyCount}</span></th>${cells}</tr>`;
+        const myClash = Object.keys(calClash[t.id]||{}).filter(k=>k.slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`).length;
+        return `<tr${myClash?' class="cal-row-clash"':''}><th class="cal-nm">${escapeHtml(t.name)}`
+          + (myClash ? `<span class="cal-cl" title="${myClash} يوم فيه تضارب">⚠ ${myClash}</span>` : '')
+          + `<span class="cal-ct">${busyCount}</span></th>${cells}</tr>`;
       }).join('');
       /* رمز اليوم: ح ن ث ر خ ج س — الجمعة والسبت إجازة */
       const DW = ['ح','ن','ث','ر','خ','ج','س'];   // الأحد=0 ... السبت=6
@@ -9579,13 +9946,67 @@ function renderAvailabilityCalendar(box){
           <span style="display:inline-flex;align-items:center;gap:6px;"><i style="width:14px;height:14px;border-radius:4px;background:#DFF3EB;border:1px solid #8DD8BD;display:inline-block;"></i> متاح</span>
           <span style="display:inline-flex;align-items:center;gap:6px;"><i style="width:14px;height:14px;border-radius:4px;background:#FEE4E2;border:1px solid #FDA29B;display:inline-block;"></i> غير متاح</span>
           <span style="display:inline-flex;align-items:center;gap:6px;"><i style="width:14px;height:14px;border-radius:4px;background:#DFF3F8;border:1px solid #9FD3E4;display:inline-block;"></i> إجازة (الجمعة والسبت)</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><i style="width:14px;height:14px;border-radius:4px;background:#C0334D;border:1px solid #9E2840;display:inline-block;"></i> تضارب</span>
         </span>
       </div>
-      <div class="helper">الرقم بجوار الاسم = عدد الأيام المشغولة في ذلك الشهر.</div>
-    </div>${monthBlocks}`;
+      ${calClashDays ? `<div class="clash-bar">${icon('alert',15)}
+        <span><b>${calClashDays}</b> حالة تضارب في هذا الربع — مقدّم مرتبط بأكثر من فعالية في اليوم نفسه.
+        الخلايا الحمراء الداكنة في الجدول أدناه؛ اضغط أيّها لعرض الفعاليات المتضاربة.</span>
+        <button class="btn btn-sm btn-outline" id="cal_clashJump" style="margin-inline-start:auto;">عرض القائمة</button>
+      </div>` : `<div class="ok-bar">${icon('checkCircle',15)} <span>لا يوجد أي تضارب في هذا الربع.</span></div>`}
+      <div class="helper">الرقم بجوار الاسم = عدد الأيام المشغولة في ذلك الشهر · ⚠ = عدد أيام التضارب.</div>
+    </div>${monthBlocks}${calClashTable()}`;
+
+    /* جدول تفاصيل التضارب — نفس بطاقة الإتاحة، مرتّب حسب المقدّم ثم التاريخ */
+    function calClashTable(){
+      if(!calClashDays) return '';
+      const rows = [];
+      (state.trainers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'ar')).forEach(t=>{
+        const days = calClash[t.id] || {};
+        Object.keys(days).sort().forEach(d=>{
+          rows.push({ t, d, evs: days[d] });
+        });
+      });
+      return `<div class="card" id="cal_clashCard" style="border:2px solid #C0334D;">
+        <h2 class="tp-h" style="background:#C0334D !important;">${icon('alert',15)} تنبيه تضارب الفعاليات — ${rows.length} حالة</h2>
+        <div class="tbl-scroll"><table class="clash-tbl"><thead><tr>
+          <th style="width:19%;">مقدم الفعالية</th><th style="width:13%;">التاريخ</th>
+          <th style="width:7%;">العدد</th><th>الفعاليات المتضاربة</th>
+        </tr></thead><tbody>
+        ${rows.map(r=>`<tr>
+          <td style="font-weight:700;">${escapeHtml(r.t.name)}</td>
+          <td style="white-space:nowrap;">${fmtDate(r.d)}</td>
+          <td style="text-align:center;"><span class="badge bad">${r.evs.length}</span></td>
+          <td>${r.evs.map(o=>`<button class="clash-ev" onclick="openOrderDrawer('${o.id}')">
+              <b>#${o.serial||'—'}</b> ${escapeHtml(o.title||'بلا عنوان')}
+              <span>${escapeHtml((o.timeFrom||'—')+' – '+(o.timeTo||'—'))}</span>
+            </button>`).join('')}</td>
+        </tr>`).join('')}
+        </tbody></table></div>
+        <div class="helper" style="margin-top:8px;">اضغط أي فعالية لفتحها ومعالجة التضارب.</div>
+      </div>`;
+    }
+
     document.getElementById('tpq_year').onchange=e=>{ window.__tpQ.year=Number(e.target.value); render(); };
     document.getElementById('tpq_q').onchange=e=>{ window.__tpQ.q=Number(e.target.value); render(); };
-
+    const jump = document.getElementById('cal_clashJump');
+    if(jump) jump.onclick=()=>{ const el=document.getElementById('cal_clashCard');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); };
+    /* النقر على خلية تضارب داخل الجدول */
+    box.querySelectorAll('[data-calclash]').forEach(td=>{
+      td.style.cursor='pointer';
+      td.onclick=()=>{
+        const [tid,d] = td.dataset.calclash.split('|');
+        const evs = (calClash[tid]||{})[d] || [];
+        const t = (state.trainers||[]).find(x=>x.id===tid);
+        if(evs.length===1){ openOrderDrawer(evs[0].id); return; }
+        const msg = '⚠ تضارب فعاليات\n\n' + (t?t.name:'') + ' — ' + fmtDate(d) + '\n\n'
+          + evs.map((o,i)=>(i+1)+') #'+(o.serial||'—')+' — '+(o.title||'بلا عنوان')
+              + '\n     من ' + (o.timeFrom||'—') + ' إلى ' + (o.timeTo||'—')).join('\n\n')
+          + '\n\nاضغط «موافق» لفتح الفعالية الأولى.';
+        if(confirm(msg)) openOrderDrawer(evs[0].id);
+      };
+    });
 }
 function renderTrainerPortalPage(c){
   if(!loggedTrainerId){
@@ -9740,7 +10161,7 @@ function renderTrainerPortalPage(c){
         <div class="stat-box"><div class="num">${notEvaluated.length}</div><div class="lbl">بانتظار التقييم</div></div>
       </div>
       <table><thead><tr><th>م</th><th>العنوان</th><th>التاريخ</th><th>الوقت</th><th>عدد الساعات</th></tr></thead><tbody>
-        ${rows.length?rows.map(r=>`<tr><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${r.fmtDate(o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td><td>${r.hrs.toFixed(1)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty-state">لا توجد بيانات</td></tr>'}
+        ${rows.length?rows.map(r=>`<tr><td>${r.o.serial}</td><td>${escapeHtml(r.o.title)}</td><td>${fmtDate(r.o.date)}</td><td>${r.o.timeFrom||''}-${r.o.timeTo||''}</td><td>${r.hrs.toFixed(1)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty-state">لا توجد بيانات</td></tr>'}
       </tbody></table>
       <button class="btn btn-outline btn-sm" style="margin-top:12px;" id="tp_print_hours">🖨️ طباعة</button>
     </div>`;
@@ -10046,10 +10467,25 @@ function renderSettingsPage(c){
     })()}
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="downloadBackup()">${icon('download',15)} تنزيل نسخة احتياطية</button>
-      <button class="btn btn-outline" onclick="document.getElementById('restoreFile').click()">${icon('copy',15)} استرجاع من ملف</button>
+      <button class="btn btn-outline" onclick="document.getElementById('restoreFile').click()">${icon('copy',15)} استرجاع كامل من ملف</button>
       <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreFromFile(this.files[0])">
-      <button class="btn btn-outline" onclick="restoreLocal('last')">استرجاع النسخة الأخيرة</button>
-      <button class="btn btn-outline" onclick="restoreLocal('prev')">استرجاع النسخة السابقة</button>
+      <button class="btn btn-outline" onclick="restoreLocal('last')">استرجاع كامل — النسخة الأخيرة</button>
+      <button class="btn btn-outline" onclick="restoreLocal('prev')">استرجاع كامل — النسخة السابقة</button>
+    </div>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:2px dashed var(--danger,#CF443A);">
+      <div style="font-weight:800;color:var(--danger,#CF443A);margin-bottom:4px;">🔎 بياناتٌ أدخلتَها ولم تظهر؟</div>
+      <div class="helper" style="margin-bottom:9px;line-height:1.8;">
+        هذه الأدوات <b>تُضيف فقط</b> السجلات المفقودة ولا تمسح ولا تستبدل شيئًا موجودًا —
+        استخدمها من نفس الجهاز الذي أدخلت البيانات عليه.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="diagnoseToday()">${icon('alert',15)} فحص بيانات اليوم</button>
+        <button class="btn btn-outline" onclick="recoverFromLocal('last')">استرجاع المفقود — النسخة الأخيرة</button>
+        <button class="btn btn-outline" onclick="recoverFromLocal('prev')">استرجاع المفقود — النسخة السابقة</button>
+        <button class="btn btn-outline" onclick="document.getElementById('recoverFile').click()">${icon('copy',15)} استرجاع المفقود من ملف</button>
+        <input type="file" id="recoverFile" accept=".json" style="display:none" onchange="recoverFromFile(this.files[0])">
+      </div>
     </div>
     <div class="helper" style="margin-top:9px;">نزّل نسخة احتياطية دوريًا واحتفظ بها خارج المتصفح.</div>
   </div>
@@ -10193,7 +10629,7 @@ async function importOrdersExcel(file){
     function normTitle(s){ return (s||'').toString().trim().replace(/\s+/g,' '); }
     rows.slice(1).forEach(r=>{
       const title=(r[0]||'').toString().trim(); if(!title) return;
-      let date=r[1]; if(date instanceof Date){ date = date.toISOString().slice(0,10); } else { date=(date||'').toString().trim(); }
+      let date=r[1]; if(date instanceof Date){ date = dateToISO(date); } else { date=(date||'').toString().trim(); }
       const timeFrom=(r[2]||'').toString().trim(), timeTo=(r[3]||'').toString().trim();
       const schoolName=(r[4]||'').toString().trim(); const participantsCount=(r[5]||'').toString().trim();
       // أعمدة اختيارية إضافية: G = مسار البرنامج (اسم), H = المدربون "الاسم:الهاتف، الاسم:الهاتف"
@@ -10622,7 +11058,7 @@ function downloadBackup(){
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `نسخة-احتياطية-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `نسخة-احتياطية-${todayStr()}.json`;
     a.click(); URL.revokeObjectURL(a.href);
     toast('تم تنزيل النسخة الاحتياطية');
   }catch(e){ toast('تعذّر التنزيل: '+e.message); }
@@ -10654,6 +11090,148 @@ async function restoreLocal(which){
     await flushSave(); toast('تم الاسترجاع'); render();
   }catch(e){ alert('النسخة غير صالحة: '+e.message); }
 }
+/* ══════════════════════════════════════════════════════════════════
+   استرجاع السجلات المفقودة بالدمج (لا يمسح شيئًا)
+   ──────────────────────────────────────────────────────────────────
+   للحالة التي تُدخل فيها بيانات على جهاز ثم لا تظهر لأن جهازًا آخر
+   كتب نسخة أقدم فوقها. النسخة الاحتياطية المحلية في ذلك الجهاز
+   ما زالت تحملها، فنُضيف منها ما هو مفقود فقط.
+   ══════════════════════════════════════════════════════════════════ */
+const RECOVER_COLLECTIONS = ['orders','schools','trainers','users','fields','programTypes',
+  'placeTypes','venues','adminRequestsList','trainerRequests','quranActivities','tasks'];
+const RECOVER_LABEL = { orders:'فعالية', schools:'جهة/مدرسة', trainers:'مقدّم مبادرة',
+  users:'مستخدم', fields:'مجال', programTypes:'مسار', placeTypes:'نوع مكان', venues:'مكان تنفيذ',
+  adminRequestsList:'طلب إداري', trainerRequests:'طلب مقدّم', quranActivities:'نشاط قرآني', tasks:'مهمة' };
+
+/* يحسب ما هو موجود في المصدر وغائب عن الحالة الحالية */
+function recoverDiff(source){
+  const out = { total:0, byColl:{}, records:{} };
+  if(!source || typeof source !== 'object') return out;
+  RECOVER_COLLECTIONS.forEach(k=>{
+    const src = Array.isArray(source[k]) ? source[k] : [];
+    if(!src.length) return;
+    const have = new Set((Array.isArray(state[k])?state[k]:[]).map(x=>x && x.id).filter(Boolean));
+    const miss = src.filter(x=>x && x.id && !have.has(x.id));
+    if(miss.length){ out.byColl[k] = miss.length; out.records[k] = miss; out.total += miss.length; }
+  });
+  /* مشرفون مفقودون داخل مدارس موجودة */
+  const svMiss = [];
+  (Array.isArray(source.schools)?source.schools:[]).forEach(ss=>{
+    const cur = (state.schools||[]).find(x=>x.id===ss.id);
+    if(!cur) return;   // المدرسة نفسها مفقودة → تُستعاد كاملة أعلاه
+    const have = new Set((cur.supervisors||[]).map(v=>v && v.id).filter(Boolean));
+    (ss.supervisors||[]).forEach(v=>{ if(v && v.id && !have.has(v.id)) svMiss.push({schoolId:ss.id, sv:v}); });
+  });
+  if(svMiss.length){ out.supervisors = svMiss; out.byColl.__sv = svMiss.length; out.total += svMiss.length; }
+  return out;
+}
+
+function recoverSummary(d){
+  if(!d.total) return 'لا يوجد أي سجل مفقود — كل ما في النسخة موجود بالنظام.';
+  const lines = Object.keys(d.byColl).map(k=>{
+    const lbl = k==='__sv' ? 'مشرف' : (RECOVER_LABEL[k]||k);
+    return '• ' + d.byColl[k] + ' ' + lbl;
+  });
+  return lines.join('\n');
+}
+
+/* يطبّق الاسترجاع فعليًا */
+async function recoverApply(d){
+  if(!d.total) return 0;
+  Object.keys(d.records||{}).forEach(k=>{
+    if(!Array.isArray(state[k])) state[k] = [];
+    d.records[k].forEach(r=>state[k].push(r));
+  });
+  (d.supervisors||[]).forEach(({schoolId, sv})=>{
+    const sc = (state.schools||[]).find(x=>x.id===schoolId);
+    if(sc){ sc.supervisors = sc.supervisors || []; sc.supervisors.push(sv); }
+  });
+  /* أعلى رقم تسلسلي حتى لا تتكرر أرقام التكليف */
+  const maxSerial = (state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0);
+  if(maxSerial >= Number(state.nextSerial||0)) state.nextSerial = maxSerial + 1;
+  __readFailed = false;
+  await flushSave();
+  return d.total;
+}
+
+/* من النسخة المحلية في هذا المتصفح */
+async function recoverFromLocal(which){
+  const info = backupInfo();
+  const raw = which==='prev' ? info.prev : info.last;
+  if(!raw){ toast('لا توجد نسخة محفوظة في هذا المتصفح'); return; }
+  let src = null;
+  try{ src = JSON.parse(raw); }catch(e){ alert('النسخة غير صالحة: '+e.message); return; }
+  const d = recoverDiff(src);
+  if(!d.total){ alert('النسخة ' + (which==='prev'?'السابقة':'الأخيرة') + ' لا تحتوي أي سجل مفقود.\n\nكل ما فيها موجود بالنظام.'); return; }
+  if(!confirm('سيتم استرجاع السجلات المفقودة التالية وإضافتها للنظام\n(لن يُحذف أو يُستبدل أي شيء موجود):\n\n'
+    + recoverSummary(d) + '\n\nمتابعة؟')) return;
+  const n = await recoverApply(d);
+  toast('تم استرجاع ' + n + ' سجلًا مفقودًا');
+  render();
+}
+
+/* من ملف نسخة احتياطية */
+function recoverFromFile(file){
+  if(!file) return;
+  const rd = new FileReader();
+  rd.onload = async ()=>{
+    let src = null;
+    try{ src = JSON.parse(rd.result); }catch(e){ alert('تعذّر قراءة الملف: '+e.message); return; }
+    const d = recoverDiff(src);
+    if(!d.total){ alert('هذا الملف لا يحتوي أي سجل مفقود — كل ما فيه موجود بالنظام.'); return; }
+    if(!confirm('سيتم استرجاع السجلات المفقودة التالية من الملف\n(لن يُحذف أو يُستبدل أي شيء موجود):\n\n'
+      + recoverSummary(d) + '\n\nمتابعة؟')) return;
+    const n = await recoverApply(d);
+    toast('تم استرجاع ' + n + ' سجلًا مفقودًا');
+    render();
+  };
+  rd.readAsText(file);
+}
+
+/* فحص تشخيصي: هل بيانات اليوم موجودة؟ */
+function diagnoseToday(){
+  const today = todayStr();
+  const orders = state.orders || [];
+  const madeToday = orders.filter(o=>String(o.createdAt||'').slice(0,10) === today);
+  const forToday  = orders.filter(o=>o.date === today);
+  const info = backupInfo();
+  let bkLine = 'لا توجد نسخة محلية في هذا المتصفح.';
+  if(info.last){
+    try{
+      const b = JSON.parse(info.last);
+      const bToday = (b.orders||[]).filter(o=>String(o.createdAt||'').slice(0,10)===today).length;
+      const d = recoverDiff(b);
+      bkLine = 'النسخة المحلية الأخيرة: ' + (b.orders||[]).length + ' فعالية'
+        + (info.at ? ' — حُفظت ' + fmtDate(String(info.at).slice(0,10)) + ' ' + String(info.at).slice(11,16) : '')
+        + '\n   منها ' + bToday + ' أُنشئت اليوم'
+        + '\n   ' + (d.total ? '⚠ تحتوي ' + d.total + ' سجلًا مفقودًا من النظام — يمكن استرجاعها' : '✅ لا تحتوي أي سجل مفقود');
+    }catch(e){ bkLine = 'النسخة المحلية غير صالحة.'; }
+  }
+  const lines = [
+    'تشخيص بيانات اليوم — ' + fmtDate(today),
+    '',
+    'في قاعدة البيانات الآن:',
+    '   • ' + orders.length + ' فعالية إجمالًا',
+    '   • ' + madeToday.length + ' فعالية أُنشئت اليوم',
+    '   • ' + forToday.length + ' فعالية تاريخها اليوم',
+    '   • ' + (state.schools||[]).length + ' جهة · ' + (state.trainers||[]).length + ' مقدّم مبادرة',
+    '',
+    'حالة الاتصال والحفظ:',
+    '   • القراءة: ' + (__readFailed ? '❌ فشلت — الحفظ متوقف' : '✅ ناجحة'),
+    '   • المزامنة الحيّة: ' + (__liveUnsub ? '✅ مفعّلة' : '❌ متوقفة'),
+    '   • آخر حفظ ناجح: ' + (syncState.lastAt ? new Date(syncState.lastAt).toLocaleTimeString('ar') : 'لا يوجد'),
+    '',
+    'النسخة الاحتياطية المحلية:',
+    '   ' + bkLine,
+  ];
+  if(madeToday.length){
+    lines.push('', 'الفعاليات المُنشأة اليوم:');
+    madeToday.slice(0,15).forEach(o=>lines.push('   #' + (o.serial||'—') + ' — ' + (o.title||'بلا عنوان')));
+    if(madeToday.length>15) lines.push('   ... و' + (madeToday.length-15) + ' أخرى');
+  }
+  alert(lines.join('\n'));
+}
+
 async function dedupeSchools(){
   const norm = s => (s||'').replace(/\s+/g,' ').trim();
   const seen = new Map(), dupes = [];
