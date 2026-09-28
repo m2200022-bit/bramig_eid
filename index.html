@@ -2380,6 +2380,14 @@ async function loadState(){
       state.trainerRequests.forEach(r=>{ if(!r.trainerId && r.trainerIds && r.trainerIds[0]) r.trainerId=r.trainerIds[0]; });
       state.users.forEach(u=>{ if(u.active===undefined) u.active=true; });
       state.tasks.forEach(t=>{ if(!t.status){ t.status = t.done ? 'مكتملة' : 'لم تبدأ'; } if(!t.priority){ t.priority='متوسطة'; } });
+      /* إصلاح المدى المقلوب الناتج عن ترحيل سابق — قبل أي عرض أو تقرير */
+      const __fixedRanges = fixInvertedDateRanges();
+      if(__fixedRanges){
+        setTimeout(()=>{ try{
+          toast(`✅ أُصلح تاريخ انتهاء ${__fixedRanges} فعالية مُرحَّلة — ستظهر الآن في التقارير`);
+          saveState();
+        }catch(e){} }, 1800);
+      }
       __rememberBase(JSON.stringify(state), __baseUpdatedAt);
       __startLiveSync();
       return;
@@ -4457,7 +4465,7 @@ function renderHome(c){
   /* ── بطاقات المؤشرات العليا ── */
   const cDone    = orders.filter(o=>o.completionStatus==='تم').length;
   const cPending = orders.filter(o=>!o.completionStatus && o.date && o.date < today).length;
-  const cUpcoming= orders.filter(o=>o.date && o.date >= today && (o.status||'active')==='active').length;
+  const cUpcoming= orders.filter(o=>o.date && o.date >= today && (o.status||'active')!=='cancelled').length;
   const cStuck   = orders.filter(o=>o.completionStatus==='المشرف لا يرد').length;
 
   function kpi(icon, num, label, tint, fg, unit){
@@ -4545,7 +4553,7 @@ function renderHome(c){
   }).join('') : `<div class="empty-state" style="padding:22px;">لا توجد طلبات تنتظر إجراءً</div>`;
 
   const MNM = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  const upNext = orders.filter(o=>o.date && o.date>=today && (o.status||'active')==='active')
+  const upNext = orders.filter(o=>o.date && o.date>=today && (o.status||'active')!=='cancelled')
     .sort((a,b)=>(a.date||'').localeCompare(b.date||'')).slice(0,3);
   const upHtml = upNext.length ? upNext.map((o,i)=>{
     const d = new Date(o.date+'T00:00:00'); const sc = state.schools.find(x=>x.id===o.schoolId);
@@ -4643,7 +4651,7 @@ function renderHome(c){
       ${shown || `<div style="text-align:center;font-size:11.5px;color:#999;padding:10px;">لا يوجد</div>`}${more}
     </div>`;
   }
-  const upcoming = orders.filter(o=>o.date && o.date>=today && (o.status||'active')==='active').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const upcoming = orders.filter(o=>o.date && o.date>=today && (o.status||'active')!=='cancelled').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const needEval = orders.filter(o=>!o.completionStatus && o.date && o.date<today).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const doneList = orders.filter(o=>o.completionStatus==='تم').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const stuck    = orders.filter(o=>['المشرف لا يرد','لم يتم','الغيت'].includes(o.completionStatus));
@@ -6653,6 +6661,40 @@ async function toggleCancelOrder(id){
   if(!confirm('هل تريد إلغاء هذه الفعالية؟ ستبقى مسجلة لكن بحالة "ملغاة".')) return;
   o.status='cancelled'; await saveState(); toast('تم إلغاء الفعالية'); render();
 }
+/* ══════════════════════════════════════════════════════════════════
+   فحص التعارض عند الترحيل — يجمع تعارض المقدّمين وتعارض الجهة
+   في اليوم/المدة الجديدة، ويعيد نصًا جاهزًا للعرض.
+   ══════════════════════════════════════════════════════════════════ */
+function postponeConflicts(o, newDate, newTo, tf, tt){
+  const out = [];
+  const dTo = newTo || newDate;
+  /* تعارض مقدّمي المبادرة */
+  (o.trainerIds||[]).forEach(tid=>{
+    const t = (state.trainers||[]).find(x=>x.id===tid);
+    const c = trainerConflictSingle(tid, newDate, tf, tt, o.id, dTo);
+    if(!c) return;
+    const sc = (state.schools||[]).find(x=>x.id===c.schoolId);
+    out.push({ kind:'trainer', who:(t?t.name:''), order:c,
+      line:`${t?t.name:''} مرتبط بفعالية أخرى:\n      أمر ${c.serial||'—'} — ${c.title||'بلا عنوان'}`
+        + `\n      ${fmtDate(c.date)} · من ${c.timeFrom||'—'} إلى ${c.timeTo||'—'}`
+        + (sc?`\n      ${sc.name}`:'') });
+  });
+  /* فعالية أخرى للجهة نفسها ضمن المدة الجديدة */
+  if(o.schoolId){
+    const sc = (state.schools||[]).find(x=>x.id===o.schoolId);
+    (state.orders||[]).forEach(x=>{
+      if(x.id===o.id || x.schoolId!==o.schoolId) return;
+      if((x.status||'active')==='cancelled') return;
+      const xTo = x.dateTo || x.date;
+      if(!x.date || !dateRangesOverlap(newDate, dTo, x.date, xTo)) return;
+      out.push({ kind:'school', who:(sc?sc.name:''), order:x,
+        line:`${sc?sc.name:'الجهة'} لديها فعالية في التاريخ نفسه:\n      أمر ${x.serial||'—'} — ${x.title||'بلا عنوان'}`
+          + `\n      ${fmtDate(x.date)} · من ${x.timeFrom||'—'} إلى ${x.timeTo||'—'}` });
+    });
+  }
+  return out;
+}
+
 function openPostponeModal(id){
   const o = state.orders.find(x=>x.id===id); if(!o) return;
   openModal('ترحيل / تأجيل: '+o.title, [
@@ -6660,13 +6702,67 @@ function openPostponeModal(id){
     {name:'timeFrom', label:'من الساعة', type:'time'},
     {name:'timeTo', label:'إلى الساعة', type:'time'},
   ], async v=>{
-    const oldDate=o.date, oldFrom=o.timeFrom, oldTo=o.timeTo;
-    o.date=v.date; if(v.timeFrom) o.timeFrom=v.timeFrom; if(v.timeTo) o.timeTo=v.timeTo;
-    o.status='postponed';
-    o.adminNote = (o.adminNote?o.adminNote+' | ':'') + `تم ترحيلها من ${oldDate} (${oldFrom||''}-${oldTo||''}) إلى ${o.date} (${o.timeFrom||''}-${o.timeTo||''})`;
-    await saveState(); toast('تم ترحيل الفعالية'); render();
+    const oldDate = o.date, oldDateTo = o.dateTo || o.date;
+    const oldFrom = o.timeFrom, oldTo = o.timeTo;
+
+    /* ⚠ الفعالية قد تمتد أيامًا: نُحرّك تاريخ الانتهاء بنفس المقدار
+       حفاظًا على المدة. كان تاريخ الانتهاء يبقى قديمًا فتصبح الفعالية
+       بمدى مقلوب (انتهاء قبل البداية) فتختفي من كل التقارير. */
+    const span   = Math.max(0, daysCount(oldDate, oldDateTo) - 1);
+    const newDate = v.date;
+    const newTo   = addDaysISO(newDate, span);
+    const nf = v.timeFrom || oldFrom, nt = v.timeTo || oldTo;
+
+    /* فحص التعارض قبل التنفيذ */
+    const cf = postponeConflicts(o, newDate, newTo, nf, nt);
+    if(cf.length){
+      const msg = `⚠ يوجد تعارض في التاريخ الجديد (${fmtDate(newDate)})`
+        + (newTo!==newDate?` — ${fmtDate(newTo)}`:'') + `\n\n`
+        + cf.map((x,i)=>`${i+1}) ${x.line}`).join('\n\n')
+        + `\n\nهل تريد إتمام الترحيل رغم التعارض؟`;
+      /* إعادة false تُبقي النافذة مفتوحة لاختيار تاريخ آخر مباشرة */
+      if(!confirm(msg)){ toast('أُلغي الترحيل — اختر تاريخًا آخر'); return false; }
+    }
+
+    o.date   = newDate;
+    o.dateTo = newTo;
+    if(v.timeFrom) o.timeFrom = v.timeFrom;
+    if(v.timeTo)   o.timeTo   = v.timeTo;
+    o.status = 'postponed';
+    /* بيانات الترحيل — تُطبع في نسخة الجهة الطالبة ونسخة الإدارة */
+    o.postponedFrom     = oldDate;
+    o.postponedFromTo   = (oldDateTo && oldDateTo!==oldDate) ? oldDateTo : '';
+    o.postponedFromTime = (oldFrom||oldTo) ? `${oldFrom||'—'} - ${oldTo||'—'}` : '';
+    o.postponedAt       = todayStr();
+    o.postponedHadClash = cf.length ? cf.length : 0;
+    o.adminNote = (o.adminNote?o.adminNote+' | ':'')
+      + `تم ترحيلها من ${fmtDateRaw(oldDate)}${oldDateTo&&oldDateTo!==oldDate?` — ${fmtDateRaw(oldDateTo)}`:''}`
+      + ` (${oldFrom||''}-${oldTo||''}) إلى ${fmtDateRaw(o.date)}${o.dateTo&&o.dateTo!==o.date?` — ${fmtDateRaw(o.dateTo)}`:''}`
+      + ` (${o.timeFrom||''}-${o.timeTo||''})`;
+    await saveState();
+    toast(`تم ترحيل الفعالية إلى ${fmtDateRaw(o.date)}`);
+    render();
   });
   setTimeout(()=>{ const f=document.getElementById('mf_date'); if(f) f.value=o.date; const tf=document.getElementById('mf_timeFrom'); if(tf) tf.value=o.timeFrom||''; const tt=document.getElementById('mf_timeTo'); if(tt) tt.value=o.timeTo||''; },0);
+}
+
+/* تاريخ نصّي بلا محارف عزل — للملاحظات والنصوص المجمّعة */
+function fmtDateRaw(iso){ return String(fmtDate(iso)||'').replace(/[⁦-⁩‎‏]/g,''); }
+
+/* ══════════════════════════════════════════════════════════════════
+   إصلاح الفعاليات المُرحَّلة سابقًا: تاريخ انتهائها بقي قديمًا فصارت
+   بمدى مقلوب واختفت من التقارير. نُصلحها تلقائيًا عند التحميل.
+   ══════════════════════════════════════════════════════════════════ */
+function fixInvertedDateRanges(){
+  let fixed = 0;
+  (state.orders||[]).forEach(o=>{
+    if(!o.date || !o.dateTo) return;
+    if(o.dateTo >= o.date) return;
+    o.__dateToWas = o.dateTo;
+    o.dateTo = o.date;          // فعالية ليوم واحد في تاريخها الجديد
+    fixed++;
+  });
+  return fixed;
 }
 
 /* ============ Evaluation modal ============ */
@@ -7258,6 +7354,8 @@ function qrTextForOrder(o){
   if(ptype) L.push(`مسار المبادرة: ${ptype.name}`);
   L.push(`عدد المستهدفين: ${o.participantsCount||'—'}`);
   L.push(`التاريخ: ${dateTxt}`);
+  if(o.postponedFrom) L.push(`مُرحَّلة من: ${clean(fmtDate(o.postponedFrom))}`
+    + (o.postponedFromTo?` — ${clean(fmtDate(o.postponedFromTo))}`:'') + ` إلى ${dateTxt}`);
   L.push(`الوقت: ${timeTxt}`);
   L.push(`عدد الأيام: ${daysCount(o.date,o.dateTo)} — الساعات: ${computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo)}`);
   L.push(`${o.venue?'الجهة الطالبة':'المكان'}: ${school?school.name:'—'}`);
@@ -7330,6 +7428,16 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
   ];
   /* مكان التنفيذ الفعلي — يظهر فقط إذا اختلف عن الجهة الطالبة */
   if(o.venue) summaryRows.push(['مكان التنفيذ', `<b>${escapeHtml(o.venue)}</b>`]);
+  /* بيان الترحيل — يظهر في نسخة الجهة الطالبة ونسخة الإدارة */
+  if(o.postponedFrom){
+    const oldTxt = `${dayNameOf(o.postponedFrom)}، <span class="num-f">${fmtDate(o.postponedFrom)}</span>`
+      + (o.postponedFromTo ? ` — إلى — ${dayNameOf(o.postponedFromTo)}، <span class="num-f">${fmtDate(o.postponedFromTo)}</span>` : '')
+      + (o.postponedFromTime ? ` <span class="num-f">(${escapeHtml(o.postponedFromTime)})</span>` : '');
+    const newTxt = `${dayNameOf(o.date)}، <span class="num-f">${fmtDate(o.date)}</span>`
+      + (o.dateTo && o.dateTo!==o.date ? ` — إلى — ${dayNameOf(o.dateTo)}، <span class="num-f">${fmtDate(o.dateTo)}</span>` : '');
+    summaryRows.push(['بيان الترحيل',
+      `<span class="pp-note"><b>مُرحَّلة</b> من ${oldTxt} &nbsp;←&nbsp; إلى ${newTxt}</span>`]);
+  }
   const trainerIds = (o.trainerIds||[]);
   const trainerPeople = trainerIds.map(id=>state.trainers.find(t=>t.id===id)).filter(Boolean).map(t=>({name:t.name, phone:t.phone}));
   let rows = [
@@ -7439,6 +7547,11 @@ const REQ_NOTE_CSS = `
   .req-note{display:block; color:#8A1538; background:#FDF0E2;
     border-inline-start:3px solid #E08A3C; border-radius:5px;
     padding:1.5mm 2.5mm; font-weight:700; line-height:1.7;}
+  /* بيان الترحيل في نسخة الجهة الطالبة ونسخة الإدارة */
+  .pp-note{display:block; color:#7A4B00; background:#FFF6D8;
+    border-inline-start:3px solid #D9A400; border-radius:5px;
+    padding:1.5mm 2.5mm; font-weight:700; line-height:1.7;}
+  .pp-note b{color:#8A1538;}
 `;
 const REPORT_STYLES = `<style>
   /* أعمدة الأرقام والمدة: لا التفاف، والمحتوى داخل حدود العمود */
