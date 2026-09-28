@@ -4705,7 +4705,7 @@ function renderHome(c){
       ${kpi('⏱️', totalHours,               'إجمالي الساعات', '#E6F1FB', '#185FA5')}
       ${kpi('🗓️', totalDays,                'إجمالي الأيام',  '#EAF3DE', '#3B6D11')}
       ${kpi('🏫', (state.schools||[]).length,'الجهات',        '#FAEEDA', '#854F0B')}
-      ${kpi('🧑‍🏫', (state.trainers||[]).length,'مقدمو الفعالية','#F1EFE8', '#2C2C2A')}
+      ${kpi('\uD83E\uDDD1\u200D\uD83C\uDFEB', (state.trainers||[]).length,'مقدمو الفعالية','#F1EFE8', '#2C2C2A')}
     </div>
   </div>`;
 
@@ -6747,7 +6747,11 @@ function openPostponeModal(id){
 }
 
 /* تاريخ نصّي بلا محارف عزل — للملاحظات والنصوص المجمّعة */
-function fmtDateRaw(iso){ return String(fmtDate(iso)||'').replace(/[⁦-⁩‎‏]/g,''); }
+function fmtDateRaw(iso){
+  /* إزالة محارف العزل الاتجاهي — مكتوبة بالترميز \uXXXX عمدًا
+     كي لا يحتوي الملف على محارف تحكّم خفية في مصدره. */
+  return String(fmtDate(iso)||'').replace(/[\u2066-\u2069\u200E\u200F\u061C\u202A-\u202E]/g,'');
+}
 
 /* ══════════════════════════════════════════════════════════════════
    إصلاح الفعاليات المُرحَّلة سابقًا: تاريخ انتهائها بقي قديمًا فصارت
@@ -6769,7 +6773,7 @@ function fixInvertedDateRanges(){
 function openEvaluationModal(orderId){
   const o = state.orders.find(x=>x.id===orderId); if(!o) return;
   const overlay=document.getElementById('modalOverlay'); const box=document.getElementById('modalBox');
-  const evalByLabel = o.evaluatedBy==='trainer' ? '🧑‍🏫 تم إدخال هذا التقييم من قبل مقدم الفعالية'
+  const evalByLabel = o.evaluatedBy==='trainer' ? '\uD83E\uDDD1\u200D\uD83C\uDFEB تم إدخال هذا التقييم من قبل مقدم الفعالية'
     : o.evaluatedBy==='admin' ? '🛡️ تم إدخال هذا التقييم من الإدارة' : '';
   box.innerHTML = `
     <h3>تقييم وإنجاز: ${escapeHtml(o.title)}</h3>
@@ -7808,7 +7812,7 @@ function renderAdminPage(c){
     document.getElementById('adm_kpis').innerHTML = `<h2>ملخص الفترة</h2>
       <div class="stat-grid">
         ${statBox('📋', k.events, 'عدد الفعاليات')}
-        ${statBox('🧑‍🏫', k.trainers, 'عدد المدربين')}
+        ${statBox('\uD83E\uDDD1\u200D\uD83C\uDFEB', k.trainers, 'عدد المدربين')}
         ${statBox('⏱️', k.hours.toFixed(1), 'إجمالي عدد الساعات')}
         ${statBox('🏫', k.schools, 'عدد المدارس')}
         ${statBox('🗂️', k.reqs, 'عدد الطلبات الإدارية')}
@@ -8332,7 +8336,7 @@ function renderQuranReportTab(sub){
     const rows=list.map(x=>[escapeHtml(x.programName),monthNameAr(x.month),`${fmtDate(x.dateFrom)} — ${fmtDate(x.dateTo)}`,x.execDays,escapeHtml(x.method),x.teachersCount,x.studentsCount,x.memPages,x.memParts,x.revPages,x.revParts,x.completionPct+'%']);
     doPrintDoc(buildReportDoc({
       titleAr:'تقرير الأنشطة القرآنية — روح والرحيق', subtitle:`${periodLabel()} — عدد السجلات: ${list.length}`, subtitleNumFont:true,
-      kpis:[{v:t.teachersCount,l:'🧑‍🏫 إجمالي المعلمين'},{v:t.studentsCount,l:'👥 إجمالي الطلاب'},{v:t.memPages,l:'📖 إجمالي صفحات الحفظ'},{v:t.revPages,l:'🔁 إجمالي صفحات المراجعة'},{v:avgPct+'%',l:'📊 متوسط نسبة الإنجاز'}],
+      kpis:[{v:t.teachersCount,l:'\uD83E\uDDD1\u200D\uD83C\uDFEB إجمالي المعلمين'},{v:t.studentsCount,l:'👥 إجمالي الطلاب'},{v:t.memPages,l:'📖 إجمالي صفحات الحفظ'},{v:t.revPages,l:'🔁 إجمالي صفحات المراجعة'},{v:avgPct+'%',l:'📊 متوسط نسبة الإنجاز'}],
       headers:['اسم البرنامج','الشهر','الفترة','أيام التنفيذ','آلية التسميع','المعلمين','الطلاب','صفحات الحفظ','الأجزاء المحفوظة','صفحات المراجعة','الأجزاء المراجعة','نسبة الإنجاز'],
       rows
     }), true, 'A4');
