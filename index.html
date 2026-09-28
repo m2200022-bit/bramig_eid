@@ -2579,6 +2579,8 @@ async function flushSave(){
     return;
   }
   if(saving){ pendingSave=true; return; }
+  /* تطبيع قبل الكتابة: لا يُحفظ تاريخ انتهاء أقدم من تاريخ البداية */
+  try{ fixInvertedDateRanges(); }catch(e){}
   saving=true;
   try{
     /* نسخة احتياطية محلية قبل كل كتابة — للاسترجاع عند أي خطأ */
@@ -2811,7 +2813,7 @@ function trainerConflictSingle(trainerId, date, timeFrom, timeTo, excludeOrderId
   return state.orders.find(o=>{
     if(o.id===excludeOrderId) return false;
     if(!(o.trainerIds||[]).includes(trainerId)) return false;
-    const oTo = o.dateTo || o.date;
+    const oTo = orderEnd(o);
     if(!dateRangesOverlap(date, dTo, o.date, oTo)) return false;
     const exStart = parseDT(refDay, o.timeFrom||'00:00'), exEnd = parseDT(refDay, o.timeTo||o.timeFrom||'23:59');
     const winStart = new Date(exStart.getTime()-bufferMs), winEnd = new Date(exEnd.getTime()+bufferMs);
@@ -2858,7 +2860,7 @@ function schoolSameWeek(schoolId, date, excludeOrderId, trainerIds){
   const mine = new Set(trainerIds||[]);
   return state.orders.filter(o=>{
     if(o.id===excludeOrderId || o.schoolId!==schoolId) return false;
-    const s = o.date||'', e = o.dateTo||o.date||'';
+    const s = o.date||'', e = orderEnd(o);
     if(!(s <= end && e >= start)) return false;
     const others = (o.trainerIds||[]);
     // ننبّه فقط إن كان هناك مقدّم مختلف عن المقدّمين المختارين
@@ -3706,7 +3708,7 @@ function showPlan(schoolId, perMonth, from, to, pins){
     const busy = (state.orders||[]).some(o=>{
       if((o.status||'active')==='cancelled') return false;
       const s=o.date||''; if(!s) return false;
-      const e=o.dateTo||s;
+      const e=orderEnd(o);
       return iso>=s && iso<=e && o.schoolId===schoolId;
     });
     if(busy) return {ok:false, why:'الجهة مرتبطة بفعالية في هذا اليوم'};
@@ -3850,7 +3852,7 @@ function renderSchedulePage(c){
 
   const inRange = o=>{
     const s=o.date||''; if(!s) return false;
-    const e=o.dateTo||s;
+    const e=orderEnd(o);
     return s<=T && e>=F && (o.status||'active')!=='cancelled';
   };
   const trFilter = window.__schedTr || '';
@@ -3861,7 +3863,7 @@ function renderSchedulePage(c){
   const busyBy = {}, clashBy = {};
   (state.orders||[]).filter(inRange).forEach(o=>{
     (o.trainerIds||[]).forEach(tid=>{
-      const s=o.date, e=o.dateTo||o.date;
+      const s=o.date, e=orderEnd(o);
       let cur=s, guard=0;
       while(cur<=e && guard<90){
         if(cur>=F && cur<=T){
@@ -3893,6 +3895,9 @@ function renderSchedulePage(c){
         ${Object.entries(spans).map(([k,v])=>`<button data-span="${k}" class="${schedRange===k?'active':''}">${v.label}</button>`).join('')}
       </div>
       <div class="rp-dates" style="margin:0;">
+        <div class="rp-date" style="width:250px;"><label>بحث</label>
+          <input id="sc_q" type="search" autocomplete="off" placeholder="رقم التكليف أو العنوان أو الجهة أو المقدّم..."
+                 value="${escapeHtml(window.__schedQ||'')}"></div>
         <div class="rp-date"><label>من</label><input id="sc_from" type="date" lang="en-GB" value="${F}"></div>
         <div class="rp-date"><label>إلى</label><input id="sc_to" type="date" lang="en-GB" value="${T}"></div>
         <div class="rp-date" style="width:190px;"><label>مقدّم المبادرة</label>
@@ -3910,6 +3915,8 @@ function renderSchedulePage(c){
       </span>
     </div>
   </div>
+
+  <div id="sc_qResult"></div>
 
   <div class="card">
     <h2>${icon('calendar',15)} أحدث الفعاليات — ${list.length} ${eventWord(list.length)}</h2>
@@ -4043,6 +4050,92 @@ function renderSchedulePage(c){
     if(v < window.__schedFrom) window.__schedFrom = addDaysISO(v, -(SPAN_DAYS[schedRange] ?? 6));
     render();
   });
+  /* ══════════════════════════════════════════════════════════════
+     البحث: يبحث في كل الفعاليات — لا في الفترة المعروضة فقط —
+     فإن كانت النتيجة خارج الفترة يقولها صراحةً بدل أن تختفي بصمت.
+     ══════════════════════════════════════════════════════════════ */
+  function schedSearch(){
+    const box = document.getElementById('sc_qResult');
+    const q = (document.getElementById('sc_q').value||'').trim();
+    window.__schedQ = q;
+    if(!q){ box.innerHTML=''; return; }
+    const nq = _mzNz(q);
+    const hits = (state.orders||[]).filter(o=>{
+      if(String(o.serial||'')===q) return true;
+      const sc = (state.schools||[]).find(x=>x.id===o.schoolId);
+      const tn = (o.trainerIds||[]).map(id=>{
+        const t=(state.trainers||[]).find(x=>x.id===id); return t?t.name:''; }).join(' ');
+      return _mzNz(o.title||'').includes(nq)
+          || _mzNz(sc?sc.name:'').includes(nq)
+          || _mzNz(tn).includes(nq)
+          || String(o.serial||'').includes(q);
+    }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+    if(!hits.length){
+      box.innerHTML = `<div class="card" style="border:2px solid #C0334D;">
+        <div class="clash-bar" style="margin:0;">${icon('alert',15)}
+          <span>لا توجد أي فعالية تطابق «<b>${escapeHtml(q)}</b>» في النظام كلّه —
+          وليست مسألة فترة معروضة.</span></div></div>`;
+      return;
+    }
+    const inR  = o => { const s=o.date||'', e=orderEnd(o); return s<=T && e>=F; };
+    const out  = hits.filter(o=>!inR(o));
+    const isIn = hits.filter(o=>inR(o));
+    const row = (o, outside) => {
+      const sc = (state.schools||[]).find(x=>x.id===o.schoolId);
+      const tn = (o.trainerIds||[]).map(id=>{
+        const t=(state.trainers||[]).find(x=>x.id===id); return t?t.name:''; }).filter(Boolean);
+      const bad = hasBadEnd(o);
+      return `<tr${outside?' style="background:#FFFBEB;"':''}>
+        <td><span class="badge">${o.serial}</span></td>
+        <td style="text-align:right;">${escapeHtml(o.title||'')}
+          ${bad?`<span class="badge bad" title="تاريخ الانتهاء أقدم من تاريخ البداية">تاريخ تالف</span>`:''}</td>
+        <td style="white-space:nowrap;">${fmtDate(o.date)}${orderEnd(o)!==o.date?` — ${fmtDate(orderEnd(o))}`:''}</td>
+        <td style="white-space:nowrap;direction:ltr;">${escapeHtml(fullTimeRange(o.timeFrom,o.timeTo))}</td>
+        <td style="text-align:right;">${sc?escapeHtml(sc.name):'—'}</td>
+        <td style="text-align:right;">${tn.length?escapeHtml(tn.join('، ')):'—'}</td>
+        <td>${(o.status||'active')==='postponed'?'<span class="badge" style="background:#FFF2C9;color:#A66B08;">مؤجّلة</span>':
+             (o.status||'active')==='cancelled'?'<span class="badge bad">ملغاة</span>':doneBadge(o.completionStatus)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-sm btn-outline" data-view="${o.id}">عرض</button>
+          ${outside?`<button class="btn btn-sm btn-primary" data-jump="${o.date}">انتقل لتاريخها</button>`:''}
+        </td></tr>`;
+    };
+    box.innerHTML = `<div class="card" style="border:2px solid var(--gold);">
+      <h2>${icon('search',15)} نتائج البحث عن «${escapeHtml(q)}» — ${hits.length} ${eventWord(hits.length)}</h2>
+      ${out.length ? `<div class="clash-bar" style="background:#FFF7E0;border-color:#E8D46A;color:#7A5800;">
+        ${icon('alert',15)}<span><b>${out.length}</b> ${out.length===1?'نتيجة':'نتائج'} خارج الفترة المعروضة
+        (${fmtDate(F)} — ${fmtDate(T)}) — لذلك لا تظهر في الجدول أدناه.
+        اضغط «انتقل لتاريخها» لعرضها.</span></div>` : ''}
+      <div class="tbl-scroll"><table style="font-size:12.5px;"><thead><tr>
+        <th style="width:46px;">#</th><th style="text-align:right;">الفعالية</th><th>التاريخ</th>
+        <th>الوقت</th><th>الجهة</th><th>المقدّمون</th><th>الحالة</th><th>إجراء</th>
+      </tr></thead><tbody>
+        ${isIn.map(o=>row(o,false)).join('')}${out.map(o=>row(o,true)).join('')}
+      </tbody></table></div>
+      <div class="helper" style="margin-top:8px;">
+        الصفوف ذات الخلفية الصفراء خارج الفترة المعروضة. البحث يشمل كل فعاليات النظام.
+      </div></div>`;
+    box.querySelectorAll('[data-jump]').forEach(b=>{
+      b.onclick = ()=>{
+        const d = b.dataset.jump;
+        window.__schedFrom = addDaysISO(d, -3);
+        window.__schedTo   = addDaysISO(d,  3);
+        render();
+      };
+    });
+    box.querySelectorAll('[data-view]').forEach(b=>{
+      b.onclick = ()=>viewOrderReadOnly(b.dataset.view);
+    });
+  }
+  const _scq = document.getElementById('sc_q');
+  if(_scq){
+    let _t=null;
+    _scq.addEventListener('input', ()=>{ clearTimeout(_t); _t=setTimeout(schedSearch, 220); });
+    _scq.addEventListener('search', schedSearch);
+    if(window.__schedQ) schedSearch();
+  }
+
   c.querySelectorAll('[data-view]').forEach(b=>{ b.onclick = ()=>viewOrderReadOnly(b.dataset.view); });
   const sortPick = cb => {
     openModal('فرز التقرير', [{name:'by', label:'الفرز حسب', type:'select', options:[
@@ -4116,7 +4209,7 @@ function renderSchedulePage(c){
 function printTrainerRequests(from, to, sortBy){
   const list = (state.orders||[]).filter(o=>{
     const s=o.date||''; if(!s) return false;
-    const e=o.dateTo||s;
+    const e=orderEnd(o);
     return s<=to && e>=from && (o.status||'active')!=='cancelled';
   });
   if(!list.length){ toast('لا توجد فعاليات في هذه الفترة'); return; }
@@ -4189,7 +4282,7 @@ function buildTrainerReqRows(list, sortBy){
 function exportTrainerRequests(from, to, sortBy){
   const list = (state.orders||[]).filter(o=>{
     const s=o.date||''; if(!s) return false;
-    const e=o.dateTo||s;
+    const e=orderEnd(o);
     return s<=to && e>=from && (o.status||'active')!=='cancelled';
   });
   const rows = buildTrainerReqRows(list, sortBy);
@@ -4974,7 +5067,7 @@ function selectedOrderRows(containerId){
     const pt = state.programTypes.find(x=>x.id===o.programTypeId);
     const trs = (o.trainerIds||[]).map(id=>{ const t=state.trainers.find(y=>y.id===id); return t?t.name:''; })
       .filter(Boolean).join('، ');
-    const d1 = o.date, d2 = o.dateTo || o.date;
+    const d1 = o.date, d2 = orderEnd(o);
     return [
       o.serial,
       o.title || '',
@@ -5138,7 +5231,7 @@ function renderOrderPage(c){
         /* أيام تنفيذه مرتّبة — كل يوم مربع قابل للنقر يفتح أمر التكليف */
         const dayMap = new Map();
         list.forEach(o=>{
-          const s = o.date, e = o.dateTo || o.date;
+          const s = o.date, e = orderEnd(o);
           if(!s) return;
           let cur = s, guard = 0;
           while(cur <= e && guard < 60){
@@ -6616,7 +6709,7 @@ function viewOrderReadOnly(id){
   const pt  = state.programTypes.find(x=>x.id===o.programTypeId);
   const trs = (o.trainerIds||[]).map(t=>{ const x=state.trainers.find(y=>y.id===t); return x?(x.phone?`${x.name} — ${x.phone}`:x.name):''; }).filter(Boolean);
   const rqs = (o.adminRequests||[]).map(t=>{ const x=state.adminRequestsList.find(y=>y.id===t); return x?x.name:''; }).filter(Boolean);
-  const d1 = o.date, d2 = o.dateTo || o.date;
+  const d1 = o.date, d2 = orderEnd(o);
   const rows = [
     ['fileText','عنوان المبادرة', o.title||'—'],
     ['layers','المجال / المسار', [fd&&fd.name, pt&&pt.name].filter(Boolean).join(' · ')||'—'],
@@ -6685,7 +6778,7 @@ function postponeConflicts(o, newDate, newTo, tf, tt){
     (state.orders||[]).forEach(x=>{
       if(x.id===o.id || x.schoolId!==o.schoolId) return;
       if((x.status||'active')==='cancelled') return;
-      const xTo = x.dateTo || x.date;
+      const xTo = orderEnd(x);
       if(!x.date || !dateRangesOverlap(newDate, dTo, x.date, xTo)) return;
       out.push({ kind:'school', who:(sc?sc.name:''), order:x,
         line:`${sc?sc.name:'الجهة'} لديها فعالية في التاريخ نفسه:\n      أمر ${x.serial||'—'} — ${x.title||'بلا عنوان'}`
@@ -6702,7 +6795,7 @@ function openPostponeModal(id){
     {name:'timeFrom', label:'من الساعة', type:'time'},
     {name:'timeTo', label:'إلى الساعة', type:'time'},
   ], async v=>{
-    const oldDate = o.date, oldDateTo = o.dateTo || o.date;
+    const oldDate = o.date, oldDateTo = orderEnd(o);
     const oldFrom = o.timeFrom, oldTo = o.timeTo;
 
     /* ⚠ الفعالية قد تمتد أيامًا: نُحرّك تاريخ الانتهاء بنفس المقدار
@@ -7175,9 +7268,30 @@ function trainerMiniTable(o){
     </div>`).join('');
 }
 /* عدد الأيام بين تاريخين (شامل يوم البداية والنهاية) */
+/* ══════════════════════════════════════════════════════════════════
+   نهاية الفعالية الفعلية.
+   ──────────────────────────────────────────────────────────────────
+   كل عوامل التصفية الزمنية تسأل: هل تداخلت مدة الفعالية مع الفترة؟
+   وكانت تقرأ dateTo كما هو. فإذا كان dateTo أقدم من تاريخ البداية
+   (ترحيل قديم، استيراد، تعديل يدوي) صارت المدة مقلوبة فاختفت
+   الفعالية من كل الصفحات والتقارير بصمت.
+   هنا لا يمكن أن تسبق النهاية البداية أبدًا.
+   ══════════════════════════════════════════════════════════════════ */
+function orderEnd(o){
+  if(!o) return '';
+  const s = o.date || '', e = o.dateTo || '';
+  if(!e) return s;
+  if(!s) return e;
+  return e < s ? s : e;
+}
+/* هل تاريخ انتهاء هذه الفعالية سليم؟ (للتشخيص والإصلاح) */
+function hasBadEnd(o){ return !!(o && o.date && o.dateTo && o.dateTo < o.date); }
+
 function daysCount(dateFrom, dateTo){
   if(!dateFrom) return 0;
   if(!dateTo || dateTo===dateFrom) return 1;
+  /* نهاية أقدم من البداية = بيانات تالفة → يوم واحد، لا رقم سالب */
+  if(dateTo < dateFrom) return 1;
   const d1 = new Date(dateFrom+'T00:00:00'), d2 = new Date(dateTo+'T00:00:00');
   const diff = Math.round((d2-d1)/86400000)+1;
   return diff>0 ? diff : 1;
@@ -7213,7 +7327,7 @@ function fullTimeRange(from, to){
 /* ── تنسيقات موحّدة لكل التقارير (عدا نسخة الجهة الطالبة/الإدارة) ── */
 /* عمود التاريخ: (من) فوق تاريخها و(إلى) فوق تاريخها متجاورتان */
 function repPeriodCell(o){
-  const s = fmtDate(o.date), e = fmtDate(o.dateTo||o.date);
+  const s = fmtDate(o.date), e = fmtDate(orderEnd(o));
   return `<span class="prd2"><span class="p2"><b>من</b><i>${s||'—'}</i></span><span class="p2"><b>إلى</b><i>${e||'—'}</i></span></span>`;
 }
 /* المكان وهاتف المشرف في عمود واحد يفصلهما / */
@@ -7269,7 +7383,7 @@ function trainerCellText(o){
 }
 function dateRangeStr(o){
   const s = o && o.date ? fmtDate(o.date) : '';
-  const e = o && o.dateTo && o.dateTo !== o.date ? fmtDate(o.dateTo) : '';
+  const e = (o && orderEnd(o) !== o.date) ? fmtDate(orderEnd(o)) : '';
   if(!s && !e) return '';
   return e ? `${s} — ${e}` : s;
 }
@@ -7786,7 +7900,7 @@ function renderAdminPage(c){
        متعددة الأيام التي تبدأ قبل الفترة وتمتد داخلها. */
     return {list: state.orders.filter(o=>{
       const s = o.date || '';
-      const e = o.dateTo || o.date || '';
+      const e = orderEnd(o);
       if(!s && !e) return false;
       if(from && e && e < from) return false;
       if(to && s && s > to) return false;
@@ -7837,7 +7951,7 @@ function renderAdminPage(c){
     return list.map((o,i)=>{
       const school = state.schools.find(s=>s.id===o.schoolId);
       const supervisor = school ? school.supervisors.find(s=>s.id===o.supervisorId) : null;
-      return [i+1, o.serial, o.title, fmtDate(o.date), fmtDate(o.dateTo||o.date),
+      return [i+1, o.serial, o.title, fmtDate(o.date), fmtDate(orderEnd(o)),
               fullTimeRange(o.timeFrom,o.timeTo), school?school.name:'',
               supervisor?supervisor.phone||'':'', trainerNames(o), trainerPhones(o)];
     });
@@ -7868,7 +7982,7 @@ function renderAdminPage(c){
       const school = state.schools.find(s=>s.id===o.schoolId);
       const supervisor = school ? school.supervisors.find(s=>s.id===o.supervisorId) : null;
       const reqs = (o.adminRequests||[]).map(id=>{const r=state.adminRequestsList.find(x=>x.id===id); return r?r.name:'';}).filter(Boolean).join('، ');
-      return [i+1, o.serial, o.title, fmtDate(o.date), fmtDate(o.dateTo||o.date), fullTimeRange(o.timeFrom,o.timeTo), school?school.name:'', supervisor?supervisor.phone||'':'', o.participantsCount||'', trainerNames(o), trainerPhones(o), reqs||'—'];
+      return [i+1, o.serial, o.title, fmtDate(o.date), fmtDate(orderEnd(o)), fullTimeRange(o.timeFrom,o.timeTo), school?school.name:'', supervisor?supervisor.phone||'':'', o.participantsCount||'', trainerNames(o), trainerPhones(o), reqs||'—'];
     });
     exportToExcel('جدول_الفعاليات.xlsx', ['م','أمر التكليف','عنوان الفعالية','من تاريخ','إلى تاريخ','الوقت','المكان','رقم المشرف','عدد المشاركين','مقدم البرنامج','رقم هاتفه','الطلبات الإدارية للبرنامج'], rows, `جدول الفعاليات خلال فترة (من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'})`);
   };
@@ -7879,7 +7993,7 @@ function renderAdminPage(c){
       const school = state.schools.find(s=>s.id===o.schoolId);
       const supervisor = school ? school.supervisors.find(s=>s.id===o.supervisorId) : null;
       const reqs = (o.adminRequests||[]).map(id=>{const r=state.adminRequestsList.find(x=>x.id===id); return r?r.name:'';}).filter(Boolean).join('، ');
-      return [i+1, o.serial, escapeHtml(o.title), fmtDate(o.date), fmtDate(o.dateTo||o.date), escapeHtml(fullTimeRange(o.timeFrom,o.timeTo)), school?escapeHtml(school.name):'', supervisor&&supervisor.phone?phoneLink(supervisor.phone):'', o.participantsCount||'', trainerMiniTable(o), reqs||'—'];
+      return [i+1, o.serial, escapeHtml(o.title), fmtDate(o.date), fmtDate(orderEnd(o)), escapeHtml(fullTimeRange(o.timeFrom,o.timeTo)), school?escapeHtml(school.name):'', supervisor&&supervisor.phone?phoneLink(supervisor.phone):'', o.participantsCount||'', trainerMiniTable(o), reqs||'—'];
     }));
     const reqRows = Object.entries(k.reqCounts).map(([id,count])=>{ const r=state.adminRequestsList.find(x=>x.id===id); return `<tr><td>${escapeHtml(r?r.name:id)}</td><td>${count}</td></tr>`; }).join('') || '<tr><td colspan="2" style="text-align:center;color:#999;">لا توجد</td></tr>';
     doPrintDoc(buildReportDoc({
@@ -8548,7 +8662,7 @@ function renderReportsPage(c){
       const g    = document.getElementById('ps_group').value;
       const list = (state.orders||[]).filter(o=>{
         const s=o.date||''; if(!s) return false;
-        const e=o.dateTo||s;
+        const e=orderEnd(o);
         if(from && e<from) return false;
         if(to && s>to) return false;
         return true;
@@ -8705,7 +8819,7 @@ function renderReportsPage(c){
       const TH   = parseFloat(document.getElementById('tp_sim').value);
       const list = (state.orders||[]).filter(o=>{
         if((o.status||'active')==='cancelled') return false;
-        const s=o.date||'', e=o.dateTo||o.date||'';
+        const s=o.date||'', e=orderEnd(o);
         if(from && e && e<from) return false;
         if(to && s && s>to) return false;
         return !!s;
@@ -8856,7 +8970,7 @@ function renderReportsPage(c){
         const isDone = o.completionStatus==='تم';
         if(isDone && !wDone) return false;
         if(!isDone && !wNot) return false;
-        const s=o.date||'', e=o.dateTo||o.date||'';
+        const s=o.date||'', e=orderEnd(o);
         if(!s && !e) return false;
         if(from && e && e<from) return false;
         if(to && s && s>to) return false;
@@ -9857,7 +9971,7 @@ function renderDistributionsTabContent(c){
     const {start,end} = periodBounds(period, dateStr);
     const sheets = state.trainers.map(t=>{
       const list = state.orders.filter(o=>(o.trainerIds||[]).includes(t.id) && o.date>=start && o.date<=end).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-      return {name:t.name, headers:['العنوان','من تاريخ','إلى تاريخ','عدد الأيام','الوقت','عدد الساعات','المدرسة','الإنجاز'], rows:list.map(o=>{ const s=state.schools.find(x=>x.id===o.schoolId); return [o.title, fmtDate(o.date), fmtDate(o.dateTo||o.date), daysCount(o.date,o.dateTo), fullTimeRange(o.timeFrom,o.timeTo), computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo), s?s.name:'', o.completionStatus||'لم تنجز']; })};
+      return {name:t.name, headers:['العنوان','من تاريخ','إلى تاريخ','عدد الأيام','الوقت','عدد الساعات','المدرسة','الإنجاز'], rows:list.map(o=>{ const s=state.schools.find(x=>x.id===o.schoolId); return [o.title, fmtDate(o.date), fmtDate(orderEnd(o)), daysCount(o.date,o.dateTo), fullTimeRange(o.timeFrom,o.timeTo), computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo), s?s.name:'', o.completionStatus||'لم تنجز']; })};
     });
     exportToExcelMultiSheet('التوزيعات.xlsx', sheets, `التوزيعات (${fmtDate(start)} إلى ${fmtDate(end)})`);
   };
@@ -9995,7 +10109,7 @@ function renderAvailabilityCalendar(box){
       return (state.orders||[]).filter(o=>{
         if((o.status||'active')==='cancelled') return false;
         if(!(o.trainerIds||[]).includes(tid)) return false;
-        const s=o.date||'', e=o.dateTo||o.date||'';
+        const s=o.date||'', e=orderEnd(o);
         return s && dISO>=s && dISO<=e;
       });
     }
