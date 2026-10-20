@@ -334,6 +334,56 @@
     border:1px solid #F0C9C6; text-align:right;}
   .clash-tbl td{padding:6px 9px; border:1px solid var(--line); vertical-align:top;}
   .clash-tbl tbody tr:nth-child(even){background:#FCFAF8;}
+  /* ══ شريط تعذّر الاتصال بقاعدة البيانات ══ */
+  .db-down{display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+    background:#FBE7E5; border:2px solid #C0334D; border-radius:12px;
+    padding:11px 14px; margin-bottom:14px; color:#8E2437;}
+  .db-down .lu{flex:none;}
+  .db-down-tx{display:flex; flex-direction:column; gap:2px; min-width:200px;}
+  .db-down-tx b{font-size:13.5px; font-weight:800;}
+  .db-down-tx i{font-style:normal; font-size:12px; opacity:.9;}
+  .db-down-btns{margin-inline-start:auto; display:inline-flex; gap:7px; flex-wrap:wrap;}
+  @media print{ .db-down{display:none !important;} }
+
+  /* ══ لوحة اختيار مقدّمي المبادرة في جدول المقدّمين ══ */
+  .sc-trbtn{display:inline-flex; align-items:center; gap:7px; min-height:34px;
+    padding:0 11px; border:1px solid var(--line); border-radius:9px; background:#fff;
+    cursor:pointer; font-family:inherit; font-size:12.5px; color:var(--ink); max-width:260px;}
+  .sc-trbtn:hover{border-color:var(--gold);}
+  .sc-trbtn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sc-trbtn b{margin-inline-start:auto; background:var(--brand-100,#E8F1EC); color:var(--brand-800,#1F6B4C);
+    border-radius:20px; padding:1px 8px; font-size:11.5px;}
+  /* ⚠ مربعات الاختيار داخل اللوحة كانت ترث تنسيق حقول النموذج
+     (عرض كامل وارتفاع 42px) فيصير كل سطر 85px ولا تُرى القائمة.
+     نستخدم المعرّف # لنتجاوز تلك القواعد بثقة. */
+  .sc-trwrap{position:relative;}
+  #sc_trPanel{position:fixed; z-index:9999;
+    width:270px; max-height:min(300px, 60vh); overflow-y:auto; overflow-x:hidden;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 10px 26px rgba(0,0,0,.16); padding:6px;}
+  #sc_trPanel label{display:flex !important; align-items:center; gap:7px;
+    margin:0 !important; padding:5px 8px; border-radius:7px; cursor:pointer;
+    font-size:12.5px; font-weight:400; line-height:1.3; min-height:0 !important;
+    width:auto !important; color:var(--ink);}
+  #sc_trPanel input[type=checkbox]{
+    width:15px !important; min-width:15px !important; max-width:15px !important;
+    height:15px !important; min-height:15px !important; flex:none !important;
+    margin:0 !important; padding:0 !important; accent-color:var(--brand-700,#1F6B4C);
+    border-radius:3px !important; box-shadow:none !important; cursor:pointer;}
+  #sc_trPanel .sc-trall{background:#F4F1EC; font-weight:800 !important; margin-bottom:5px !important;}
+  #sc_trPanel .sc-trlist{display:flex; flex-direction:column; gap:2px;}
+  #sc_trPanel .sc-trrow:hover{background:#FAF8F5;}
+  #sc_trPanel .sc-trrow.on{background:#EAF7F1; box-shadow:inset 0 0 0 1px #A9DCC6;}
+  #sc_trPanel .sc-trnm{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #sc_trPanel .sc-trph{font-size:10.5px; color:var(--muted); direction:ltr; flex:none;}
+
+  /* ══ خلية فترة التاريخ في جداول الشاشة — مطابقة لنمط الطباعة ══ */
+  .prd1{display:block; text-align:center; direction:ltr; font-size:12.5px;}
+  .prd2{display:inline-flex; flex-direction:column; gap:2px; align-items:center;}
+  .prd2 .p2{display:flex; flex-direction:row; align-items:baseline; gap:5px;}
+  .prd2 .p2 b{font-size:10px; font-weight:700; color:var(--muted,#8A7A6A);}
+  .prd2 .p2 i{font-style:normal; font-size:12.5px; direction:ltr; white-space:nowrap;}
+
   /* ══ شريط تنبيه التضارب أعلى صفحة طلب فعالية ══ */
   #ordClashBar{margin-bottom:10px;}
   .ord-clash{border:2px solid #C0334D; border-radius:12px; overflow:hidden;
@@ -2192,6 +2242,118 @@
   .inl-btn.danger:hover{background:var(--danger-bg,#FBE7E5); color:var(--danger,#CF443A);}
   .glow-card .form-table tbody td > label:has(.inl-acts),
   .glow-card .form-table tbody td > label .inl-btn{pointer-events:auto !important;}
+
+  /* ══════════════════════════════════════════════════════════════════
+     طبقة الصقل البصري — شاشة فقط
+     ──────────────────────────────────────────────────────────────────
+     لا تغيّر الهوية ولا الألوان: تستعمل متغيّرات النظام نفسها، وتضيف
+     عمقًا وتمييزًا للعناصر التي تُلمس. كلّها معزولة عن الطباعة.
+     ══════════════════════════════════════════════════════════════════ */
+@media screen{
+
+  /* ── الأيقونات: عمق خفيف يرفعها عن السطح ── */
+  .lu, svg.lu{ filter:drop-shadow(0 1px 1.5px rgba(28,50,59,.20)); }
+  h2 .lu, .sec-title .lu{ filter:drop-shadow(0 1.5px 2px rgba(28,50,59,.28)); }
+  #sideNav .lu{ filter:drop-shadow(0 1.5px 2.5px rgba(0,0,0,.45)); }
+  #sideNav .nav-item.active .lu{ filter:drop-shadow(0 2px 4px rgba(221,150,75,.55)); }
+
+  /* ── أزرار الأيقونات: سطح مرتفع يُضغط ── */
+  .icon-btn{
+    background:linear-gradient(180deg,#fff,#F7F5F1);
+    border:1px solid var(--border-c);
+    box-shadow:0 1px 2px rgba(28,50,59,.10), 0 2px 6px rgba(28,50,59,.06);
+    transition:box-shadow .16s ease, transform .12s ease, border-color .16s ease;
+  }
+  .icon-btn:hover{
+    border-color:var(--brass-600);
+    box-shadow:0 2px 5px rgba(28,50,59,.14), 0 6px 16px rgba(46,112,105,.16);
+    transform:translateY(-1px);
+  }
+  .icon-btn:active{ transform:translateY(1px); box-shadow:inset 0 2px 4px rgba(28,50,59,.14); }
+
+  /* ── الأزرار: عمق حقيقي واستجابة للضغط ── */
+  .btn{ transition:box-shadow .16s ease, transform .12s ease, filter .16s ease; }
+  .btn.btn-primary, .content .btn.btn-primary{
+    box-shadow:0 1px 2px rgba(28,50,59,.16), 0 4px 12px rgba(46,112,105,.22); }
+  .btn.btn-primary:hover, .content .btn.btn-primary:hover{
+    box-shadow:0 2px 4px rgba(28,50,59,.18), 0 8px 20px rgba(46,112,105,.28); transform:translateY(-1px); }
+  .btn.btn-outline, .content .btn.btn-outline{ box-shadow:0 1px 2px rgba(28,50,59,.07); }
+  .btn.btn-outline:hover, .content .btn.btn-outline:hover{
+    box-shadow:0 2px 6px rgba(28,50,59,.12); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(1px) !important; filter:brightness(.97); }
+  .btn:disabled, .btn[disabled]{ box-shadow:none !important; transform:none !important; }
+
+  /* ── البطاقات: ظل متدرّج بدل الحدّ المسطّح ── */
+  .card, .content .card{
+    box-shadow:0 1px 2px rgba(28,50,59,.05), 0 6px 18px rgba(28,50,59,.06);
+    transition:box-shadow .2s ease;
+  }
+  .card:hover, .content .card:hover{
+    box-shadow:0 2px 4px rgba(28,50,59,.07), 0 10px 26px rgba(28,50,59,.09); }
+  /* الرفع عند المرور للبطاقات التي تُنقر فقط — لا لكل بطاقة */
+  .stat-box[onclick], .clickable-card, .panel[onclick]{
+    transition:box-shadow .18s ease, transform .18s ease;
+  }
+  .stat-box[onclick]:hover, .clickable-card:hover, .panel[onclick]:hover{
+    transform:translateY(-2px);
+    box-shadow:0 4px 10px rgba(28,50,59,.10), 0 14px 32px rgba(28,50,59,.12);
+  }
+
+  /* ── الجداول: ترويسة ثابتة عند التمرير وصفوف أوضح ── */
+  .tbl-scroll{ position:relative; }
+  .tbl-scroll > table:not(.cal-tb):not(.sched-tbl):not(.av-tbl) > thead > tr > th{
+    position:sticky; top:0; z-index:3;
+    box-shadow:0 1px 0 rgba(28,50,59,.14), 0 3px 8px rgba(28,50,59,.07);
+  }
+  .content table tbody tr{ transition:background .14s ease; }
+  .content table tbody tr:nth-child(even){ background:rgba(248,246,241,.55); }
+  .content table tbody tr:hover{ background:var(--limestone-hover); }
+  /* الصف القابل للنقر: شريط ذهبي على الحافة اليمنى عند المرور */
+  .content table tbody tr.clickable{ cursor:pointer; position:relative; }
+  .content table tbody tr.clickable:hover{ background:var(--brass-100); }
+  .content table tbody tr.clickable:hover > td:first-child{
+    box-shadow:inset -3px 0 0 var(--brass-600);
+  }
+
+  /* ── الشارات: حدّ شعري يمنحها تماسكًا ── */
+  .badge{ box-shadow:inset 0 0 0 1px rgba(28,50,59,.07); }
+
+  /* ── تركيز لوحة المفاتيح: حلقة واضحة في كل مكان ── */
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible{
+    outline:2px solid var(--brass-600);
+    outline-offset:2px;
+    border-radius:6px;
+  }
+
+  /* ── زر العودة لأعلى ── */
+  #toTop{
+    position:fixed; inset-inline-start:18px; bottom:18px; z-index:70;
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--border-c);
+    background:linear-gradient(180deg,#fff,#F4F1EB); color:var(--brass-700);
+    display:none; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 3px 8px rgba(28,50,59,.14), 0 10px 24px rgba(28,50,59,.14);
+    transition:transform .16s ease, box-shadow .16s ease, opacity .2s ease;
+  }
+  #toTop.on{ display:flex; }
+  #toTop:hover{ transform:translateY(-2px);
+    box-shadow:0 5px 12px rgba(28,50,59,.18), 0 14px 30px rgba(46,112,105,.20); }
+  #toTop:active{ transform:translateY(1px); }
+
+  /* ── احترام تفضيل تقليل الحركة ── */
+  @media (prefers-reduced-motion: reduce){
+    .btn, .icon-btn, .card, .stat-box[onclick], #toTop,
+    .content table tbody tr{ transition:none !important; }
+    .btn:hover, .icon-btn:hover, .stat-box[onclick]:hover, #toTop:hover,
+    .clickable-card:hover, .panel[onclick]:hover{ transform:none !important; }
+  }
+}
+
+/* الطباعة لا تتأثر بشيء مما سبق */
+@media print{
+  .lu, svg.lu{ filter:none !important; }
+  #toTop{ display:none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -2332,6 +2494,118 @@ function getDb(){
 }
 const STATE_DOC = () => getDb().collection('appState').doc('main');
 
+/* ══════════════════════════════════════════════════════════════════
+   تشخيص أخطاء الاتصال بقاعدة البيانات
+   ──────────────────────────────────────────────────────────────────
+   كانت الرسالة تعرض نص الخطأ الإنجليزي الخام من Firebase، وهو لا يدلّ
+   المستخدم على شيء. هنا نترجم كل حالة إلى سببها وعلاجها.
+   ══════════════════════════════════════════════════════════════════ */
+const FB_ERRORS = {
+  'unavailable': {
+    why:'تعذّر الوصول إلى خادم قاعدة البيانات.',
+    fix:'غالبًا انقطاع إنترنت مؤقّت أو حجب من الشبكة. تأكّد من الاتصال ثم أعد المحاولة.',
+    transient:true },
+  'deadline-exceeded': {
+    why:'انتهت مهلة الاتصال قبل وصول البيانات.',
+    fix:'الشبكة بطيئة. أعد المحاولة، وإن تكرّر فجرّب شبكة أخرى.',
+    transient:true },
+  'internal': {
+    why:'خطأ مؤقّت في خدمة قاعدة البيانات.',
+    fix:'أعد المحاولة بعد لحظات.', transient:true },
+  'permission-denied': {
+    why:'قاعدة البيانات رفضت القراءة (قواعد الأمان).',
+    fix:'افتح Firebase Console ← Firestore ← Rules وتأكّد من وجود:\n'
+      + '       match /appState/main { allow read, write: if true; }\n'
+      + '       وقد تكون قواعد تجريبية انتهت صلاحيتها بتاريخ محدّد.' },
+  'unauthenticated': {
+    why:'الطلب غير موثّق.',
+    fix:'راجع قواعد Firestore — قد تشترط تسجيل دخول.' },
+  'not-found': {
+    why:'لم يُعثر على قاعدة البيانات أو المشروع.',
+    fix:'تأكّد أن مشروع Firebase ما زال قائمًا وأن Firestore مُفعّل فيه.' },
+  'failed-precondition': {
+    why:'خدمة Firestore غير مُهيّأة في المشروع.',
+    fix:'افتح Firebase Console وفعّل Firestore Database.' },
+  'resource-exhausted': {
+    why:'تجاوزت حصّة الاستخدام المجانية لليوم.',
+    fix:'انتظر إعادة ضبط الحصّة (منتصف الليل بتوقيت المحيط الهادئ) أو فعّل الفوترة.' },
+  'cancelled': { why:'أُلغي الطلب قبل اكتماله.', fix:'أعد المحاولة.', transient:true },
+};
+function describeFbError(e){
+  const code = String((e && e.code) || '').replace(/^firestore\//,'');
+  const known = FB_ERRORS[code];
+  if(known) return { code, ...known };
+  const msg = String((e && e.message) || e || '');
+  /* الحجب من إضافة متصفح أو جدار ناري يظهر كفشل شبكة دون رمز */
+  if(/network|fetch|Failed to get document|offline|ERR_/i.test(msg)){
+    return { code: code||'network',
+      why:'لم يصل الطلب إلى الخادم أصلًا.',
+      fix:'تحقّق من الإنترنت، وجرّب تعطيل مانع الإعلانات أو إضافات الخصوصية،\n'
+        + '       فبعضها يحجب googleapis.com. جرّب أيضًا نافذة تصفّح خفي.',
+      transient:true };
+  }
+  return { code: code||'unknown', why:'خطأ غير متوقّع.', fix:'أعد المحاولة، وإن تكرّر فأرسل نص الخطأ للمطوّر.', raw:msg };
+}
+
+/* فحص اتصال متدرّج — يُشغّل من زر «فحص الاتصال» */
+async function diagnoseConnection(){
+  const steps = [];
+  const add = (ok, label, note)=>steps.push({ok, label, note:note||''});
+
+  add(navigator.onLine, 'اتصال الجهاز بالإنترنت',
+      navigator.onLine ? '' : 'المتصفح يرى الجهاز غير متصل');
+
+  /* هل يصل المتصفح إلى نطاق Google أصلًا؟ (يكشف الحجب بالإضافات والجدار الناري) */
+  let reach = false;
+  try{
+    await fetch('https://firestore.googleapis.com/', {mode:'no-cors', cache:'no-store'});
+    reach = true;
+  }catch(e){ reach = false; }
+  add(reach, 'الوصول إلى نطاق googleapis.com',
+      reach ? '' : 'محجوب — غالبًا مانع إعلانات أو إضافة خصوصية أو جدار ناري');
+
+  /* القراءة الفعلية من المستند */
+  let readOk = false, detail = '';
+  try{
+    const snap = await STATE_DOC().get();
+    readOk = true;
+    if(snap.exists){
+      const raw = snap.data() || {};
+      const n = raw.json ? JSON.parse(raw.json) : null;
+      detail = n ? `${(n.orders||[]).length} فعالية · ${(n.schools||[]).length} جهة`
+                 + (raw.updatedAt ? ` · آخر تحديث ${new Date(raw.updatedAt).toLocaleString('ar')}` : '')
+                 : 'المستند موجود لكنه فارغ';
+    } else detail = 'المستند غير موجود (أول تشغيل)';
+  }catch(e){
+    const d = describeFbError(e);
+    detail = `[${d.code}] ${d.why}\n       ${d.fix}`;
+  }
+  add(readOk, 'قراءة البيانات من Firestore', detail);
+
+  const allOk = steps.every(s=>s.ok);
+  alert('فحص الاتصال بقاعدة البيانات\n'
+    + '══════════════════════════════\n\n'
+    + steps.map(s=>`${s.ok?'✅':'❌'} ${s.label}${s.note?'\n       '+s.note:''}`).join('\n\n')
+    + '\n\n' + (allOk
+        ? '✅ الاتصال سليم. إن كان الحفظ متوقّفًا فاضغط «إعادة المحاولة».'
+        : '⚠ عالج البند المعلّم بـ ❌ ثم أعد المحاولة.')
+    + '\n\nالمشروع: ' + (firebaseConfig && firebaseConfig.projectId || '—'));
+  return allOk;
+}
+
+/* إعادة محاولة القراءة دون إعادة تحميل الصفحة */
+async function retryConnection(){
+  toast('جارٍ إعادة المحاولة...');
+  __readFailed = false; __docExisted = false;
+  try{
+    await loadState();
+    if(!__readFailed){ toast('✅ تم الاتصال — الحفظ مُفعّل الآن'); render(); return true; }
+  }catch(e){ __readFailed = true; }
+  toast('⚠️ ما زال الاتصال متعذّرًا');
+  render();
+  return false;
+}
+
 async function loadState(){
   try{
     const snap = await STATE_DOC().get();
@@ -2395,14 +2669,26 @@ async function loadState(){
   }catch(e){
     console.error('load error', e);
     syncState.ok = false;
+    const d = describeFbError(e);
+    /* الأخطاء المؤقّتة (انقطاع لحظي، بطء شبكة) تُعاد محاولتها تلقائيًا
+       قبل إيقاف الحفظ — كان أي انقطاع عابر يوقف النظام حتى إعادة التحميل. */
+    if(d.transient && (loadState.__tries||0) < 2){
+      loadState.__tries = (loadState.__tries||0) + 1;
+      await new Promise(r=>setTimeout(r, 800 * loadState.__tries));
+      return loadState();
+    }
+    loadState.__tries = 0;
     /* ⚠ لا نكتب بيانات افتراضية فوق قاعدة البيانات عند فشل القراءة —
        كان هذا يمحو البيانات الحقيقية عند أي انقطاع شبكة أو خطأ صلاحيات. */
     state = defaultState();
     __readFailed = true;
-    alert('تعذّر تحميل البيانات من قاعدة البيانات.\n\n'
-      + 'السبب: ' + (e && e.message ? e.message : e) + '\n\n'
-      + '⚠ لن يُحفظ أي تعديل حتى تنجح القراءة، حمايةً لبياناتك.\n'
-      + 'أعد تحميل الصفحة بعد التأكد من الاتصال.');
+    alert('تعذّر الاتصال بقاعدة البيانات\n'
+      + '══════════════════════════════\n\n'
+      + 'السبب: ' + d.why + '\n'
+      + 'الرمز: ' + d.code + '\n\n'
+      + 'الحل:   ' + d.fix + '\n\n'
+      + '🛡 بياناتك محفوظة: أوقفنا الحفظ تمامًا كي لا يُكتب شيء فوقها.\n'
+      + 'استخدم زر «إعادة المحاولة» أعلى الصفحة بعد معالجة السبب.');
     return;
   }
   /* المستند موجود لكن محتواه غير صالح → لا نكتب فوقه */
@@ -2673,6 +2959,7 @@ const LU = {
   shield:      '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   bell:        '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   arrowLeft:   '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  arrowUp:     '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
   arrowUpRight:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
 };
 /* يبني أيقونة Lucide بالحجم واللون المطلوبين */
@@ -2755,6 +3042,30 @@ function showInfoModal(title, bodyHtml, onReady){
   overlay.onclick = e=>{ if(e.target===overlay) closeModal(); };
   if(onReady) onReady(box);
 }
+/* زر العودة لأعلى: يظهر بعد تمرير كافٍ فقط، ويعمل على الصفحة وعلى
+   الحاوية الداخلية أيّهما هو المُمرَّر فعلًا. */
+function ensureToTop(){
+  let btn = document.getElementById('toTop');
+  if(!btn){
+    btn = document.createElement('button');
+    btn.id = 'toTop'; btn.type = 'button';
+    btn.title = 'العودة إلى أعلى الصفحة';
+    btn.setAttribute('aria-label','العودة إلى أعلى الصفحة');
+    btn.innerHTML = icon('arrowUp',18) || '↑';
+    document.body.appendChild(btn);
+    const scroller = () => {
+      const m = document.querySelector('.main') || document.scrollingElement || document.documentElement;
+      return (m && m.scrollHeight > m.clientHeight + 40) ? m : (document.scrollingElement||document.documentElement);
+    };
+    btn.onclick = ()=> scroller().scrollTo({top:0, behavior:'smooth'});
+    const sync = ()=>{ btn.classList.toggle('on', scroller().scrollTop > 320); };
+    window.addEventListener('scroll', sync, true);
+    window.addEventListener('resize', sync);
+    btn.__sync = sync;
+  }
+  if(btn.__sync) btn.__sync();
+}
+
 function closeModal(){
   const overlay=document.getElementById('modalOverlay');
   if(overlay){ overlay.classList.remove('open'); overlay.onclick=null; }
@@ -2802,6 +3113,9 @@ function parseDT(dateStr, timeStr){ if(!dateStr) return null; return new Date(da
 function dateRangesOverlap(aFrom, aTo, bFrom, bTo){
   return aFrom <= (bTo||aFrom) && (aTo||aFrom) >= bFrom;
 }
+/* الفعالية الملغاة لا تُحتسب في أي تعارض — لا للمقدّم ولا للجهة */
+function isLiveOrder(o){ return !!o && (o.status||'active') !== 'cancelled'; }
+
 function trainerConflictSingle(trainerId, date, timeFrom, timeTo, excludeOrderId, dateTo){
   if(!trainerId || !date) return null;
   const dTo = dateTo || date;
@@ -2812,6 +3126,7 @@ function trainerConflictSingle(trainerId, date, timeFrom, timeTo, excludeOrderId
   const newStart = parseDT(refDay, timeFrom||'00:00'), newEnd = parseDT(refDay, timeTo||timeFrom||'23:59');
   return state.orders.find(o=>{
     if(o.id===excludeOrderId) return false;
+    if(!isLiveOrder(o)) return false;          /* ملغاة ← لا تحجز المقدّم */
     if(!(o.trainerIds||[]).includes(trainerId)) return false;
     const oTo = orderEnd(o);
     if(!dateRangesOverlap(date, dTo, o.date, oTo)) return false;
@@ -2851,7 +3166,8 @@ function nextOrderSerial(){
 }
 function schoolSameDay(schoolId, date, excludeOrderId){
   if(!schoolId||!date) return null;
-  return state.orders.find(o=> o.id!==excludeOrderId && o.schoolId===schoolId && o.date===date) || null;
+  return state.orders.find(o=> o.id!==excludeOrderId && isLiveOrder(o)
+    && o.schoolId===schoolId && o.date===date) || null;
 }
 /* فعاليات أخرى في نفس المدرسة خلال نفس الأسبوع (يُستثنى ما كان لنفس المدرب) */
 function schoolSameWeek(schoolId, date, excludeOrderId, trainerIds){
@@ -2860,6 +3176,7 @@ function schoolSameWeek(schoolId, date, excludeOrderId, trainerIds){
   const mine = new Set(trainerIds||[]);
   return state.orders.filter(o=>{
     if(o.id===excludeOrderId || o.schoolId!==schoolId) return false;
+    if(!isLiveOrder(o)) return false;          /* ملغاة ← لا تمنع الجهة */
     const s = o.date||'', e = orderEnd(o);
     if(!(s <= end && e >= start)) return false;
     const others = (o.trainerIds||[]);
@@ -3247,6 +3564,25 @@ function render(){
   else if(currentPage==='distributions') renderDistributionsPage(c);
   else if(currentPage==='approvals') renderApprovalsPage(c);
   else if(currentPage==='settings') renderSettingsPage(c);
+  /* ⚠ بعد رسم الصفحة لا قبله: مولّدات الصفحات تُسنِد innerHTML كاملًا
+     فتمحو أي شيء أُضيف قبلها. */
+  if(__readFailed){
+    const bar = document.createElement('div');
+    bar.className = 'db-down';
+    bar.innerHTML = `${icon('alert',17)}
+      <div class="db-down-tx">
+        <b>الاتصال بقاعدة البيانات متعذّر — الحفظ موقوف</b>
+        <i>بياناتك المخزّنة سليمة، ولن يُكتب فوقها شيء حتى ينجح الاتصال.</i>
+      </div>
+      <span class="db-down-btns">
+        <button class="btn btn-sm btn-primary" id="dbRetry">إعادة المحاولة</button>
+        <button class="btn btn-sm btn-outline" id="dbDiag">فحص الاتصال</button>
+      </span>`;
+    c.insertBefore(bar, c.firstChild);
+    bar.querySelector('#dbRetry').onclick = ()=>retryConnection();
+    bar.querySelector('#dbDiag').onclick  = ()=>diagnoseConnection();
+  }
+  ensureToTop();
   document.getElementById('orgNameDisplay').textContent = state.orgName || 'إدارة الفعاليات';
   document.getElementById('logoSlot').innerHTML = state.logo ? `<img src="${state.logo}">` : `<div class="logo-placeholder">🕌</div>`;
   attachDateHints();
@@ -3855,8 +4191,19 @@ function renderSchedulePage(c){
     const e=orderEnd(o);
     return s<=T && e>=F && (o.status||'active')!=='cancelled';
   };
-  const trFilter = window.__schedTr || '';
-  const list = (state.orders||[]).filter(o=> inRange(o) && (!trFilter || (o.trainerIds||[]).includes(trFilter)))
+  /* المقدّمون المختارون: مصفوفة فارغة = الكل.
+     نحافظ على التوافق مع الاختيار المفرد القديم (__schedTr). */
+  if(!Array.isArray(window.__schedTrs)){
+    window.__schedTrs = window.__schedTr ? [window.__schedTr] : [];
+  }
+  const allTrainers = (state.trainers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  const validIds = new Set(allTrainers.map(t=>t.id));
+  window.__schedTrs = window.__schedTrs.filter(id=>validIds.has(id));
+  const selTr = new Set(window.__schedTrs);
+  const trPicked = id => selTr.size===0 || selTr.has(id);
+  const trFilter = window.__schedTrs.length===1 ? window.__schedTrs[0] : '';
+  const list = (state.orders||[]).filter(o=> inRange(o)
+      && (selTr.size===0 || (o.trainerIds||[]).some(id=>selTr.has(id))))
     .sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.timeFrom||'').localeCompare(b.timeFrom||''));
 
   /* الأيام المشغولة لكل مقدّم */
@@ -3880,13 +4227,15 @@ function renderSchedulePage(c){
   });
   const clashCount = Object.values(clashBy).reduce((s,m)=>s+Object.keys(m).length, 0);
   /* كل أيام الفترة */
-  const days = []; { let cur=F, guard=0; while(cur<=T && guard<95){ days.push(cur); cur=addDaysISO(cur,1); guard++; } }
+  const MAX_SPAN_DAYS = 400;
+  const days = []; let spanTruncated = false;
+  { let cur=F, guard=0;
+    while(cur<=T && guard<MAX_SPAN_DAYS){ days.push(cur); cur=addDaysISO(cur,1); guard++; }
+    if(cur<=T) spanTruncated = true; }
   const DW = ['ح','ن','ث','ر','خ','ج','س'];
   const isOff = iso => { const d=new Date(iso+'T00:00:00').getDay(); return d===5 || d===6; };
 
-  const trainers = (state.trainers||[]).slice()
-    .filter(t=>!trFilter || t.id===trFilter)
-    .sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  const trainers = allTrainers.filter(t=>trPicked(t.id));
 
   c.innerHTML = `
   <div class="card">
@@ -3900,15 +4249,30 @@ function renderSchedulePage(c){
                  value="${escapeHtml(window.__schedQ||'')}"></div>
         <div class="rp-date"><label>من</label><input id="sc_from" type="date" lang="en-GB" value="${F}"></div>
         <div class="rp-date"><label>إلى</label><input id="sc_to" type="date" lang="en-GB" value="${T}"></div>
-        <div class="rp-date" style="width:190px;"><label>مقدّم المبادرة</label>
-          <select id="sc_trainer">
-            <option value="">— كل المقدّمين —</option>
-            ${(state.trainers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'ar'))
-              .map(t=>`<option value="${t.id}" ${window.__schedTr===t.id?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}
-          </select></div>
+        <div class="rp-date sc-trwrap" style="width:auto;"><label>مقدّمو المبادرة</label>
+          <button type="button" id="sc_trBtn" class="sc-trbtn">
+            ${icon('users',14)}
+            <span id="sc_trLbl">${selTr.size ? escapeHtml(
+              trainers.length<=2 ? trainers.map(t=>t.name).join('، ') : trainers.length+' مقدّمين')
+              : 'كل المقدّمين'}</span>
+            <b>${selTr.size || allTrainers.length}</b>
+          </button>
+          <div id="sc_trPanel" class="sc-trpanel" hidden>
+            <label class="sc-trall"><input type="checkbox" id="sc_trAll" ${selTr.size===0?'checked':''}>
+              <span>كل المقدّمين</span></label>
+            <div class="sc-trlist">
+              ${allTrainers.map(t=>`<label class="sc-trrow${selTr.has(t.id)?' on':''}">
+                <input type="checkbox" class="sc-trchk" value="${t.id}" ${selTr.has(t.id)?'checked':''}>
+                <span class="sc-trnm">${escapeHtml(t.name)}</span>
+                ${t.phone?`<span class="sc-trph">${escapeHtml(t.phone)}</span>`:''}
+              </label>`).join('') || '<span class="helper">لا يوجد مقدمو مبادرات</span>'}
+            </div>
+          </div>
+        </div>
       </div>
       <span style="margin-inline-start:auto;display:inline-flex;gap:6px;">
-        <button class="btn btn-primary" id="sc_print" style="min-height:34px;font-size:12px;">${icon('printer',14)} طباعة طلبات المقدّمين</button>
+        <button class="btn btn-primary" id="sc_printAvail" style="min-height:34px;font-size:12px;">${icon('calendar',14)} طباعة جدول الإتاحة</button>
+        <button class="btn btn-outline" id="sc_print" style="min-height:34px;font-size:12px;">${icon('printer',14)} طباعة طلبات المقدّمين</button>
         <button class="icon-btn" id="sc_excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:34px;height:34px;padding:0;">${icon('sheet',15)}</button>
         <button class="btn btn-outline" id="sc_plan" style="min-height:34px;font-size:12px;">${icon('sparkles',14)} اقتراح توزيع لجهة</button>
         <button class="icon-btn" id="sc_check" title="فحص التضارب خلال الفترة" aria-label="فحص التضارب" style="width:34px;height:34px;padding:0;">${icon('alert',15)}</button>
@@ -3923,6 +4287,7 @@ function renderSchedulePage(c){
     ${list.length ? `<div class="tbl-scroll"><table style="font-size:12.5px;"><thead><tr>
       <th style="width:46px;">#</th><th style="text-align:right;">الفعالية</th><th>التاريخ</th>
       <th>الوقت</th><th>الأيام</th><th>المكان</th><th>المقدّمون</th><th>الحالة</th>
+      <th style="width:52px;">تعديل</th>
     </tr></thead><tbody>
       ${list.map(o=>{
         const sc = state.schools.find(x=>x.id===o.schoolId);
@@ -3936,6 +4301,8 @@ function renderSchedulePage(c){
           <td style="text-align:right;">${sc?escapeHtml(sc.name):'—'}</td>
           <td style="text-align:right;">${tn.length?escapeHtml(tn.join('، ')):'—'}</td>
           <td>${doneBadge(o.completionStatus)}</td>
+          <td class="no-view"><button class="icon-btn" data-edit="${o.id}" title="فتح الطلب وتعديله"
+            aria-label="تعديل" style="width:28px;height:28px;padding:0;">${icon('edit',14)}</button></td>
         </tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty-state">لا توجد فعاليات في هذه الفترة</div>`}
@@ -4136,7 +4503,16 @@ function renderSchedulePage(c){
     if(window.__schedQ) schedSearch();
   }
 
-  c.querySelectorAll('[data-view]').forEach(b=>{ b.onclick = ()=>viewOrderReadOnly(b.dataset.view); });
+  c.querySelectorAll('[data-edit]').forEach(b=>{
+    b.onclick = e=>{ e.stopPropagation(); editOrder(b.dataset.edit); };
+  });
+  c.querySelectorAll('[data-view]').forEach(b=>{
+    b.onclick = e=>{
+      /* النقر على خانة التعديل لا يفتح نافذة العرض */
+      if(e.target.closest('.no-view')) return;
+      viewOrderReadOnly(b.dataset.view);
+    };
+  });
   const sortPick = cb => {
     openModal('فرز التقرير', [{name:'by', label:'الفرز حسب', type:'select', options:[
       {value:'date', label:'تاريخ المبادرة (الأحدث أولًا)'},
@@ -4146,8 +4522,199 @@ function renderSchedulePage(c){
   document.getElementById('sc_print').onclick = ()=>sortPick(by=>printTrainerRequests(F, T, by));
   document.getElementById('sc_excel').onclick = ()=>sortPick(by=>exportTrainerRequests(F, T, by));
   document.getElementById('sc_plan').onclick = ()=>openPlanWizard();
-  const _st = document.getElementById('sc_trainer');
-  if(_st) _st.onchange = ()=>{ window.__schedTr = _st.value; render(); };
+  /* لوحة اختيار المقدّمين */
+  /* ⚠ لوحة نُقلت إلى body في رسم سابق: نزيلها أولًا كي لا تتكرّر المعرّفات */
+  document.querySelectorAll('body > .sc-trfloat').forEach(x=>x.remove());
+  const _tb = c.querySelector('#sc_trBtn'), _tp = c.querySelector('#sc_trPanel');
+  if(_tb && _tp){
+    /* ⚠ البطاقة الحاوية تقصّ المنسدلات (overflow:hidden)، وبعض عناصرها
+       تحمل transform فيفقد position:fixed إسناده للنافذة. الحل: ننقل
+       اللوحة إلى body عند الفتح ونحسب موضعها من الزر. */
+    /* نضع اللوحة بموضع محسوب من الزر، ونقيّدها داخل حدود الشاشة */
+    const placePanel = ()=>{
+      const r = _tb.getBoundingClientRect();
+      const w = _tp.offsetWidth || 270, hgt = _tp.offsetHeight || 220;
+      let top = r.bottom + 5;
+      if(top + hgt > window.innerHeight - 8) top = Math.max(8, r.top - hgt - 5);
+      let left = r.right - w;                       /* محاذاة يمين الزر (RTL) */
+      left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+      _tp.style.top = top + 'px';
+      _tp.style.left = left + 'px';
+    };
+    _tb.onclick = e=>{
+      e.stopPropagation();
+      const show = _tp.hidden;
+      if(show){
+        if(_tp.parentElement !== document.body){
+          _tp.classList.add('sc-trfloat');
+          document.body.appendChild(_tp);
+        }
+        _tp.hidden = false;
+        placePanel();
+      } else {
+        _tp.hidden = true;
+      }
+    };
+    window.addEventListener('resize', ()=>{ if(!_tp.hidden) placePanel(); });
+    window.addEventListener('scroll', ()=>{ if(!_tp.hidden) placePanel(); }, true);
+    _tp.onclick  = e=> e.stopPropagation();
+    document.addEventListener('click', ()=>{ _tp.hidden = true; }, {once:true});
+    const apply = ()=>{
+      window.__schedTrs = Array.from(_tp.querySelectorAll('.sc-trchk:checked')).map(c=>c.value);
+      window.__schedTr  = window.__schedTrs.length===1 ? window.__schedTrs[0] : '';
+      render();
+    };
+    const _all = document.getElementById('sc_trAll');
+    if(_all) _all.onchange = ()=>{
+      /* «كل المقدّمين» = لا تصفية */
+      _tp.querySelectorAll('.sc-trchk').forEach(c=>{ c.checked = false; });
+      window.__schedTrs = []; window.__schedTr=''; render();
+    };
+    _tp.querySelectorAll('.sc-trchk').forEach(cb=>{ cb.onchange = apply; });
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     طباعة جدول إتاحة المقدّمين خلال الفترة المختارة.
+     الفترة القصيرة (≤10 أيام) تُكتب فيها الكلمة كاملة «متاح/مشغول»،
+     والطويلة تُعرض بشبكة ملوّنة مع دليل الألوان وملخّص رقمي لكل مقدّم.
+     ══════════════════════════════════════════════════════════════ */
+  function buildAvailabilityDoc(){
+    /* ══════════════════════════════════════════════════════════════
+       الشبكة تُقسَّم إلى أشهر ميلادية، شهر تحت الآخر.
+       ──────────────────────────────────────────────────────────────
+       فترة طويلة (٨٧ يومًا مثلًا) لا يمكن أن تتسع عرضًا في ورقة واحدة
+       مهما ضاقت الأعمدة؛ أما الشهر فحدّه ٣١ عمودًا ويتسع دائمًا.
+       ══════════════════════════════════════════════════════════════ */
+    const MONTH_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                      'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const BUDGET = 268, TAIL = 26;
+
+    const stateOf = (tid, d)=>{
+      if((clashBy[tid]||{})[d]) return 'clash';
+      if(isOff(d)) return 'off';
+      return (busyBy[tid]||{})[d] ? 'busy' : 'free';
+    };
+    const LBL = {free:'متاح', busy:'مشغول', off:'إجازة', clash:'تضارب'};
+    const MARK = {free:'✓', busy:'●', clash:'!', off:'—'};
+
+    /* تقسيم أيام الفترة على الأشهر */
+    const months = [];
+    days.forEach(d=>{
+      const k = d.slice(0,7);
+      let m = months.find(x=>x.key===k);
+      if(!m) months.push(m = {key:k, label:`${MONTH_AR[Number(k.slice(5,7))-1]} ${k.slice(0,4)}`, days:[]});
+      m.days.push(d);
+    });
+
+    /* شبكة شهر واحد: الكلمات كاملة إذا كانت أيامه قليلة، وإلا رموز */
+    function gridFor(m){
+      const wordy  = m.days.length <= 10;
+      const nameMM = m.days.length > 20 ? 34 : 44;
+      const dayMM  = (BUDGET - nameMM - TAIL) / Math.max(m.days.length, 1);
+      const dayW   = Math.min(wordy ? 26 : 11, dayMM).toFixed(2) + 'mm';
+
+      const colg = `<colgroup><col style="width:${nameMM}mm">`
+        + m.days.map(()=>`<col style="width:${dayW}">`).join('')
+        + `<col style="width:12mm"><col style="width:14mm"></colgroup>`;
+
+      const head = `<tr><th class="av-nm">مقدّم المبادرة</th>`
+        + m.days.map(d=>`<th class="av-d${isOff(d)?' off':''}">`
+            + `<b>${DW[new Date(d+'T00:00:00').getDay()]}</b>`
+            + `<i>${Number(d.slice(8,10))}</i></th>`).join('')
+        + `<th class="av-n">متاح</th><th class="av-n">مشغول</th></tr>`;
+
+      const body = trainers.map(t=>{
+        let free=0, busy=0;
+        const cells = m.days.map(d=>{
+          const st = stateOf(t.id, d);
+          if(st==='free') free++;
+          if(st==='busy' || st==='clash') busy++;
+          return `<td class="av-c av-${st}">${wordy ? LBL[st] : MARK[st]}</td>`;
+        }).join('');
+        return `<tr><td class="av-nm">${escapeHtml(t.name)}`
+          + (t.phone?`<u>${escapeHtml(t.phone)}</u>`:'') + `</td>${cells}`
+          + `<td class="av-n av-free"><b>${free}</b></td>`
+          + `<td class="av-n av-busy"><b>${busy}</b></td></tr>`;
+      }).join('') || `<tr><td colspan="${m.days.length+3}" style="text-align:center;color:#999;padding:14px;">لا يوجد مقدّمو مبادرات</td></tr>`;
+
+      return `<div class="av-month">`
+        + `<div class="av-mt">${m.label}<span>${m.days.length} ${dayWord(m.days.length)}`
+        + ` · ${fmtDate(m.days[0])} — ${fmtDate(m.days[m.days.length-1])}</span></div>`
+        + `<table class="rep-tbl av-tbl">${colg}<thead>${head}</thead><tbody>${body}</tbody></table>`
+        + `</div>`;
+    }
+
+    const legend = `<div class="av-lg">`
+      + [['free','متاح'],['busy','مشغول'],['clash','تضارب — أكثر من فعالية في اليوم نفسه'],['off','إجازة (الجمعة والسبت)']]
+        .map(([k,l])=>`<span><i class="av-${k}"></i>${l}</span>`).join('')
+      + `</div>`;
+
+    /* إجمالي الفترة كلها — يظهر فقط حين تمتدّ على أكثر من شهر */
+    let totals = '';
+    if(months.length > 1){
+      const rows = trainers.map(t=>{
+        let free=0, busy=0, off=0;
+        days.forEach(d=>{ const st=stateOf(t.id,d);
+          if(st==='free') free++; else if(st==='off') off++; else busy++; });
+        const pct = days.length-off ? Math.round(free/(days.length-off)*100) : 0;
+        return `<tr><td class="av-nm">${escapeHtml(t.name)}</td>`
+          + `<td class="av-n av-free"><b>${free}</b></td>`
+          + `<td class="av-n av-busy"><b>${busy}</b></td>`
+          + `<td class="av-n av-off"><b>${off}</b></td>`
+          + `<td class="av-n"><b>${pct}%</b></td></tr>`;
+      }).join('');
+      totals = `<div class="sec-t">إجمالي الفترة كاملة — ${fmtDate(F)} إلى ${fmtDate(T)}</div>`
+        + `<table class="rep-tbl av-det av-tot">`
+        + `<colgroup><col style="width:60mm"><col style="width:26mm"><col style="width:26mm"><col style="width:26mm"><col style="width:30mm"></colgroup>`
+        + `<thead><tr><th>مقدّم المبادرة</th><th>أيام متاحة</th><th>أيام مشغولة</th>`
+        + `<th>إجازات</th><th>نسبة الإتاحة</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    /* تفصيل أيام الانشغال لكل مقدّم — يُقرأ بلا ألوان */
+    const detail = trainers.map(t=>{
+      const bd = days.filter(d=>{ const s=stateOf(t.id,d); return s==='busy'||s==='clash'; });
+      if(!bd.length) return `<tr><td class="av-nm">${escapeHtml(t.name)}</td>`
+        + `<td class="av-n"><b>0</b></td><td style="color:#1F6B4C;">متاح طوال الفترة</td></tr>`;
+      return `<tr><td class="av-nm">${escapeHtml(t.name)}</td><td class="av-n"><b>${bd.length}</b></td><td>`
+        + bd.map(d=>{
+            const o = (busyBy[t.id]||{})[d];
+            const cl = (clashBy[t.id]||{})[d];
+            const ttl = cl ? cl.map(x=>x.title||'').filter(Boolean).join(' + ') : (o&&o.title)||'';
+            return `<span class="av-chip${cl?' cl':''}">${fmtDate(d)}${ttl?` — ${escapeHtml(ttl)}`:''}</span>`;
+          }).join('')
+        + `</td></tr>`;
+    }).join('');
+
+    /* التفصيل في صفحة مستقلة متى كان المحتوى كبيرًا */
+    const busyTotal = trainers.reduce((s,t)=>s + days.filter(d=>{
+      const st=stateOf(t.id,d); return st==='busy'||st==='clash'; }).length, 0);
+    const detailOwnPage = (months.length > 1) || (trainers.length > 6) || (busyTotal > 18);
+
+    return buildReportDoc({
+      titleAr:'جدول إتاحة مقدّمي المبادرات',
+      subtitle:`من ${fmtDate(F)} إلى ${fmtDate(days[days.length-1]||T)} — ${days.length} ${dayWord(days.length)}`
+        + (months.length>1 ? ` · ${months.length} أشهر` : '')
+        + (spanTruncated ? ` · (اقتُصرت الفترة على ${MAX_SPAN_DAYS} يومًا)` : ''),
+      kpis:[
+        {v:trainers.length, l:'👥 المقدّمون'},
+        {v:days.length,     l:'🗓️ أيام الفترة'},
+        {v:list.length,     l:'📋 الفعاليات'},
+        {v:clashCount,      l:'⚠️ حالات التضارب'},
+      ],
+      extraHtml: AVAIL_CSS + legend
+        + months.map(gridFor).join('')
+        + totals
+        + `<div class="sec-t${detailOwnPage?' av-break':''}">تفصيل أيام الانشغال</div>`
+        + `<table class="rep-tbl av-det"><colgroup><col style="width:44mm"><col style="width:22mm"><col></colgroup>`
+        + `<thead><tr><th>مقدّم المبادرة</th><th>أيام مشغولة</th><th>التواريخ والفعاليات</th></tr></thead>`
+        + `<tbody>${detail}</tbody></table>`
+    });
+  }
+  const _pa = document.getElementById('sc_printAvail');
+  if(_pa) _pa.onclick = ()=>{
+    if(!trainers.length){ toast('لا يوجد مقدّمو مبادرات لعرضهم'); return; }
+    doPrintDoc(buildAvailabilityDoc(), true, 'A4');
+  };
   /* فحص التضارب */
   document.getElementById('sc_check').onclick = ()=>{
     const items = [];
@@ -4951,18 +5518,30 @@ function enhanceReportTable(container){
   }
 
   /* ضبط أعمدة الأرقام والمدة على الشاشة كما في الطباعة */
-  const SCR_W = [[/^#$/,'62px'],[/عدد الساعات|^الساعات$/,'72px'],[/^المدة$/,'104px'],
-                 [/عدد الأيام|^الأيام$/,'58px'],[/^عدد المستهدفين$|^المستهدفون$/,'74px']];
+  /* نفس عروض الطباعة بالضبط — مصدر واحد (REP_COL_W) فلا تختلف الشاشة عن الورق.
+     ⚠ العنوان لا يُجبَر على سطر واحد: إجباره كان يُخرج نصّه خارج خط العمود
+     في الأعمدة الضيقة (عدد الساعات، أمر التكليف). */
+  const MM = mm => Math.round(parseFloat(mm) * 96 / 25.4) + 'px';
   tables.forEach(table=>{
+    /* جداول التقارير فقط — لا جدول الطلبات ولا غيره من جداول الشاشة */
+    if(!table.classList.contains('rep-tbl')) return;
     const ths = table.querySelectorAll(':scope > thead > tr > th');
     ths.forEach((th,i)=>{
       const t = (th.textContent||'').trim();
-      const hit = SCR_W.find(([re])=>re.test(t));
-      if(!hit) return;
-      th.style.width = hit[1]; th.style.minWidth = hit[1]; th.style.whiteSpace = 'nowrap';
+      let spec; try{ spec = repColSpec(t); }catch(e){ return; }
+      if(!spec || spec.w==='auto') return;
+      const px = MM(spec.w);
+      th.style.width = px;
+      th.style.whiteSpace = 'normal';
+      th.style.overflowWrap = 'break-word';
+      th.style.textAlign = 'center';
+      if(spec.fit) th.style.minWidth = px;
       table.querySelectorAll(':scope > tbody > tr').forEach(tr=>{
         const td = tr.children[i];
-        if(td){ td.style.whiteSpace='nowrap'; td.style.textAlign='center'; }
+        if(!td) return;
+        td.style.width = px;
+        if(spec.fit){ td.style.whiteSpace='nowrap'; td.style.textAlign='center'; td.style.minWidth=px; }
+        else { td.style.whiteSpace='normal'; td.style.overflowWrap='anywhere'; }
       });
     });
   });
@@ -6725,10 +7304,19 @@ function viewOrderReadOnly(id){
   ];
   if(o.requesterNote) rows.push(['fileText','ملاحظة الجهة الطالبة', o.requesterNote]);
   if(o.adminNote)     rows.push(['clipboard','ملاحظة الإدارة', o.adminNote]);
+  /* التعديل متاح للإدارة والمستخدم، لا لمقدّم الفعالية */
+  const canEdit = currentRole === 'admin' || currentRole === 'user';
   const body = `
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;">
       <span class="badge">${o.serial}</span>${doneBadge(o.completionStatus)}${stateBadge(o.status)}
-      <span class="helper" style="margin-inline-start:auto;">${icon('shield',13)} عرض فقط</span>
+      <span style="margin-inline-start:auto;display:inline-flex;gap:6px;align-items:center;">
+        ${canEdit ? `<button class="btn btn-primary btn-sm" id="roEdit"
+            title="فتح الطلب وتعديله" style="min-height:30px;font-size:12px;">
+            ${icon('edit',14)} تعديل الطلب</button>
+          <button class="icon-btn" id="roPrint" title="طباعة أمر التكليف" aria-label="طباعة"
+            style="width:30px;height:30px;padding:0;">${icon('printer',14)}</button>`
+          : `<span class="helper">${icon('shield',13)} عرض فقط</span>`}
+      </span>
     </div>
     <div style="max-height:60vh;overflow:auto;">
       ${rows.map(r=>`<div class="ro-row">
@@ -6737,7 +7325,16 @@ function viewOrderReadOnly(id){
         <span class="ro-v">${escapeHtml(String(r[2]))}</span>
       </div>`).join('')}
     </div>`;
-  showInfoModal(`تفاصيل الفعالية`, body, box=>{ box.style.maxWidth='560px'; });
+  showInfoModal(`تفاصيل الفعالية`, body, box=>{
+    box.style.maxWidth='560px';
+    const eb = box.querySelector('#roEdit');
+    if(eb) eb.onclick = ()=>{ closeModal(); editOrder(o.id); };
+    const pb = box.querySelector('#roPrint');
+    if(pb) pb.onclick = async ()=>{
+      closeModal();
+      doPrintDoc(await buildOrderPrintDoc(o, {}, 'نسخة الجهة الطالبة'), false, 'A4');
+    };
+  });
 }
 function editOrder(id){ editingOrderId=id; orderSubTab='new'; currentPage='order'; render(); }
 async function deleteOrder(id){
@@ -7328,7 +7925,10 @@ function fullTimeRange(from, to){
 /* عمود التاريخ: (من) فوق تاريخها و(إلى) فوق تاريخها متجاورتان */
 function repPeriodCell(o){
   const s = fmtDate(o.date), e = fmtDate(orderEnd(o));
-  return `<span class="prd2"><span class="p2"><b>من</b><i>${s||'—'}</i></span><span class="p2"><b>إلى</b><i>${e||'—'}</i></span></span>`;
+  /* ليوم واحد: تاريخ واحد فقط — بلا تسميتين مزدحمتين */
+  if(!o || orderEnd(o) === o.date) return `<span class="prd1">${s||'—'}</span>`;
+  return `<span class="prd2"><span class="p2"><b>من</b><i>${s||'—'}</i></span>`
+       + `<span class="p2"><b>إلى</b><i>${e||'—'}</i></span></span>`;
 }
 /* المكان وهاتف المشرف في عمود واحد يفصلهما / */
 /* شارة صفراء لمكان التنفيذ الفعلي — أنماط مضمّنة لتظهر في الطباعة أيضًا */
@@ -7655,6 +8255,57 @@ function dailyReportTable(list){
 /* ---- shared multi-record report doc builder (KPI row + one colored table, Duroob style) ---- */
 /* أنماط خاصة بالتقارير فقط — لا تمسّ نسخة الجهة الطالبة/الإدارة إطلاقًا
    لأنها تُبنى عبر buildOrderPrintDoc ولا تحمل الفئة rep-doc */
+/* ══════════════════════════════════════════════════════════════════
+   أنماط جدول إتاحة المقدّمين عند الطباعة — تُحقن مع المستند نفسه
+   كي تظهر الألوان والدليل في الورق وملف PDF.
+   ══════════════════════════════════════════════════════════════════ */
+const AVAIL_CSS = `<style>
+  .av-lg{display:flex; gap:12px; flex-wrap:wrap; margin:0 0 3mm; font-size:9pt; align-items:center;}
+  .av-lg span{display:inline-flex; align-items:center; gap:4px;}
+  .av-lg i{width:3.4mm; height:3.4mm; border-radius:1mm; display:inline-block; border:.3mm solid #BBB;}
+  table.av-tbl{table-layout:fixed !important; width:100% !important; border-collapse:collapse;}
+  table.av-tbl th, table.av-tbl td{border:.25mm solid #C9C2B8; padding:.6mm .4mm; text-align:center;}
+  table.av-tbl .av-nm{text-align:right; font-weight:700; font-size:9pt; padding:.8mm 1.6mm;
+    white-space:normal; overflow-wrap:anywhere; line-height:1.25;}
+  table.av-tbl .av-nm u{display:block; text-decoration:none; font-size:7.5pt; color:#6B6257; direction:ltr;}
+  table.av-tbl .av-d{background:#F3F0EB !important; color:#3D3832 !important;
+    font-size:7.5pt; line-height:1.35; padding:.9mm .2mm; vertical-align:middle;}
+  table.av-tbl .av-d.off{background:#E4F1F6 !important; color:#215D71 !important;}
+  table.av-tbl .av-d b{display:block; font-size:7.5pt; font-weight:800; color:inherit;}
+  table.av-tbl .av-d i{display:block; font-style:normal; font-size:7pt; color:inherit; opacity:.85;}
+  table.av-tbl .av-c{font-size:8pt; font-weight:700; line-height:1.1;}
+  table.av-tbl .av-n{font-size:8.5pt;}
+  .av-free{background:#E6F5EE; color:#15603F;}
+  .av-busy{background:#FDE7E5; color:#9B2C22;}
+  .av-off {background:#E4F1F6; color:#2B6E85;}
+  .av-clash{background:#C0334D; color:#fff;}
+  .av-lg i.av-free{background:#E6F5EE; border-color:#8DD8BD;}
+  .av-lg i.av-busy{background:#FDE7E5; border-color:#F0A79E;}
+  .av-lg i.av-off{background:#E4F1F6; border-color:#9FD3E4;}
+  .av-lg i.av-clash{background:#C0334D; border-color:#8E2437;}
+  table.av-det{width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:1mm;}
+  table.av-det th, table.av-det td{border:.25mm solid #C9C2B8; padding:1mm 1.6mm; font-size:9pt;
+    vertical-align:top; text-align:right;}
+  table.av-det th{background:#F3F0EB !important; color:#3D3832 !important;
+    text-align:center; font-weight:800; padding:1.4mm 1.6mm;}
+  table.av-det .av-n{text-align:center;}
+  /* كتلة شهر: لا تنكسر بين صفحتين، والشهر التالي أسفل الذي قبله */
+  .av-month{margin:0 0 4mm; page-break-inside:avoid; break-inside:avoid;}
+  .av-mt{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+    background:#EEF2F7; border-inline-start:1.2mm solid #1B3A5C; border-radius:1mm;
+    padding:1.2mm 2.4mm; margin-bottom:1.4mm; font-weight:800; font-size:10pt; color:#1B3A5C;}
+  .av-mt span{margin-inline-start:auto; font-weight:600; font-size:8.5pt; color:#5A6673;}
+  /* قسم يبدأ في صفحة جديدة */
+  .av-break{page-break-before:always; break-before:page;}
+  table.av-det{page-break-inside:auto;}
+  table.av-det tr{page-break-inside:avoid; break-inside:avoid;}
+  table.av-tot td, table.av-tot th{text-align:center;}
+  table.av-tot .av-nm{text-align:right;}
+  .av-chip{display:inline-block; background:#FDE7E5; color:#9B2C22; border:.2mm solid #F0A79E;
+    border-radius:1.2mm; padding:.3mm 1.4mm; margin:.4mm .6mm .4mm 0; font-size:8pt; white-space:nowrap;}
+  .av-chip.cl{background:#C0334D; color:#fff; border-color:#8E2437;}
+</style>`;
+
 const SCH_TBL_CSS = `
   table.sch-tbl th:first-child, table.sch-tbl td:first-child{
     width:20mm !important; padding-inline-end:5mm !important; text-align:center;
@@ -7675,8 +8326,17 @@ const REPORT_STYLES = `<style>
   /* أعمدة الأرقام والمدة: لا التفاف، والمحتوى داخل حدود العمود */
   table.rep-tbl{table-layout:fixed;}
   table.rep-tbl > thead > tr > th, table.rep-tbl > tbody > tr > td{overflow-wrap:anywhere;}
-  table.rep-tbl > thead > tr > th.rw-fit, table.rep-tbl > tbody > tr > td.rw-fit{
+  /* البيانات الرقمية: سطر واحد وتوسيط داخل حدود العمود */
+  table.rep-tbl > tbody > tr > td.rw-fit{
     white-space:nowrap;text-align:center;overflow-wrap:normal;padding-left:3px;padding-right:3px;}
+  /* ⚠ العنوان يلتف دائمًا ولا يُجبَر على سطر واحد — كان إجباره على سطر
+     واحد يُخرج نصّه خارج خط العمود في الأعمدة الضيقة (عدد الساعات، أمر التكليف). */
+  table.rep-tbl > thead > tr > th.rw-fit, table.rep-tbl > thead > tr > th.rw-w{
+    white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:none;
+    text-align:center;padding-left:3px;padding-right:3px;line-height:1.25;}
+  /* أعمدة نصّية بعرض ثابت: المحتوى يلتف ولا يتجاوز حدّ العمود */
+  table.rep-tbl > tbody > tr > td.rw-w{
+    white-space:normal;overflow-wrap:anywhere;padding-left:4px;padding-right:4px;}
   ${SCH_TBL_CSS}
   /* تقرير طلبات المقدّمين: أعمدة مضبوطة والتاريخ داخل إطاره */
   table.trq-tbl{table-layout:fixed !important;}
@@ -7710,8 +8370,17 @@ const REPORT_STYLES = `<style>
   .rep-doc th:first-child, .rep-doc td:first-child{width:34px;}
   /* عمود العنوان يأخذ نصيبًا أكبر */
   .rep-doc th.col-grow, .rep-doc td.col-grow{width:26%;}
-  .rep-doc .tstack i, .rep-doc .tstack u{white-space:normal; overflow-wrap:anywhere;}
-  .rep-doc .prd2{flex-wrap:wrap; gap:4px;}
+  .rep-doc .tstack{gap:2px;}
+  .rep-doc .tstack i, .rep-doc .tstack u{white-space:normal; overflow-wrap:anywhere;
+    line-height:1.3; display:block; max-width:100%;}
+  .rep-doc .tstack i + i{margin-top:3px; padding-top:3px; border-top:1px dotted #DBD3C8;}
+  .rep-doc .prd1{display:block; text-align:center; direction:ltr; font-size:13px;}
+  /* في التقارير: «من» و«إلى» سطران متتاليان والتسمية بجوار التاريخ */
+  .rep-doc .prd2{display:flex; flex-direction:column; gap:2px; white-space:normal;
+    max-width:100%; align-items:center;}
+  .rep-doc .prd2 .p2{flex-direction:row; align-items:baseline; gap:4px; justify-content:center;}
+  .rep-doc .prd2 .p2 b{font-size:10px; color:#8A7A6A; font-weight:700;}
+  .rep-doc .prd2 .p2 i{font-size:12.5px; overflow-wrap:normal; white-space:nowrap;}
   .rep-doc td.wrap-ok{white-space:normal; overflow-wrap:anywhere;}
   /* بطاقات إحصائيات مصغّرة داخل إطار التقرير وموزّعة بانتظام */
   /* توزيع المؤشرات حول العنوان: يمين | العنوان | يسار */
@@ -7797,18 +8466,61 @@ const REPORT_FIT_SCRIPT = `<script>
 })();
 <\/script>`;
 /* أعراض قياسية لأعمدة التقارير — تُطبَّق تلقائيًا حسب عنوان العمود */
+/* ══════════════════════════════════════════════════════════════════
+   عروض أعمدة التقارير — مقيسة على ورق A4 عرضي (≈280mm مساحة مفيدة).
+   ──────────────────────────────────────────────────────────────────
+   fit:true  → عمود رقمي قصير، سطر واحد وتوسيط (المدة، الساعات، الرقم)
+   fit:false → عمود نصّي بعرض ثابت لكن محتواه يلتف (التاريخ، الوقت، المقدّم)
+   العنوان يلتف دائمًا مهما ضاق العمود، فلا يخرج نصّه خارج خط العمود.
+   ══════════════════════════════════════════════════════════════════ */
 const REP_COL_W = [
-  [/^#$/,                         '16mm'],   // رقم أمر التكليف: أوسع ليتسع الرقم
-  [/عدد الساعات|^الساعات$/,        '18mm'],
-  [/^المدة$/,                      '26mm'],
-  [/عدد الأيام|^الأيام$/,          '14mm'],
-  [/^عدد المستهدفين$|^المستهدفون$/,'18mm'],
+  /* رقم أمر التكليف بكل مسمياته — يتسع لخمسة أرقام داخل حدّ العمود */
+  [/^#$|^م$|^أمر التكليف$|^رقم التكليف$|^رقم الأمر$/, '17mm', true],
+  [/^المدة$/,                                          '16mm', true],
+  [/عدد الأيام|^الأيام$/,                              '15mm', true],
+  [/عدد الساعات|^الساعات$/,                            '19mm', true],
+  [/^عدد المستهدفين$|^المستهدفون$|^عدد المشاركين$/,     '19mm', true],
+  [/^تقييم /,                                          '17mm', true],
+  /* أعمدة نصّية: عرض يوازي المدخلات بدل أن يتمدّد بلا داعٍ */
+  [/^التاريخ$|^التاريخ \(من — إلى\)$|^تاريخ المبادرة$/, '30mm', false],
+  [/^الوقت$/,                                           '28mm', false],
+  [/^مقدم الفعالية$|^مقدم المبادرة$|^مقدم البرنامج$|^المقدّمون$|^المقدمون$/, '40mm', false],
 ];
-function repColWidth(header){
+function repColSpec(header){
   const t = String(header||'').replace(/<[^>]+>/g,'').trim();
-  for(const [re,w] of REP_COL_W) if(re.test(t)) return w;
-  return 'auto';
+  for(const [re,w,fit] of REP_COL_W) if(re.test(t)) return {w, fit:!!fit};
+  return {w:'auto', fit:false};
 }
+function repColWidth(header){ return repColSpec(header).w; }
+function repTableHtml(headers, rows, opts){
+  opts = opts || {};
+  const widths = (opts.colWidths && opts.colWidths.length) ? opts.colWidths : headers.map(repColWidth);
+  const specs  = headers.map(repColSpec);
+  const colg = `<colgroup>${widths.map(w=>`<col${w&&w!=='auto'?` style="width:${w}"`:''}>`).join('')}</colgroup>`;
+  const cls = i => (!widths[i] || widths[i]==='auto') ? ''
+                 : (specs[i].fit ? ' class="rw-fit"' : ' class="rw-w"');
+  const head = headers.map((hh,i)=>{
+    const s = String(hh);
+    return `<th${cls(i)}>${s.trim().startsWith('<') ? s : escapeHtml(s)}</th>`;
+  }).join('');
+  let body;
+  if(rows && rows.length){
+    body = rows.map(r=>{
+      if(typeof r === 'string') return r;                 // صف جاهز (الإجماليات مثلًا)
+      const cells = r.cells || r;
+      const attr  = r.rowAttr || '';
+      return `<tr${attr}>${cells.map((c,i)=>{
+        const extra = (r.tdAttr && r.tdAttr[i]) ? r.tdAttr[i] : '';
+        return `<td${cls(i)}${extra}>${c}</td>`;
+      }).join('')}</tr>`;
+    }).join('');
+  } else {
+    body = `<tr><td colspan="${headers.length}" style="text-align:center;color:#999;padding:16px;">لا توجد بيانات</td></tr>`;
+  }
+  return `<table class="rep-tbl${opts.tableClass?' '+opts.tableClass:''}">${colg}`
+       + `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
 function buildReportDoc(opts){
   // opts: {titleAr, subtitle, kpis:[{v,l}], headers:[...], rows:[[...]], theme}
   const theme = opts.theme || PRINT_THEME;
@@ -7846,13 +8558,8 @@ function buildReportDoc(opts){
   if(opts.headers && opts.rows){
     /* أعراض أعمدة صريحة عند تمريرها — تتجاوز التوزيع التلقائي */
     /* أعراض صريحة عند تمريرها، وإلا تُحسب تلقائيًا من عناوين الأعمدة */
-    const widths = (opts.colWidths && opts.colWidths.length)
-      ? opts.colWidths : opts.headers.map(repColWidth);
-    const colg = `<colgroup>${widths.map(w=>`<col${w&&w!=='auto'?` style="width:${w}"`:''}>`).join('')}</colgroup>`;
-    const fit = i => (widths[i] && widths[i]!=='auto') ? ' class="rw-fit"' : '';
-    html += `<table class="rep-tbl ${opts.tableClass||''}">${colg}<thead><tr>${opts.headers.map((h,i)=>`<th${fit(i)}>${String(h).trim().startsWith('<') ? h : escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>`;
-    html += opts.rows.length ? opts.rows.map(r=>`<tr>${r.map((c,i)=>`<td${fit(i)}>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${opts.headers.length}" style="text-align:center;color:#999;padding:16px;">لا توجد بيانات</td></tr>`;
-    html += `</tbody></table>`;
+    html += repTableHtml(opts.headers, opts.rows,
+      { colWidths: opts.colWidths, tableClass: opts.tableClass });
   }
   if(opts.extraHtml) html += opts.extraHtml;
   html += printDocFooter();
@@ -9006,10 +9713,11 @@ function renderReportsPage(c){
     const asHtml = r => [escapeHtml(String(r.name)), r.days, r.hours, r.events, r.trainers, r.people, r.places, r.venues].map(String);
     function tableHtml(rows, tot){
       if(!rows.length) return `<div class="empty-state">لا توجد فعاليات ضمن هذه الفترة</div>`;
-      return `<table><thead><tr>${COLS.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>
-        ${rows.map(r=>`<tr>${asHtml(r).map((v,i)=>`<td${i===0?' style="text-align:right;font-weight:700;"':''}>${v}</td>`).join('')}</tr>`).join('')}
-        <tr style="background:#FAF9F7;font-weight:700;">${asHtml(tot).map((v,i)=>`<td${i===0?' style="text-align:right;"':''}>${v}</td>`).join('')}</tr>
-      </tbody></table>`;
+      const body = rows.map(r=>({ cells:asHtml(r),
+        tdAttr:{0:' style="text-align:right;font-weight:700;"'} }));
+      body.push({ cells:asHtml(tot), rowAttr:' style="background:#FAF9F7;font-weight:700;"',
+        tdAttr:{0:' style="text-align:right;"'} });
+      return repTableHtml(COLS, body);
     }
     document.getElementById('fs_go').onclick=()=>{
       const {rows,tot}=gen();
@@ -9207,9 +9915,7 @@ function renderReportsPage(c){
       return {headers:['المهمة','البدء','الاستحقاق','الأولوية','الحالة'], rows:list.map(t=>[t.title, t.start||'', t.due||'', t.priority||'', t.status||''])};
     }
     function tableOf(headers, rows){
-      return `<table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>
-        ${rows.length?rows.map(r=>`<tr>${r.map(c=>`<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}" class="empty-state">لا توجد بيانات</td></tr>`}
-      </tbody></table>`;
+      return repTableHtml(headers, rows.map(r=>r.map(c=>escapeHtml(String(c)))));
     }
     document.getElementById('gn_go').onclick=()=>{ const {headers,rows}=gen(); const box=document.getElementById('gn_result'); box.innerHTML = tableOf(headers,rows); enhanceReportTable(box); };
     document.getElementById('gn_print').onclick=()=>{
@@ -9244,9 +9950,7 @@ function renderReportsPage(c){
       return [o.serial, escapeHtml(o.title), dateRangeStr(o), escapeHtml(fullTimeRange(o.timeFrom,o.timeTo)), (school?escapeHtml(school.name):'') + venueBadge(o), escapeHtml(trainerNames(o))||'—', escapeHtml(trainerPhones(o)), o.completionStatus||'لم تنجز'];
     }
     function tableOf(list){
-      return `<table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>
-        ${list.length?list.map(o=>`<tr>${rowOf(o).map(v=>`<td>${v}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}" class="empty-state">لا توجد بيانات</td></tr>`}
-      </tbody></table>`;
+      return repTableHtml(headers, list.map(o=>rowOf(o)));
     }
     document.getElementById('ev_go').onclick=()=>{
       const {evaluated, notEvaluated} = gen();
@@ -9273,7 +9977,8 @@ function renderReportsPage(c){
         kpis:[{v:evaluated.length,l:'فعاليات مقيَّمة'},{v:notEvaluated.length,l:'بانتظار التقييم'}],
         headers,
         rows:evaluated.map(rowOf),
-        extraHtml:`<div class="sec-t">⏳ فعاليات غير مقيَّمة</div><table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${notEvaluated.length?notEvaluated.map(o=>`<tr>${rowOf(o).map(v=>`<td>${v}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}" style="text-align:center;color:#999;">لا توجد</td></tr>`}</tbody></table>`
+        extraHtml:`<div class="sec-t">⏳ فعاليات غير مقيَّمة</div>`
+          + repTableHtml(headers, notEvaluated.map(o=>rowOf(o)))
       }), true, 'A4');
     };
     document.getElementById('ev_pdf').onclick=()=>document.getElementById('ev_print').onclick();
@@ -9392,9 +10097,8 @@ function renderReportsPage(c){
       const box = document.getElementById('rp_result');
       box.innerHTML = groups.length ? groups.map(({trainer,list})=>`
         <h3 style="font-family:var(--font-head);color:var(--maroon-800);margin:14px 0 8px;">${escapeHtml(trainer.name)} <span class="badge">${list.length} ${eventWord(list.length)}</span></h3>
-        <table><thead><tr>${columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
-          ${list.map(o=>`<tr>${rowOf(o,columns).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-        </tbody></table>`).join('') : `<div class="empty-state">لا توجد فعاليات ضمن هذا الاختيار</div>`;
+        ${repTableHtml(columns.map(cellHtml), list.map(o=>rowOf(o,columns).map(cellHtml)))}
+        `).join('') : `<div class="empty-state">لا توجد فعاليات ضمن هذا الاختيار</div>`;
       enhanceReportTable(box);
     };
     document.getElementById('rp_excel').onclick=()=>{
@@ -9407,9 +10111,8 @@ function renderReportsPage(c){
       const {groups, columns, from, to} = gen();
       const extraHtml = groups.map(({trainer,list})=>`
         <div class="sec-t">${escapeHtml(trainer.name)} (${list.length} ${eventWord(list.length)})</div>
-        <table><thead><tr>${columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
-          ${list.map(o=>`<tr>${rowOf(o,columns).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-        </tbody></table>`).join('');
+        ${repTableHtml(columns.map(cellHtml), list.map(o=>rowOf(o,columns).map(cellHtml)))}
+        `).join('');
       doPrintDoc(buildReportDoc({
         titleAr:'تقرير مقدم فعالية', subtitle:`من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'}`,
         kpis:(function(){
@@ -9516,9 +10219,8 @@ function renderReportsPage(c){
           ${escapeHtml(school.name)} <span class="badge">${list.length} ${eventWord(list.length)}</span>
           ${supsOf(school,list)?`<span class="sup-inline">${icon('users',13)} ${escapeHtml(supsOf(school,list))}</span>`:''}
         </h3>
-        <table><thead><tr>${columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
-          ${list.map(o=>`<tr>${rowOf(o).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-        </tbody></table>`).join('') : `<div class="empty-state">لا توجد فعاليات ضمن هذا الاختيار</div>`;
+        ${repTableHtml(columns.map(cellHtml), list.map(o=>rowOf(o).map(cellHtml)))}
+        `).join('') : `<div class="empty-state">لا توجد فعاليات ضمن هذا الاختيار</div>`;
       enhanceReportTable(box);
     };
     document.getElementById('rp_excel2').onclick=()=>{
@@ -9532,9 +10234,8 @@ function renderReportsPage(c){
       const extraHtml = groups.map(({school,list})=>`
         <div class="sec-t">${escapeHtml(school.name)} (${list.length} ${eventWord(list.length)})${
           supsOf(school,list)?` — المشرف: ${escapeHtml(supsOf(school,list))}`:''}</div>
-        <table><thead><tr>${columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
-          ${list.map(o=>`<tr>${rowOf(o).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-        </tbody></table>`).join('');
+        ${repTableHtml(columns.map(cellHtml), list.map(o=>rowOf(o).map(cellHtml)))}
+        `).join('');
       doPrintDoc(buildReportDoc({
         titleAr:'تقرير فعاليات مدرسة خلال فترة', subtitle:`من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'}`,
         tableClass:'sch-tbl',
