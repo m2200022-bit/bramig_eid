@@ -9092,7 +9092,7 @@ function printDocOpen(theme){
   /* خط فاصل رفيع جدًا: شرطات دقيقة بفواصل واسعة وشفافية منخفضة —
      يُرسم كخلفية متدرجة بدل border ليمكن التحكم في سمك الشرطة وطولها بدقة */
   .field-row{display:flex;justify-content:space-between;align-items:center;border-bottom:none;
-    background-image:repeating-linear-gradient(to right, rgba(11,31,51,.30) 0 1px, transparent 1px 5px);
+    background-image:repeating-linear-gradient(to right, rgba(11,31,51,.12) 0 1px, transparent 1px 5px);
     background-position:left bottom;background-size:100% 0.6px;background-repeat:no-repeat;
     padding:1.1mm 0;font-size:11.5pt;line-height:1.25}
   .f-ar{font-weight:700;color:${theme};min-width:160px;font-size:16px;font-family:'Tajawal',Arial}
@@ -9101,7 +9101,7 @@ function printDocOpen(theme){
   .fr-tbl{width:100%;border-collapse:collapse;table-layout:auto;margin:0}
   .fr-tbl>tbody>tr>td{border:none !important;background-color:transparent !important;
     padding:1.1mm 0;vertical-align:middle;font-size:16px;font-family:'Tajawal',Arial;line-height:1.25;
-    background-image:repeating-linear-gradient(to right, rgba(11,31,51,.30) 0 1px, transparent 1px 5px) !important;
+    background-image:repeating-linear-gradient(to right, rgba(11,31,51,.12) 0 1px, transparent 1px 5px) !important;
     background-position:left bottom !important;background-size:100% 0.6px !important;background-repeat:no-repeat !important;
     -webkit-print-color-adjust:exact;print-color-adjust:exact}
   .fr-tbl>tbody>tr>td.f-ar{width:1%;white-space:nowrap;min-width:0;text-align:right;
@@ -9469,16 +9469,8 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
     summaryRows.concat(rows).map(([label,val])=>
       `<tr class="fr-row"><td class="f-ar">${escapeHtml(label)} :</td><td class="f-val">${val}</td></tr>`
     ).join('')}</tbody></table>`;
-  /* خانات التوقيع والاعتماد + رمز QR للتحقق من تفاصيل الأمر */
-  const sigQr = await generateQRDataUrl(qrTextForOrder(o));
-  html += `<table style="width:100%;border-collapse:collapse;margin-top:5mm;table-layout:fixed;"><tr>
-    ${['مقدّم المبادرة','مشرف الجهة الطالبة','اعتماد الإدارة'].map(t=>`<td style="border:1px solid ${PRINT_LINE_COLOR};border-radius:4px;padding:2mm 3mm;vertical-align:top;height:20mm;">
-      <div style="font-weight:700;font-size:9.5pt;color:${PRINT_THEME};">${t}</div>
-      <div style="font-size:8pt;color:#666;margin-top:1mm;">الاسم: ....................................</div>
-      <div style="font-size:8pt;color:#666;margin-top:3mm;">التوقيع: ................................</div></td>`).join('')}
-    ${sigQr?`<td style="width:26mm;border:1px solid ${PRINT_LINE_COLOR};text-align:center;vertical-align:middle;padding:1mm;">
-      <img src="${sigQr}" style="width:20mm;height:20mm;display:block;margin:0 auto;"><div style="font-size:6.5pt;color:#666;">رمز التحقق</div></td>`:''}
-  </tr></table>`;
+  /* فاصل نقطي خفيف جدًا بدل خانات التوقيع */
+  html += `<div style="height:0;margin:5mm 0 1mm;border-top:1px dotted rgba(11,31,51,.14);"></div>`;
   html += printDocFooter();
   html += printDocClose();
   return html;
