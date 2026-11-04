@@ -3199,6 +3199,8 @@
 
   /* المقدّمون معًا */
   .cw-tbl{ width:100%; }
+  .mt-badge{ position:absolute; top:-6px; inset-inline-end:-6px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:var(--ds-gold); color:#fff; font-size:10px; font-weight:800; display:grid; place-items:center; line-height:1; }
+  .mt-badge[hidden]{ display:none; }
   .cw-tbl td{ vertical-align:top; }
   .cw-tr{ display:flex; align-items:center; gap:5px; font-weight:700; margin:2px 0; }
   .cw-tr .lu{ color:var(--ds-teal); }
@@ -3219,6 +3221,63 @@
   .pf-hint:empty{ display:none; }
   /* حالة «اليوم» تبقى تركوازية لتتميّز عن العنابي الأساسي والأحمر */
   .st-run{ background:#E3F3F5 !important; color:#06636E !important; }
+
+  /* ملفات المقدّم والجهة */
+  .pr-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .pr-av{ width:52px; height:52px; border-radius:14px; background:var(--ds-teal-l); color:var(--ds-teal); display:grid; place-items:center; flex:none; }
+  .pr-name{ font-size:18px; color:var(--ds-ink); }
+  .pr-sub{ font-size:12.5px; color:var(--ds-ink-3); margin-top:2px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .pr-sub a{ color:var(--ds-teal-d); display:inline-flex; align-items:center; gap:3px; }
+  .pr-pill{ font-size:11.5px; font-weight:800; border-radius:20px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
+  .pr-pill.warn{ background:var(--ds-warn-l); color:#9A5B00; }
+  .pr-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin-bottom:12px; }
+  .pr-kpi{ border:1px solid var(--ds-line); border-radius:12px; padding:9px 10px; display:flex; flex-direction:column; gap:2px; }
+  .pr-kpi .lu{ color:var(--ds-teal); }
+  .pr-kpi b{ font-size:18px; color:var(--ds-ink); font-variant-numeric:tabular-nums; }
+  .pr-kpi i{ font-style:normal; font-size:11.5px; color:var(--ds-ink-3); }
+  .pr-sec{ border-top:1px solid var(--ds-line-2); padding-top:10px; margin-top:10px; }
+  .pr-sec h4{ font-size:13px; margin:0 0 8px; display:flex; align-items:center; gap:6px; color:var(--ds-ink); flex-wrap:wrap; }
+  .pr-sec h4 .lu{ color:var(--ds-teal); }
+  .pr-sec h4 .helper{ font-weight:400; }
+  .pr-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .pr-chip{ display:inline-flex !important; cursor:pointer; margin:0 !important; width:auto !important; }
+  .pr-chip input{ display:none !important; }
+  .pr-chip span{ padding:5px 11px; border:1px solid var(--ds-line); border-radius:20px; font-size:12px; font-weight:700; color:var(--ds-ink-2); }
+  .pr-chip.on span{ background:var(--ds-teal); border-color:var(--ds-teal); color:#fff; }
+  .pr-tag{ display:inline-flex; gap:5px; align-items:center; padding:4px 10px; border-radius:8px; background:var(--ds-bg); border:1px solid var(--ds-line-2); font-size:12px; color:var(--ds-ink); text-decoration:none; }
+  .pr-tag b{ color:var(--ds-teal-d); }
+  a.pr-tag:hover{ border-color:var(--ds-teal); }
+  .pr-leaves{ display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+  .pr-leave{ display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:9px; background:var(--ds-warn-l); color:#7A4A00; font-size:12.5px; }
+  .pr-leave span{ flex:1; } .pr-leave.old{ background:var(--ds-bg); color:var(--ds-ink-3); }
+  .pr-addleave{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .pr-addleave label{ font-size:12px; margin:0 !important; } .pr-addleave input{ width:auto !important; min-height:32px; font-size:12.5px; }
+  .pr-addleave #lv_note{ flex:1; min-width:140px; }
+  .pr-tbl td{ font-size:12px; } .pr-tbl a{ color:var(--ds-ink); }
+  .pr-actions{ margin-top:12px; display:flex; gap:8px; }
+  .sch-note{ background:var(--ds-gold-l); color:#6B5226; border-radius:6px; padding:2px 8px; font-weight:700; }
+  .sch-prof{ color:var(--ds-teal-d); font-weight:700; display:inline-flex; align-items:center; gap:4px; }
+  .opt-tag.skill{ background:var(--ds-gold-l); color:var(--ds-gold-d); font-weight:800; }
+  .cell.leave{ background:var(--ds-warn-l) !important; color:#9A5B00; font-weight:800; font-size:11px; }
+  /* المناسبات */
+  .occ-tbl td{ font-size:12.5px; vertical-align:top; }
+  .occ-tbl tr.occ-warn td{ background:#FFF8EC !important; }
+  .occ-list{ display:flex; flex-direction:column; gap:8px; }
+  .occ-item{ display:flex; align-items:center; gap:12px; border:1px solid var(--ds-line); border-radius:12px; padding:9px 12px; }
+  .occ-item.warn{ border-color:#F0D3A8; background:#FFFBF4; }
+  .occ-d{ width:46px; height:46px; border-radius:12px; background:var(--ds-teal-l); color:var(--ds-teal-d); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:none; }
+  .occ-d b{ font-size:17px; line-height:1; } .occ-d i{ font-style:normal; font-size:10px; }
+  .home-occ{ margin-top:16px; }
+  .oc-occ{ font-size:10px; font-weight:800; color:var(--ds-gold-d); background:var(--ds-gold-l); border-radius:4px; padding:1px 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .oc-occ .lu{ width:9px; height:9px; vertical-align:-1px; }
+  .oc-form{ display:flex; flex-direction:column; gap:4px; }
+  .oc-form label{ font-size:12.5px; font-weight:700; margin-top:6px !important; }
+  .oc-row{ display:flex; gap:6px; } .oc-row select{ flex:1; }
+  /* شريط عدم الاتصال */
+  #offlineBar{ position:fixed; top:96px; left:50%; transform:translateX(-50%); z-index:300; background:#3A2A30; color:#fff;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; display:flex; align-items:center; gap:8px; box-shadow:0 10px 30px rgba(0,0,0,.25); max-width:calc(100% - 32px); }
+  #offlineBar .lu{ color:#F2C46B; flex:none; }
+  #offlineBar button{ all:unset; cursor:pointer; background:rgba(255,255,255,.14); border-radius:8px; padding:4px 10px; font-weight:700; white-space:nowrap; }
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
@@ -3499,6 +3558,7 @@ async function loadState(){
       if(!Array.isArray(state.auditLog)) state.auditLog=[];
       if(!Array.isArray(state.resources)) state.resources=[];
       if(!Array.isArray(state.targets)) state.targets=[];
+      try{ ensureOccasions(); }catch(e){}
       /* أماكن التنفيذ الفعلية (حين يختلف مكان التنفيذ عن الجهة الطالبة) */
       if(!Array.isArray(state.venues)) state.venues = ['مركز عيد الثقافي - دحل الحمام','مخيم أم العمد','عزبة سمسمة'].map(name=>({id:uid(), name}));
       if(!state.placeTypes || !state.placeTypes.length){
@@ -3553,6 +3613,7 @@ async function loadState(){
       return loadState();
     }
     loadState.__tries = 0;
+    if((navigator.onLine===false || d.transient) && tryOfflineBoot()){ return; }
     /* ⚠ لا نكتب بيانات افتراضية فوق قاعدة البيانات عند فشل القراءة —
        كان هذا يمحو البيانات الحقيقية عند أي انقطاع شبكة أو خطأ صلاحيات. */
     state = defaultState();
@@ -3600,7 +3661,7 @@ let __baseJson = '', __baseUpdatedAt = null, __baseIds = {};
 let __liveUnsub = null, __ourLastWriteAt = 0, __mergeNoticeAt = 0;
 
 /* المجموعات التي تُدمج بالمعرّف id */
-const MERGE_COLLECTIONS = ['auditLog','resources','targets','orders','schools','trainers','users','fields','programTypes',
+const MERGE_COLLECTIONS = ['auditLog','resources','targets','occasions','orders','schools','trainers','users','fields','programTypes',
   'placeTypes','venues','adminRequestsList','trainerRequests','quranActivities','tasks',
   'notifications','adminNotifications'];
 
@@ -3740,6 +3801,8 @@ async function flushSave(){
     return;
   }
   if(saving){ pendingSave=true; return; }
+  /* بلا إنترنت: نحفظ على الجهاز ونرفع لاحقًا */
+  if(typeof navigator!=='undefined' && navigator.onLine===false){ queueOfflineSave(); return; }
   /* تطبيع قبل الكتابة: لا يُحفظ تاريخ انتهاء أقدم من تاريخ البداية */
   try{ fixInvertedDateRanges(); }catch(e){}
   saving=true;
@@ -3750,6 +3813,7 @@ async function flushSave(){
       localStorage.setItem('backup_prev', localStorage.getItem('backup_last') || '');
       localStorage.setItem('backup_last', pre);
       localStorage.setItem('backup_at', new Date().toISOString());
+      localStorage.setItem('backup_base_at', String(__baseUpdatedAt==null?'':__baseUpdatedAt));
     }catch(e){}
 
     /* ⚠ الكتابة داخل Transaction: نقرأ آخر نسخة، وإن تغيّرت بعد قراءتنا
@@ -3777,9 +3841,12 @@ async function flushSave(){
     __mergeNotice(mergeStats, 'save');
     __startLiveSync();
     syncState.ok = true; syncState.lastAt = Date.now(); renderUserBox();
+    if(__offline || localStorage.getItem('offline_state')){ clearOfflineQueue(); try{ render(); }catch(e){} }
   }catch(e){
     console.error('save error', e);
     syncState.ok = false; renderUserBox();
+    const dfe = describeFbError(e);
+    if(navigator.onLine===false || dfe.transient || /unavailable|deadline|network/i.test(dfe.code||'')){ saving=false; queueOfflineSave(); return; }
     // إظهار الخطأ بوضوح بدل الفشل الصامت الذي كان يسبب فقدان البيانات
     toast('⚠️ لم يتم حفظ البيانات! ' + (e && e.message ? e.message : ''));
   }
@@ -4489,12 +4556,12 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.1';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
     pill.className = 'th-sync ' + (syncState.ok?'ok':'bad');
-    pill.innerHTML = `<span class="sync-dot ${syncState.ok?'sync-ok':'sync-bad'}"></span>${syncState.ok?'متزامن':'غير متزامن'} · v${APP_VERSION}`;
+    pill.innerHTML = `<span class="sync-dot ${syncState.ok?'sync-ok':'sync-bad'}"></span>${syncState.ok?'متزامن':(__offline?'غير متصل — محفوظ محليًا':'غير متزامن')} · v${APP_VERSION}`;
   }
   const host = document.getElementById('userBoxSlot');
   if(!host) return;
@@ -4588,7 +4655,7 @@ function render(){
   renderRefreshBtn();
   const c = document.getElementById('content'); c.innerHTML='';
   c.classList.remove('big-inputs');   // تُضاف فقط للصفحات التي تحتاجها
-  if(currentPage==='home'){ renderHome(c); appendHomeTargets(c); }
+  if(currentPage==='home'){ renderHome(c); appendHomeTargets(c); try{ appendHomeOccasions(c); }catch(e){ console.warn(e); } }
   else if(currentPage==='newOrder'){ orderSubTab='new'; renderOrderPage(c); }
   else if(currentPage==='ordersList'){ orderSubTab='list'; renderOrderPage(c); }
   else if(currentPage==='order') renderOrderPage(c);
@@ -5335,6 +5402,7 @@ function renderSchedulePage(c){
         <button class="btn btn-outline" id="sc_print" style="min-height:34px;font-size:12px;">${icon('printer',14)} طباعة طلبات المقدّمين</button>
         <button class="icon-btn" id="sc_excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:34px;height:34px;padding:0;">${icon('sheet',15)}</button>
         <button class="btn btn-outline" id="sc_plan" style="min-height:34px;font-size:12px;">${icon('sparkles',14)} اقتراح توزيع لجهة</button>
+        <button class="icon-btn mt-btn" id="sc_multi" title="فعاليات يشارك فيها أكثر من مقدّم" aria-label="فعاليات يشارك فيها أكثر من مقدّم" style="width:34px;height:34px;padding:0;position:relative;">${icon('users',15)}<span class="mt-badge" hidden></span></button>
         <button class="icon-btn" id="sc_check" title="فحص التضارب خلال الفترة" aria-label="فحص التضارب" style="width:34px;height:34px;padding:0;">${icon('alert',15)}</button>
       </span>
     </div>
@@ -5367,8 +5435,6 @@ function renderSchedulePage(c){
       }).join('')}
     </tbody></table></div>` : `<div class="empty-state">لا توجد فعاليات في هذه الفترة</div>`}
   </div>
-
-  <div class="card" id="sc_cowork"></div>
 
   <div class="card">
     <h2>${icon('users',15)} إتاحة مقدّمي المبادرات</h2>
@@ -5419,10 +5485,12 @@ function renderSchedulePage(c){
         const busyN = days.filter(d=>bm[d] && !isOff(d)).length;
         return `<tr>
           <td style="text-align:right;white-space:nowrap;">
-            <b>${escapeHtml(t.name)}</b>${t.phone?`<span class="helper" style="display:block;font-size:10.5px;direction:ltr;text-align:right;">${escapeHtml(t.phone)}</span>`:''}
+            <a href="#" onclick="openTrainerProfile('${t.id}');return false;" style="color:inherit;"><b>${escapeHtml(t.name)}</b></a>${t.phone?`<span class="helper" style="display:block;font-size:10.5px;direction:ltr;text-align:right;">${escapeHtml(t.phone)}</span>`:''}
           </td>
           ${days.map(d=>{
             if(isOff(d)) return `<td class="cell off"></td>`;
+            const lv = trainerLeaveOn(t.id, d);
+            if(lv) return `<td class="cell leave" title="إجازة: ${escapeHtml(leaveTxt(lv))}">إ</td>`;
             const cl = (clashBy[t.id]||{})[d];
             if(cl) return `<td class="cell clash" data-clash="${t.id}|${d}"
               title="تضارب: ${escapeHtml(cl.map(x=>x.title||'').join(' + '))}">!</td>`;
@@ -5582,7 +5650,11 @@ function renderSchedulePage(c){
     ]}], v=> setTimeout(()=>cb(v.by||'date'), 60));
   };
   document.getElementById('sc_print').onclick = ()=>sortPick(by=>printTrainerRequests(F, T, by));
-  bindCowork(document.getElementById('sc_cowork'), (state.orders||[]).filter(o=>inRange(o) && (selTr.size===0 || (o.trainerIds||[]).some(id=>selTr.has(id)))), F, T);
+  { const mtOrders = (state.orders||[]).filter(o=>inRange(o) && (selTr.size===0 || (o.trainerIds||[]).some(id=>selTr.has(id))));
+    const n = multiTrainerRows(mtOrders).length, b = document.getElementById('sc_multi');
+    if(b){ const bd = b.querySelector('.mt-badge'); if(bd){ bd.textContent = n; bd.hidden = !n; }
+      b.onclick = ()=>showInfoModal('', '<div id="mtBox"></div>', box=>{ box.style.maxWidth='1120px';
+        const h = box.querySelector('h3'); if(h) h.remove(); bindMultiTrainer(box.querySelector('#mtBox'), mtOrders, F, T); }); } }
   document.getElementById('sc_excel').onclick = ()=>sortPick(by=>exportTrainerRequests(F, T, by));
   document.getElementById('sc_plan').onclick = ()=>openPlanWizard();
   /* لوحة اختيار المقدّمين */
@@ -5654,7 +5726,7 @@ function renderSchedulePage(c){
 
     const stateOf = (tid, d)=>{
       if((clashBy[tid]||{})[d]) return 'clash';
-      if(isOff(d)) return 'off';
+      if(isOff(d) || trainerLeaveOn(tid, d)) return 'off';
       return (busyBy[tid]||{})[d] ? 'busy' : 'free';
     };
     const LBL = {free:'متاح', busy:'مشغول', off:'إجازة', clash:'تضارب'};
@@ -7852,6 +7924,9 @@ function renderOrderForm(sub){
       if(c) hits.push({ t, c });
     });
 
+    /* المقدّمون المختارون في إجازة */
+    chosen.forEach(tid=>{ const lv = trainerLeaveOn(tid, date, dateTo); if(lv){ const t=(state.trainers||[]).find(x=>x.id===tid);
+      hits.push({ t, c:{ id:'', serial:'إجازة', title: leaveTxt(lv), date: lv.from, timeFrom:'', timeTo:'' }, leave:true }); } });
     /* تضارب الجهة نفسها في اليوم نفسه */
     const schId = (document.getElementById('f_school')||{}).value || '';
     const sameDay = schId ? schoolSameDay(schId, date, exclude) : null;
@@ -7899,6 +7974,9 @@ function renderOrderForm(sub){
     const checkedSet = new Set(previouslyChecked.length ? previouslyChecked : selectedTrainerIds);
     box.innerHTML = state.trainers.map(t=>{
       const conflict = date ? trainerConflictSingle(t.id, date, tf, tt, editing?editing.id:null, dateTo) : null;
+      const leave = date ? trainerLeaveOn(t.id, date, dateTo) : null;
+      const fieldSel = (document.getElementById('f_field')||{}).value || '';
+      const skilled = !!fieldSel && (t.skills||[]).includes(fieldSel);
       const busy = !!conflict && !checkedSet.has(t.id);
       const checked = checkedSet.has(t.id);
       // المشغول لم يعد ممنوعًا: يُسمح باختياره بعد تأكيد التنسيق مع الجهة
@@ -7910,8 +7988,8 @@ function renderOrderForm(sub){
       const tip = busy
         ? `مشغول من ${cFrom||'—'} إلى ${cTo||'—'} — ${conflict.title||''}${cSch?` (${cSch})`:''}`
         : '';
-      const avail = !!date && !busy;     // متاح فقط بعد تحديد التاريخ
-      return `<label class="opt-row${busy?' is-busy':''}${avail?' is-free':''}${checked?' on':''}" title="${escapeHtml(tip)}">
+      const avail = !!date && !busy && !leave;     // متاح فقط بعد تحديد التاريخ
+      return `<label class="opt-row${busy||leave?' is-busy':''}${avail?' is-free':''}${checked?' on':''}${skilled?' is-skilled':''}" data-skill="${skilled?1:0}" title="${escapeHtml(leave?('في إجازة: '+leaveTxt(leave)):tip)}">
         <input type="checkbox" value="${t.id}"
           data-busy="${busy?'1':'0'}"
           data-name="${escapeHtml(t.name)}"
@@ -7923,10 +8001,14 @@ function renderOrderForm(sub){
           ${checked?'checked':''}>
         <span class="opt-box">${icon('check',11)}</span>
         <span class="opt-txt">${escapeHtml(t.name)}${t.phone?` / <b>${escapeHtml(t.phone)}</b>`:''}</span>
-        ${busy ? `<span class="opt-tag busy">مشغول ${escapeHtml(cRange)}</span>`
+        ${skilled ? `<span class="opt-tag skill" title="يقدّم هذا المجال">★</span>` : ''}
+        ${leave ? `<span class="opt-tag busy">إجازة</span>`
+               : busy ? `<span class="opt-tag busy">مشغول ${escapeHtml(cRange)}</span>`
                : avail ? `<span class="opt-tag free">متاح</span>` : ''}
       </label>`;
     }).join('') || '<span class="helper" style="padding:9px 12px;display:block;">لا يوجد مقدمو مبادرات بعد</span>';
+    /* أصحاب المجال المختار أولًا */
+    Array.from(box.querySelectorAll('label.opt-row[data-skill="1"]')).reverse().forEach(l=>box.insertBefore(l, box.firstChild));
     // تأكيد صريح عند اختيار مدرب مشغول
     function refreshMSLabel(){
       const sel = Array.from(box.querySelectorAll('input:checked'));
@@ -7985,8 +8067,11 @@ function renderOrderForm(sub){
     const _si = document.getElementById('supervisorInfo');
     if(sv){ _si.style.display=''; _si.innerHTML = `<span>${icon('users',12)} ${escapeHtml(sv.phone||'-')}</span><span>${escapeHtml(sv.email||'-')}</span><span>${escapeHtml(sch.level)}</span>`; }
     else { _si.style.display='none'; _si.innerHTML=''; }
+    if(sch && sch.notes){ _si.style.display=''; _si.innerHTML += `<span class="sch-note">${icon('fileText',12)} ${escapeHtml(sch.notes)}</span>`; }
+    if(sch){ _si.style.display=''; _si.innerHTML += `<a href="#" class="sch-prof" onclick="openSchoolProfile('${sch.id}');return false;">${icon('school',12)} ملف الجهة</a>`; }
   }
   document.getElementById('f_school').addEventListener('change', refreshSupervisors);
+  document.getElementById('f_school').addEventListener('change', ()=>{ try{ updateSupervisorInfo(); }catch(e){} });
   document.getElementById('f_school').addEventListener('change', ()=>{ try{ refreshOrderClashBar(); }catch(e){} });
   document.getElementById('f_supervisor').addEventListener('change', updateSupervisorInfo);
   /* المصدر: التواريخ ← عدد الأيام. وعند تعديل عدد الأيام ← تاريخ الانتهاء. */
@@ -8401,6 +8486,14 @@ function renderOrderForm(sub){
     if(!timeFrom){ toast('يرجى إدخال وقت المبادرة (من)'); return; }
     if(!timeTo){ toast('يرجى إدخال وقت المبادرة (إلى)'); return; }
     if(participantsCount===''){ toast('يرجى إدخال عدد المستهدفين'); return; }
+    /* تنبيه الطلب المكرر: نفس الجهة/المكان وعنوان مشابه خلال ±30 يومًا */
+    if(!editing){
+      const venueV = ((document.getElementById('f_venue')||{}).value || '').trim();
+      const sim = findSimilarOrders(title, schoolId, venueV, date, null);
+      if(sim.length && !confirm('⚠️ يوجد طلب مشابه لنفس الجهة خلال شهر من هذا التاريخ:\n\n'
+        + sim.slice(0,5).map(o=>`• أمر ${o.serial} — ${o.title} (${fmtDateRaw(o.date)})`).join('\n')
+        + '\n\nهل هذا طلب جديد فعلًا وليس تكرارًا؟')) return;
+    }
     /* فعالية أسبوعية متكررة: نعرض المواعيد كلها للمراجعة ثم ننشئ أمر تكليف لكل موعد */
     const repEl = document.getElementById('f_repeat');
     if(!editing && repEl && repEl.checked){
@@ -8441,6 +8534,10 @@ function renderOrderForm(sub){
     if(!trainerIds.length){ toast('يرجى اختيار مقدم مبادرة واحد على الأقل'); return; }
     if(!checkedReqs.length){ toast('يرجى اختيار طلب إداري واحد على الأقل'); return; }
 
+    if(trainerIds.length && date){
+      const lvs = trainerIds.map(tid=>({t:state.trainers.find(x=>x.id===tid), l:trainerLeaveOn(tid, date, dateTo)})).filter(x=>x.l);
+      if(lvs.length && !confirm('⛔ مقدّم في إجازة خلال موعد الفعالية:\n\n' + lvs.map(x=>`• ${x.t?x.t.name:''}: ${leaveTxt(x.l)}`).join('\n') + '\n\nهل تريد المتابعة؟')) return;
+    }
     if(trainerIds.length && date){
       const conflict = anyTrainerConflict(trainerIds, date, timeFrom, timeTo, editing?editing.id:null, dateTo);
       if(conflict){
@@ -8498,6 +8595,7 @@ function renderOrderForm(sub){
     if(printMode==='school') setTimeout(()=>printOrderSchoolCopy(savedId), 150);
     else if(printMode==='admin') setTimeout(()=>printOrderAdminCopy(savedId), 150);
   }
+  { const ff = document.getElementById('f_field'); if(ff) ff.addEventListener('change', ()=>{ try{ refreshTrainerChips(); }catch(e){} }); }
   /* اقتراح مسار المبادرة من العنوان (للطلب الجديد فقط، ولا يغيّر اختيارك اليدوي) */
   (function(){
     const t = document.getElementById('f_title'), pt = document.getElementById('f_ptype');
@@ -8640,6 +8738,13 @@ function viewOrderReadOnly(id){
     box.style.maxWidth='560px';
     const eb = box.querySelector('#roEdit');
     if(eb) eb.onclick = ()=>{ closeModal(); editOrder(o.id); };
+    { const acts = document.createElement('div'); acts.className='rep-actions';
+      const sc0 = state.schools.find(x=>x.id===o.schoolId);
+      acts.innerHTML = (sc0?`<button class="btn btn-outline btn-sm" type="button" data-sp="${sc0.id}">${icon('school',13)} ملف الجهة</button>`:'')
+        + (o.trainerIds||[]).map(tid=>{ const t=state.trainers.find(x=>x.id===tid); return t?`<button class="btn btn-outline btn-sm" type="button" data-tp="${tid}">${icon('user',13)} ${escapeHtml(t.name)}</button>`:''; }).join('');
+      const bodyEl = box.querySelector('#modalInfoBody'); if(bodyEl && acts.innerHTML) bodyEl.appendChild(acts);
+      acts.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{ closeModal(); setTimeout(()=>openSchoolProfile(b.dataset.sp),60); });
+      acts.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{ closeModal(); setTimeout(()=>openTrainerProfile(b.dataset.tp),60); }); }
     const wb = box.querySelector('#roWa'); if(wb) wb.onclick = ()=>{ closeModal(); setTimeout(()=>shareOrderWhatsApp(o.id),60); };
     const db = box.querySelector('#roDup'); if(db) db.onclick = ()=>{ closeModal(); setTimeout(()=>duplicateOrder(o.id),60); };
     const pb = box.querySelector('#roPrint');
@@ -8683,6 +8788,9 @@ function postponeConflicts(o, newDate, newTo, tf, tt){
         + `\n      ${fmtDate(c.date)} · من ${c.timeFrom||'—'} إلى ${c.timeTo||'—'}`
         + (sc?`\n      ${sc.name}`:'') });
   });
+  /* إجازات المقدّمين */
+  (o.trainerIds||[]).forEach(tid=>{ const lv = trainerLeaveOn(tid, newDate, dTo); if(lv){ const t=(state.trainers||[]).find(x=>x.id===tid);
+    out.push({ kind:'leave', who:(t?t.name:''), order:{}, line:`${t?t.name:''} في إجازة: ${leaveTxt(lv)}` }); } });
   /* الموارد المحجوزة */
   resourceConflicts(o.resourceIds||[], newDate, dTo, o.id).forEach(x=>{
     out.push({ kind:'resource', who:x.res.name, order:x.order,
@@ -13274,7 +13382,7 @@ function renderSettingsPage(c){
       <button class="plus-btn" onclick="quickAddTrainer()">+</button></span></h2>
     <div class="helper" style="margin-bottom:8px;">أعمدة الملف المتوقعة: الاسم، الجوال (بهذا الترتيب، مع صف عناوين أول).</div>
     <table><thead><tr><th>الاسم</th><th>الجوال</th><th></th></tr></thead><tbody>
-    ${state.trainers.map(t=>`<tr><td>${escapeHtml(t.name)}</td><td>${escapeHtml(t.phone||'')}</td>
+    ${state.trainers.map(t=>`<tr><td><a href="#" onclick="openTrainerProfile('${t.id}');return false;">${escapeHtml(t.name)}</a>${(t.leaves||[]).some(l=>(l.to||l.from)>=todayStr())?' <span class="st st-hold">إجازة</span>':''}</td><td>${escapeHtml(t.phone||'')}</td>
       <td class="actions-cell"><button class="icon-btn" title="تعديل" onclick="editTrainer('${t.id}')">✏️</button><button class="icon-btn danger" title="حذف" onclick="deleteFromList('trainers','${t.id}')">🗑️</button></td></tr>`).join('') || `<tr><td colspan="3" class="empty-state">لا يوجد مقدمو فعاليات</td></tr>`}
     </tbody></table>
   </div>
@@ -13343,7 +13451,7 @@ function renderSettingsPage(c){
         if(!svs.length){
           rows.push(`<tr data-find="${escapeHtml((s.name+' '+(s.email||'')).toLowerCase())}"${flag?' style="background:#FFF8EC;"':''}>
             <td><input type="checkbox" class="schRow" data-school="${s.id}"></td>
-            <td style="text-align:right;">${escapeHtml(s.name)}</td>
+            <td style="text-align:right;"><a href="#" onclick="openSchoolProfile('${s.id}');return false;">${escapeHtml(s.name)}</a></td>
             <td>${escapeHtml(s.level||'غير مصنّف')}</td>
             <td style="text-align:right;">${escapeHtml(s.email||'—')}</td>
             <td colspan="3" class="helper">لا يوجد مشرفون</td>
@@ -13353,7 +13461,7 @@ function renderSettingsPage(c){
         } else svs.forEach((sv,i)=>{
           rows.push(`<tr data-find="${escapeHtml((s.name+' '+sv.name+' '+(sv.phone||'')+' '+(sv.email||'')+' '+(s.email||'')).toLowerCase())}"${flag?' style="background:#FFF8EC;"':''}>
             <td><input type="checkbox" class="schRow" data-school="${s.id}" data-sv="${sv.id}"></td>
-            <td style="text-align:right;">${i===0?escapeHtml(s.name):''}</td>
+            <td style="text-align:right;">${i===0?`<a href="#" onclick="openSchoolProfile('${s.id}');return false;">${escapeHtml(s.name)}</a>`:''}</td>
             <td>${i===0?escapeHtml(s.level||'غير مصنّف'):''}</td>
             <td style="text-align:right;">${i===0?escapeHtml(s.email||'—'):''}</td>
             <td style="text-align:right;">${escapeHtml(sv.name)}</td>
@@ -14337,11 +14445,11 @@ function openCommandPalette(){
       });
       (state.schools||[]).filter(s=>_mzNz(s.name).includes(nq)).slice(0,5).forEach(s=>{
         const n = state.orders.filter(o=>o.schoolId===s.id).length;
-        res.push({grp:'الجهات', ic:icon('school',16), t:s.name, s:`${n} ${eventWord(n)}`, run:()=>openOrdersFiltered(s.name)});
+        res.push({grp:'الجهات', ic:icon('school',16), t:s.name, s:`${n} ${eventWord(n)}`, run:()=>openSchoolProfile(s.id)});
       });
       (state.trainers||[]).filter(x=>_mzNz(x.name).includes(nq) || String(x.phone||'').includes(t)).slice(0,5).forEach(x=>{
         const n = state.orders.filter(o=>(o.trainerIds||[]).includes(x.id)).length;
-        res.push({grp:'مقدّمو المبادرات', ic:icon('users',16), t:x.name, s:`${x.phone||''}${x.phone?' · ':''}${n} ${eventWord(n)}`, run:()=>openOrdersFiltered(x.name)});
+        res.push({grp:'مقدّمو المبادرات', ic:icon('users',16), t:x.name, s:`${x.phone||''}${x.phone?' · ':''}${n} ${eventWord(n)}`, run:()=>openTrainerProfile(x.id)});
       });
     }
     res.push({grp:'إجراءات', ic:icon('filePlus',16), t:'إنشاء طلب فعالية جديد', s:'', run:()=>{ currentPage='newOrder'; editingOrderId=null; render(); }});
@@ -14396,8 +14504,8 @@ function renderSettingsHub(c){
   const pending = state.trainerRequests.filter(r=>r.status==='pending').length;
   const tabs = currentRole==='admin'
     ? [['lists','القوائم والبيانات','settings',0],['approvals','الموافقات','checkCircle',pending],
-       ['targets','المستهدفات السنوية','flag',0],['portal','بوابة مقدّم الفعالية','users',0],['audit','سجل التعديلات','history',0]]
-    : [['portal','بوابة مقدّم الفعالية','users',0]];
+       ['targets','المستهدفات السنوية','flag',0],['occasions','تقويم المناسبات','calendar',0],['portal','بوابة مقدّم الفعالية','users',0],['audit','سجل التعديلات','history',0]]
+    : [['portal','بوابة مقدّم الفعالية','users',0],['occasions','تقويم المناسبات','calendar',0]];
   if(!tabs.find(t=>t[0]===settingsTab)) settingsTab = tabs[0][0];
   c.innerHTML = `<div class="hub-tabs" role="tablist">
       ${tabs.map(t=>`<button type="button" role="tab" class="hub-tab${t[0]===settingsTab?' on':''}" data-hub="${t[0]}" aria-selected="${t[0]===settingsTab}">
@@ -14409,6 +14517,7 @@ function renderSettingsHub(c){
   else if(settingsTab==='portal') renderTrainerPortalPage(body);
   else if(settingsTab==='audit') body.innerHTML = auditCardHtml();
   else if(settingsTab==='targets') renderTargetsEditor(body);
+  else if(settingsTab==='occasions') renderOccasionsTab(body);
   c.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{ settingsTab=b.dataset.hub; render(); });
 }
 
@@ -14429,6 +14538,7 @@ function openRecurringPreview(base, until, printMode){
     const cf = anyTrainerConflict(base.trainerIds, d, base.timeFrom, base.timeTo, null, end);
     if(cf){ const t = state.trainers.find(x=>x.id===cf.trainerId); notes.push({k:'dan', t:`${t?t.name:'مقدّم'} مشغول (أمر ${cf.order.serial})`}); }
     checkAcademicDate(d, end).forEach(a=>notes.push({k: a.level==='block'?'dan':'warn', t:a.msg}));
+    (base.trainerIds||[]).forEach(tid=>{ const lv = trainerLeaveOn(tid, d, end); if(lv){ const t=state.trainers.find(x=>x.id===tid); notes.push({k:'dan', t:`${t?t.name:'مقدّم'} في إجازة`}); } });
     resourceConflicts(base.resourceIds||[], d, end, null).forEach(x=>notes.push({k:'dan', t:`${x.res.name} محجوز (أمر ${x.order.serial})`}));
     const sd = schoolSameDay(base.schoolId, d, null);
     if(sd) notes.push({k:'warn', t:`فعالية أخرى بالجهة (أمر ${sd.serial})`});
@@ -14766,6 +14876,7 @@ function renderOrdersCalendar(box, list){
     while(d <= e && g < 62){ (byDay[d] = byDay[d] || []).push({o, start:d===o.date, end:d===e}); d = addDaysISO(d,1); g++; }
   });
   const monthLabel = new Date(Y, M-1, 1).toLocaleDateString('ar-QA-u-nu-latn',{month:'long', year:'numeric'});
+  let occMap = {}; try{ ensureOccasions(); occMap = occasionsOnDays(gridStart, addDaysISO(gridStart, weeks*7)); }catch(e){}
   const DOW = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   let cells = '';
   for(let i=0;i<weeks*7;i++){
@@ -14775,6 +14886,7 @@ function renderOrdersCalendar(box, list){
     cells += `<div class="oc-day${inM?'':' out'}${d===today?' today':''}${dow>=5?' wkend':''}" data-day="${d}">
       <div class="oc-dh"><span class="oc-num">${Number(d.slice(8,10))}</span>
         ${canEdit?`<button type="button" class="oc-add" data-new="${d}" title="طلب جديد بتاريخ ${fmtDateRaw(d)}" aria-label="طلب جديد">${icon('plus',12)}</button>`:''}</div>
+      ${(occMap[d]||[]).map(n=>`<div class="oc-occ" title="${escapeHtml(n)}">${icon('flag',10)} ${escapeHtml(n)}</div>`).join('')}
       ${items.slice(0,MAX).map(({o,start,end})=>{ const st = orderState(o, today);
         return `<div class="oc-ev st-${st.k}${start?' s':''}${end?' e':''}" data-id="${o.id}" ${canEdit && st.k!=='draft' && start?'draggable="true"':''}
           title="${escapeHtml(`${o.serial} — ${o.title||''} · ${o.timeFrom||''}-${o.timeTo||''} · ${ST_NAMES[st.k]||st.l}`)}">
@@ -15063,6 +15175,432 @@ function openPathFixer(){
   overlay.classList.add('open'); overlay.onclick = e=>{ if(e.target===overlay) closeModal(); };
   draw();
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   فعاليات يشارك فيها أكثر من مقدّم مبادرة (خلال فترة جدول المقدّمين)
+   ══════════════════════════════════════════════════════════════════ */
+function multiTrainerRows(orders){
+  return orders.filter(o=>(o.trainerIds||[]).filter(Boolean).length >= 2)
+    .sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.timeFrom||'').localeCompare(b.timeFrom||''));
+}
+function bindMultiTrainer(box, orders, F, T){
+  const list = multiTrainerRows(orders);
+  const trs = o => (o.trainerIds||[]).map(id=>state.trainers.find(t=>t.id===id)).filter(Boolean);
+  const reqs = o => (o.adminRequests||[]).map(id=>{ const r=state.adminRequestsList.find(x=>x.id===id); return r?r.name:''; }).filter(Boolean);
+  const timeTxt = o => (o.timeFrom||o.timeTo) ? `من الساعة ${o.timeFrom||'—'} إلى الساعة ${o.timeTo||'—'}` : '—';
+  const dateTxt = o => o.dateTo && o.dateTo!==o.date ? `${fmtDateRaw(o.date)} — ${fmtDateRaw(o.dateTo)}` : fmtDateRaw(o.date);
+  const COLS = ['#','الفعالية','التاريخ','الوقت','الجهة / المكان','مقدّمو المبادرة','الجوال','الطلبات الإدارية'];
+  box.innerHTML = `<h2>${icon('users',15)} فعاليات يشارك فيها أكثر من مقدّم — ${list.length} ${eventWord(list.length)}
+      <span style="display:inline-flex;gap:6px;">
+        <button class="icon-btn" id="mt_print" title="طباعة" aria-label="طباعة" style="width:32px;height:32px;padding:0;">${icon('printer',15)}</button>
+        <button class="icon-btn" id="mt_excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:32px;height:32px;padding:0;">${icon('sheet',15)}</button>
+      </span></h2>
+    <div class="helper" style="margin-bottom:10px;">الفعاليات التي أُسند إليها مقدّمان أو أكثر — من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)}.</div>
+    ${list.length ? `<div class="tbl-scroll"><table class="mt-tbl" style="font-size:12.5px;width:100%;"><thead><tr>
+      ${COLS.map((c,i)=>`<th${i===1||i===4||i===5?' style="text-align:right;"':''}>${c}</th>`).join('')}</tr></thead><tbody>
+      ${list.map(o=>{ const sc = state.schools.find(x=>x.id===o.schoolId); const t = trs(o);
+        return `<tr>
+        <td><span class="badge">${o.serial}</span></td>
+        <td style="text-align:right;font-weight:700;"><a href="#" onclick="viewOrderReadOnly('${o.id}');return false;" style="color:inherit;">${escapeHtml(o.title||'')}</a></td>
+        <td style="white-space:nowrap;">${dayNameOf(o.date)}<br><b>${dateTxt(o)}</b></td>
+        <td style="white-space:nowrap;">${escapeHtml(timeTxt(o))}</td>
+        <td style="text-align:right;">${escapeHtml(sc?sc.name:'—')}${o.venue?`<div class="helper">مكان التنفيذ: ${escapeHtml(o.venue)}</div>`:''}</td>
+        <td style="text-align:right;">${t.map(x=>`<div class="cw-tr">${icon('user',12)} ${escapeHtml(x.name)}</div>`).join('')}</td>
+        <td style="white-space:nowrap;direction:ltr;">${t.map(x=>escapeHtml(x.phone||'—')).join('<br>')}</td>
+        <td>${reqs(o).map(r=>`<span class="badge">${escapeHtml(r)}</span>`).join(' ')||'—'}</td></tr>`; }).join('')}
+    </tbody></table></div>` : `<div class="empty-state">لا توجد فعاليات بأكثر من مقدّم خلال هذه الفترة</div>`}`;
+  box.querySelector('#mt_print').onclick = ()=>{
+    if(!list.length){ toast('لا توجد بيانات'); return; }
+    doPrintDoc(buildReportDoc({ titleAr:'فعاليات يشارك فيها أكثر من مقدّم مبادرة',
+      subtitle:`من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)}`,
+      kpis:[{v:list.length,l:'📋 الفعاليات'},{v:new Set(list.flatMap(o=>o.trainerIds||[])).size,l:'👥 المقدّمون'}],
+      headers: COLS, colWidths:['10mm','52mm','28mm','42mm','52mm','46mm','24mm','auto'],
+      rows: list.map(o=>{ const sc = state.schools.find(x=>x.id===o.schoolId); const t = trs(o);
+        return [String(o.serial), escapeHtml(o.title||''), `${dayNameOf(o.date)}<br>${dateTxt(o)}`, escapeHtml(timeTxt(o)),
+          escapeHtml(sc?sc.name:'—') + (o.venue?`<br><span style="color:#777;">${escapeHtml(o.venue)}</span>`:''),
+          t.map(x=>escapeHtml(x.name)).join('<br>'), t.map(x=>escapeHtml(x.phone||'—')).join('<br>'), escapeHtml(reqs(o).join('، ')||'—')]; })
+    }), true, 'A4');
+  };
+  box.querySelector('#mt_excel').onclick = ()=>{
+    if(!list.length){ toast('لا توجد بيانات'); return; }
+    exportToExcel(`فعاليات_بأكثر_من_مقدم_${F}_${T}.xlsx`, COLS, list.map(o=>{ const sc = state.schools.find(x=>x.id===o.schoolId); const t = trs(o);
+      return [o.serial, o.title||'', dateTxt(o), timeTxt(o), (sc?sc.name:'') + (o.venue?` — ${o.venue}`:''),
+        t.map(x=>x.name).join('، '), t.map(x=>x.phone||'').filter(Boolean).join('، '), reqs(o).join('، ')]; }),
+      `فعاليات يشارك فيها أكثر من مقدّم — من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)}`);
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   إجازات المقدّمين
+   ══════════════════════════════════════════════════════════════════ */
+function trainerLeaveOn(tid, date, dateTo){
+  const t = (state.trainers||[]).find(x=>x.id===tid); if(!t || !date) return null;
+  return (t.leaves||[]).find(l=>l.from && dateRangesOverlap(date, dateTo||date, l.from, l.to||l.from)) || null;
+}
+function leaveTxt(l){ return `${fmtDateRaw(l.from)}${l.to&&l.to!==l.from?` — ${fmtDateRaw(l.to)}`:''}${l.note?` (${l.note})`:''}`; }
+
+/* ══════════════════════════════════════════════════════════════════
+   ملف المقدّم
+   ══════════════════════════════════════════════════════════════════ */
+function avgRating(list){
+  const v = list.flatMap(o=>[o.supervisorRating,o.schoolRating,o.studentsRating]).map(Number).filter(x=>x>0);
+  return v.length ? Math.round(v.reduce((s,x)=>s+x,0)/v.length*10)/10 : null;
+}
+function profileEventsTable(list, showTrainers){
+  if(!list.length) return `<div class="empty-state">لا توجد فعاليات</div>`;
+  const today = todayStr();
+  return `<div style="max-height:260px;overflow:auto;"><table class="set-table pr-tbl"><thead><tr><th>#</th><th style="text-align:right;">الفعالية</th><th>التاريخ</th><th style="text-align:right;">${showTrainers?'المقدّمون':'الجهة'}</th><th>الحالة</th></tr></thead><tbody>
+    ${list.map(o=>{ const st = orderState(o, today); const sc = state.schools.find(x=>x.id===o.schoolId);
+      return `<tr><td><span class="badge">${o.serial}</span></td>
+        <td style="text-align:right;"><a href="#" onclick="closeModal();setTimeout(()=>viewOrderReadOnly('${o.id}'),60);return false;">${escapeHtml(o.title||'')}</a></td>
+        <td style="white-space:nowrap;">${fmtDateRaw(o.date)}</td>
+        <td style="text-align:right;">${showTrainers ? escapeHtml(trainerNames(o)||'—') : escapeHtml(sc?sc.name:'—')}</td>
+        <td><span class="st st-${st.k}">${ST_NAMES[st.k]||st.l}</span></td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function openTrainerProfile(id){
+  const t = (state.trainers||[]).find(x=>x.id===id); if(!t) return;
+  const year = acadYearOf(todayStr()), yr = acadYearRange(year), today = todayStr();
+  const all = state.orders.filter(o=>(o.trainerIds||[]).includes(id) && isLiveOrder(o));
+  const inYear = all.filter(o=>o.date>=yr.start && o.date<=yr.end);
+  const done = inYear.filter(o=>o.completionStatus==='تم');
+  const hours = Math.round(inYear.reduce((s,o)=>s+computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo),0)*10)/10;
+  const schools = {}; all.forEach(o=>{ const n = placeNameOf(o); if(n) schools[n]=(schools[n]||0)+1; });
+  const upcoming = all.filter(o=>o.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  const past = all.filter(o=>o.date<today).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+  const rating = avgRating(done);
+  const canEdit = currentRole==='admin' || currentRole==='user';
+  const leaves = (t.leaves||[]).slice().sort((a,b)=>(b.from||'').localeCompare(a.from||''));
+  const body = `
+    <div class="pr-head">
+      <div class="pr-av">${icon('user',26)}</div>
+      <div style="flex:1;min-width:0;"><b class="pr-name">${escapeHtml(t.name)}</b>
+        <div class="pr-sub">${t.phone?`<a href="tel:${escapeHtml(t.phone)}" dir="ltr">${escapeHtml(t.phone)}</a> · <a href="https://wa.me/${waNumber(t.phone)}" target="_blank">${waIcon(13)} واتساب</a>`:'لا يوجد رقم'}</div></div>
+      ${trainerLeaveOn(id, today) ? `<span class="pr-pill warn">${icon('pause',12)} في إجازة اليوم</span>` : ''}
+    </div>
+    <div class="pr-kpis">
+      ${[['fileText','فعاليات السنة',inYear.length],['checkCircle','منجزة',done.length],['clock','الساعات',hours],
+         ['school','جهات خدمها',Object.keys(schools).length],['flag','متوسط التقييم',rating===null?'—':rating]]
+        .map(k=>`<div class="pr-kpi">${icon(k[0],15)}<b>${k[2]}</b><i>${k[1]}</i></div>`).join('')}
+    </div>
+    <div class="pr-sec"><h4>${icon('layers',14)} المجالات التي يقدّمها <span class="helper">(تُقدَّم أسماؤهم أولًا عند اختيار المجال في الطلب)</span></h4>
+      <div class="pr-chips">${(state.fields||[]).map(f=>`<label class="pr-chip${(t.skills||[]).includes(f.id)?' on':''}">
+        <input type="checkbox" value="${f.id}" ${(t.skills||[]).includes(f.id)?'checked':''} ${canEdit?'':'disabled'}><span>${escapeHtml(f.name)}</span></label>`).join('')}</div></div>
+    <div class="pr-sec"><h4>${icon('pause',14)} الإجازات <span class="helper">(تُعامل كتضارب عند الإسناد والترحيل والتكرار)</span></h4>
+      ${leaves.length ? `<div class="pr-leaves">${leaves.map(l=>`<div class="pr-leave${(l.to||l.from)<today?' old':''}">
+          ${icon('calendar',13)} <span>${escapeHtml(leaveTxt(l))}</span>
+          ${canEdit?`<button type="button" class="icon-btn danger" data-delleave="${l.id}" title="حذف" aria-label="حذف الإجازة" style="width:24px;height:24px;padding:0;">${icon('trash',12)}</button>`:''}</div>`).join('')}</div>`
+        : `<div class="helper">لا توجد إجازات مسجّلة</div>`}
+      ${canEdit?`<div class="pr-addleave"><label>من</label><input type="date" id="lv_from" lang="en-GB"><label>إلى</label><input type="date" id="lv_to" lang="en-GB">
+        <input id="lv_note" placeholder="السبب (اختياري)"><button class="btn btn-outline btn-sm" id="lv_add">${icon('plus',13)} إضافة إجازة</button></div>`:''}
+    </div>
+    <div class="pr-sec"><h4>${icon('school',14)} الجهات التي خدمها</h4>
+      <div class="pr-chips">${Object.entries(schools).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span class="pr-tag">${escapeHtml(n)} <b>${c}</b></span>`).join('') || '<span class="helper">—</span>'}</div></div>
+    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.length})</h4>${profileEventsTable(upcoming, false)}</div>
+    <div class="pr-sec"><h4>${icon('history',14)} السابقة (آخر ${past.length})</h4>${profileEventsTable(past, false)}</div>
+    <div class="pr-actions"><button class="btn btn-outline btn-sm" id="pr_print">${icon('printer',14)} طباعة الملف</button></div>`;
+  showInfoModal(`${icon('user',17)} ملف مقدّم المبادرة`, body, box=>{
+    box.style.maxWidth = '860px';
+    box.querySelectorAll('.pr-chip input').forEach(cb=>cb.onchange = async ()=>{
+      t.skills = Array.from(box.querySelectorAll('.pr-chip input:checked')).map(x=>x.value);
+      cb.closest('.pr-chip').classList.toggle('on', cb.checked); await saveState(); toast('حُفظت المجالات');
+    });
+    box.querySelectorAll('[data-delleave]').forEach(b=>b.onclick = async ()=>{
+      t.leaves = (t.leaves||[]).filter(l=>l.id!==b.dataset.delleave); await saveState(); toast('حُذفت الإجازة'); openTrainerProfile(id);
+    });
+    const add = box.querySelector('#lv_add');
+    if(add) add.onclick = async ()=>{
+      const f = box.querySelector('#lv_from').value, to = box.querySelector('#lv_to').value || f, note = box.querySelector('#lv_note').value.trim();
+      if(!f){ toast('حدّد تاريخ بداية الإجازة'); return; }
+      if(to < f){ toast('تاريخ النهاية قبل البداية'); return; }
+      const hit = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(id) && o.date && dateRangesOverlap(f, to, o.date, orderEnd(o)));
+      if(hit.length && !confirm(`للمقدّم ${hit.length} ${eventWord(hit.length)} خلال هذه الإجازة:\n\n${hit.slice(0,6).map(o=>`• أمر ${o.serial} — ${o.title} (${fmtDateRaw(o.date)})`).join('\n')}\n\nتسجيل الإجازة لا يلغيها — ستحتاج إلى إعادة إسنادها. متابعة؟`)) return;
+      t.leaves = (t.leaves||[]).concat([{id:uid(), from:f, to, note}]);
+      await saveState(); toast('سُجّلت الإجازة'); openTrainerProfile(id);
+    };
+    box.querySelector('#pr_print').onclick = ()=>{
+      doPrintDoc(buildReportDoc({ titleAr:`ملف مقدّم المبادرة: ${t.name}`, subtitle:`السنة الدراسية ${acadYearLabel(year)}${t.phone?' — '+t.phone:''}`,
+        kpis:[{v:inYear.length,l:'📋 الفعاليات'},{v:done.length,l:'✅ المنجزة'},{v:hours,l:'⏱️ الساعات'},{v:Object.keys(schools).length,l:'🏫 الجهات'}],
+        headers:['#','الفعالية','التاريخ','الجهة','الحالة'],
+        rows: inYear.sort((a,b)=>a.date.localeCompare(b.date)).map(o=>{ const sc=state.schools.find(x=>x.id===o.schoolId); const st=orderState(o,today);
+          return [String(o.serial), escapeHtml(o.title||''), fmtDateRaw(o.date), escapeHtml(sc?sc.name:'—'), ST_NAMES[st.k]||st.l]; })
+      }), false, 'A4');
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ملف الجهة
+   ══════════════════════════════════════════════════════════════════ */
+function openSchoolProfile(id){
+  const s = (state.schools||[]).find(x=>x.id===id); if(!s) return;
+  const today = todayStr(), year = acadYearOf(today), yr = acadYearRange(year);
+  const all = state.orders.filter(o=>o.schoolId===id && isLiveOrder(o));
+  const inYear = all.filter(o=>o.date>=yr.start && o.date<=yr.end);
+  const done = inYear.filter(o=>o.completionStatus==='تم');
+  const upcoming = all.filter(o=>o.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  const past = all.filter(o=>o.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+  const last = past[0], next = upcoming[0];
+  const people = done.reduce((x,o)=>x+(Number(o.participantsCount)||0),0);
+  const byField = {}; inYear.forEach(o=>{ const f=state.fields.find(x=>x.id===o.fieldId); const n=f?f.name:'غير محدد'; byField[n]=(byField[n]||0)+1; });
+  const trs = {}; all.forEach(o=>(o.trainerIds||[]).forEach(tid=>{ trs[tid]=(trs[tid]||0)+1; }));
+  const rating = avgRating(done);
+  const canEdit = currentRole==='admin' || currentRole==='user';
+  const body = `
+    <div class="pr-head">
+      <div class="pr-av">${icon('school',26)}</div>
+      <div style="flex:1;min-width:0;"><b class="pr-name">${escapeHtml(s.name)}</b>
+        <div class="pr-sub">${escapeHtml(s.level||'')}${s.email?` · <span dir="ltr">${escapeHtml(s.email)}</span>`:''}</div></div>
+      ${canEdit?`<button class="btn btn-primary btn-sm" id="sp_new">${icon('plus',13)} طلب جديد لهذه الجهة</button>`:''}
+    </div>
+    <div class="pr-kpis">
+      ${[['fileText','فعاليات السنة',inYear.length],['checkCircle','منجزة',done.length],['users','المستفيدون',people],
+         ['history','آخر زيارة',last?fmtDateRaw(last.date):'—'],['calendar','القادمة',next?fmtDateRaw(next.date):'—'],['flag','متوسط التقييم',rating===null?'—':rating]]
+        .map(k=>`<div class="pr-kpi">${icon(k[0],15)}<b>${k[2]}</b><i>${k[1]}</i></div>`).join('')}
+    </div>
+    <div class="pr-sec"><h4>${icon('fileText',14)} ملاحظات دائمة <span class="helper">(تظهر في نموذج الطلب عند اختيار هذه الجهة)</span></h4>
+      <textarea id="sp_notes" rows="2" style="width:100%;" placeholder="مثل: الدخول من البوابة الخلفية، تفضّل الحصة الثالثة..." ${canEdit?'':'disabled'}>${escapeHtml(s.notes||'')}</textarea>
+      ${canEdit?`<button class="btn btn-outline btn-sm" id="sp_saveNotes" style="margin-top:6px;">${icon('save',13)} حفظ الملاحظات</button>`:''}</div>
+    <div class="pr-sec"><h4>${icon('users',14)} المشرفون</h4>
+      <div class="pr-chips">${(s.supervisors||[]).map(v=>`<span class="pr-tag">${escapeHtml(v.name)}${v.phone?` <span dir="ltr">${escapeHtml(v.phone)}</span>`:''}</span>`).join('') || '<span class="helper">لا يوجد مشرفون</span>'}</div></div>
+    <div class="pr-sec"><h4>${icon('layers',14)} المجالات هذه السنة</h4>
+      <div class="pr-chips">${Object.entries(byField).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span class="pr-tag">${escapeHtml(n)} <b>${c}</b></span>`).join('') || '<span class="helper">—</span>'}</div></div>
+    <div class="pr-sec"><h4>${icon('user',14)} مقدّمون خدموها</h4>
+      <div class="pr-chips">${Object.entries(trs).sort((a,b)=>b[1]-a[1]).map(([tid,c])=>{ const t=state.trainers.find(x=>x.id===tid); return t?`<a href="#" class="pr-tag" onclick="openTrainerProfile('${tid}');return false;">${escapeHtml(t.name)} <b>${c}</b></a>`:''; }).join('') || '<span class="helper">—</span>'}</div></div>
+    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.length})</h4>${profileEventsTable(upcoming, true)}</div>
+    <div class="pr-sec"><h4>${icon('history',14)} السابقة (${past.length})</h4>${profileEventsTable(past.slice(0,40), true)}</div>
+    <div class="pr-actions"><button class="btn btn-outline btn-sm" id="sp_print">${icon('printer',14)} طباعة الملف</button></div>`;
+  showInfoModal(`${icon('school',17)} ملف الجهة`, body, box=>{
+    box.style.maxWidth = '880px';
+    const sn = box.querySelector('#sp_saveNotes'); if(sn) sn.onclick = async ()=>{ s.notes = box.querySelector('#sp_notes').value.trim(); await saveState(); toast('حُفظت الملاحظات'); };
+    const nw = box.querySelector('#sp_new'); if(nw) nw.onclick = ()=>{ closeModal(); currentPage='newOrder'; editingOrderId=null; render();
+      setTimeout(()=>{ const f=document.getElementById('f_school'); if(f){ if(!Array.from(f.options).some(o=>o.value===id)){ const op=document.createElement('option'); op.value=id; op.textContent=s.name; f.appendChild(op); }
+        f.value=id; f.dispatchEvent(new Event('change')); } }, 60); };
+    box.querySelector('#sp_print').onclick = ()=>{
+      doPrintDoc(buildReportDoc({ titleAr:`ملف الجهة: ${s.name}`, subtitle:`السنة الدراسية ${acadYearLabel(year)}`,
+        kpis:[{v:inYear.length,l:'📋 الفعاليات'},{v:done.length,l:'✅ المنجزة'},{v:people,l:'👥 المستفيدون'}],
+        headers:['#','الفعالية','التاريخ','المقدّمون','الحالة'],
+        rows: inYear.sort((a,b)=>a.date.localeCompare(b.date)).map(o=>{ const st=orderState(o,today);
+          return [String(o.serial), escapeHtml(o.title||''), fmtDateRaw(o.date), escapeHtml(trainerNames(o)||'—'), ST_NAMES[st.k]||st.l]; })
+      }), false, 'A4');
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   تقويم المناسبات — ميلادي ثابت، هجري (أم القرى)، أو «الثلاثاء الثاني من فبراير»
+   ══════════════════════════════════════════════════════════════════ */
+const OCC_DEFAULTS = [
+  ['اليوم الوطني لدولة قطر','g','12-18','مسابقات وطنية، برامج الهوية والانتماء'],
+  ['اليوم العالمي للغة العربية','g','12-18','مسابقات الإلقاء والخط العربي'],
+  ['اليوم الرياضي للدولة','nth','2-2-2','برامج صحية ورياضية، المصلى المتنقل في الفعاليات'],
+  ['بداية شهر رمضان','h','9-1','برامج رمضانية، التهيئة لرمضان، المصلى المتنقل'],
+  ['عيد الفطر','h','10-1','برامج العيد والقيم الاجتماعية'],
+  ['عيد الأضحى','h','12-10','برامج العشر من ذي الحجة'],
+  ['رأس السنة الهجرية','h','1-1','الهجرة النبوية ودروسها'],
+  ['الإسراء والمعراج','h','7-27','قصص السيرة وفضل الصلاة'],
+  ['اليوم العالمي للمعلم','g','10-05','تكريم المعلمين ورسائل الشكر'],
+  ['اليوم العالمي لمكافحة التنمر','nth','11-4-1','ورش التنمر والعرض المسرحي'],
+  ['اليوم العالمي للتسامح','g','11-16','قيم التسامح والتعايش'],
+  ['اليوم العالمي للطفل','g','11-20','برامج الطفل وحقوقه'],
+  ['يوم الصحة العالمي','g','04-07','حملات التوعية الصحية'],
+];
+const __hijriCache = {};
+function hijriMD(iso){
+  if(__hijriCache[iso]) return __hijriCache[iso];
+  try{
+    const p = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{month:'numeric',day:'numeric',year:'numeric'}).formatToParts(new Date(iso+'T12:00:00'));
+    const g = k => Number((p.find(x=>x.type===k)||{}).value);
+    return (__hijriCache[iso] = {m:g('month'), d:g('day'), y:g('year')});
+  }catch(e){ return (__hijriCache[iso] = {m:0,d:0,y:0}); }
+}
+function hijriLabel(iso){
+  try{ return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn',{day:'numeric',month:'long',year:'numeric'}).format(new Date(iso+'T12:00:00')); }catch(e){ return ''; }
+}
+function occDatesBetween(oc, from, to){
+  const out = [];
+  const y1 = Number(from.slice(0,4)), y2 = Number(to.slice(0,4));
+  if(oc.type==='g'){ for(let y=y1;y<=y2;y++){ const d = `${y}-${oc.rule}`; if(d>=from && d<=to) out.push(d); } }
+  else if(oc.type==='nth'){ const [m,wd,n] = oc.rule.split('-').map(Number);
+    for(let y=y1;y<=y2;y++){ const first = new Date(y, m-1, 1); const off = (wd - first.getDay() + 7) % 7;
+      const d = dateToISO(new Date(y, m-1, 1 + off + (n-1)*7)); if(d>=from && d<=to && Number(d.slice(5,7))===m) out.push(d); } }
+  else if(oc.type==='once'){ if(oc.rule>=from && oc.rule<=to) out.push(oc.rule); }
+  else if(oc.type==='h'){ const [m,dd] = oc.rule.split('-').map(Number);
+    let d = from, g = 0; while(d<=to && g<800){ const h = hijriMD(d); if(h.m===m && h.d===dd) out.push(d); d = addDaysISO(d,1); g++; } }
+  return out;
+}
+function occRuleLabel(oc){
+  if(oc.type==='g'){ const [m,d]=oc.rule.split('-').map(Number); return `${d} ${['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][m-1]} سنويًا`; }
+  if(oc.type==='h'){ const [m,d]=oc.rule.split('-').map(Number); return `${d} ${['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'][m-1]} (هجري)`; }
+  if(oc.type==='nth'){ const [m,wd,n]=oc.rule.split('-').map(Number); return `${['الأول','الثاني','الثالث','الرابع'][n-1]} ${['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'][wd]} من ${['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][m-1]}`; }
+  return fmtDateRaw(oc.rule);
+}
+function ensureOccasions(){
+  if(!Array.isArray(state.occasions)) state.occasions = [];
+  if(!state.__occSeeded){
+    state.occasions = state.occasions.concat(OCC_DEFAULTS.map(x=>({id:uid(), name:x[0], type:x[1], rule:x[2], suggest:x[3], lead:21})));
+    state.__occSeeded = true;
+  }
+}
+function upcomingOccasions(days){
+  const from = todayStr(), to = addDaysISO(from, days||120);
+  return (state.occasions||[]).flatMap(oc=>occDatesBetween(oc, from, to).map(d=>({oc, date:d,
+    left: daysCount(from, d)-1,
+    planned: state.orders.filter(o=>isLiveOrder(o) && o.date && dateRangesOverlap(addDaysISO(d,-7), addDaysISO(d,2), o.date, orderEnd(o))).length })))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+}
+function occasionsOnDays(from, to){
+  const m = {}; (state.occasions||[]).forEach(oc=>occDatesBetween(oc, from, to).forEach(d=>{ (m[d]=m[d]||[]).push(oc.name); })); return m;
+}
+function newOrderForOccasion(date, title){
+  newOrderOnDate(date);
+  setTimeout(()=>{ const t=document.getElementById('f_title'); if(t && title){ t.value = title; t.dispatchEvent(new Event('input')); } }, 80);
+}
+function editOccasion(id){
+  const oc = id ? state.occasions.find(x=>x.id===id) : {type:'g', rule:'', name:'', suggest:'', lead:21};
+  if(!oc) return;
+  const [a,b,c] = String(oc.rule||'').split('-');
+  const body = `<div class="oc-form">
+    <label>اسم المناسبة</label><input id="oe_name" value="${escapeHtml(oc.name||'')}">
+    <label>نوع التاريخ</label><select id="oe_type">
+      <option value="g" ${oc.type==='g'?'selected':''}>ميلادي ثابت كل سنة</option>
+      <option value="h" ${oc.type==='h'?'selected':''}>هجري ثابت كل سنة</option>
+      <option value="nth" ${oc.type==='nth'?'selected':''}>يوم محدد من الأسبوع في شهر (مثل الثلاثاء الثاني)</option>
+      <option value="once" ${oc.type==='once'?'selected':''}>تاريخ واحد فقط</option></select>
+    <div id="oe_rule"></div>
+    <label>البرامج المقترحة</label><input id="oe_sug" value="${escapeHtml(oc.suggest||'')}">
+    <label>التنبيه قبلها بـ (يوم)</label><input id="oe_lead" type="number" min="1" lang="en" value="${oc.lead||21}">
+    <div class="modal-actions" style="justify-content:flex-start;"><button class="btn btn-primary" id="oe_save">${icon('save',14)} حفظ</button></div></div>`;
+  showInfoModal(`${icon('calendar',17)} ${id?'تعديل مناسبة':'إضافة مناسبة'}`, body, box=>{
+    box.style.maxWidth='520px';
+    const MON = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const HMON = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+    const opts = (arr, sel) => arr.map((n,i)=>`<option value="${i+1}" ${Number(sel)===i+1?'selected':''}>${n}</option>`).join('');
+    const days = sel => Array.from({length:31},(_,i)=>`<option value="${i+1}" ${Number(sel)===i+1?'selected':''}>${i+1}</option>`).join('');
+    const drawRule = ()=>{
+      const t = box.querySelector('#oe_type').value, r = box.querySelector('#oe_rule');
+      const same = t===oc.type;
+      if(t==='g') r.innerHTML = `<label>اليوم والشهر</label><div class="oc-row"><select id="oe_d">${days(same?b:1)}</select><select id="oe_m">${opts(MON, same?a:1)}</select></div>`;
+      else if(t==='h') r.innerHTML = `<label>اليوم والشهر الهجري</label><div class="oc-row"><select id="oe_d">${days(same?b:1)}</select><select id="oe_m">${opts(HMON, same?a:1)}</select></div>`;
+      else if(t==='nth') r.innerHTML = `<label>الترتيب واليوم والشهر</label><div class="oc-row"><select id="oe_n">${opts(['الأول','الثاني','الثالث','الرابع'], same?c:1)}</select>
+          <select id="oe_wd">${['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'].map((n,i)=>`<option value="${i}" ${same&&Number(b)===i?'selected':''}>${n}</option>`).join('')}</select><select id="oe_m">${opts(MON, same?a:1)}</select></div>`;
+      else r.innerHTML = `<label>التاريخ</label><input id="oe_date" type="date" lang="en-GB" value="${same?oc.rule:''}">`;
+    };
+    box.querySelector('#oe_type').onchange = drawRule; drawRule();
+    box.querySelector('#oe_save').onclick = async ()=>{
+      const name = box.querySelector('#oe_name').value.trim(); if(!name){ toast('اكتب اسم المناسبة'); return; }
+      const t = box.querySelector('#oe_type').value; const v = k => (box.querySelector('#'+k)||{}).value;
+      const rule = t==='g' ? `${String(v('oe_m')).padStart(2,'0')}-${String(v('oe_d')).padStart(2,'0')}`
+                 : t==='h' ? `${v('oe_m')}-${v('oe_d')}` : t==='nth' ? `${v('oe_m')}-${v('oe_wd')}-${v('oe_n')}` : v('oe_date');
+      if(!rule){ toast('حدّد التاريخ'); return; }
+      const rec = {name, type:t, rule, suggest: box.querySelector('#oe_sug').value.trim(), lead: Number(box.querySelector('#oe_lead').value)||21};
+      if(id) Object.assign(oc, rec); else state.occasions.push(Object.assign({id:uid()}, rec));
+      await saveState(); closeModal(); toast('حُفظت المناسبة'); render();
+    };
+  });
+}
+function renderOccasionsTab(c){
+  ensureOccasions();
+  const up = upcomingOccasions(365);
+  const canEdit = currentRole==='admin';
+  c.innerHTML = `<div class="card"><h2>${icon('calendar',15)} تقويم المناسبات
+      ${canEdit?`<button class="btn btn-primary btn-sm" onclick="editOccasion()">${icon('plus',13)} إضافة مناسبة</button>`:''}</h2>
+    <div class="helper" style="margin-bottom:10px;">المناسبات خلال السنة القادمة بتاريخها الميلادي والهجري (تقويم أم القرى). «مخطط لها» = فعاليات في الأسبوع السابق للمناسبة أو يومها. تظهر المناسبة في الصفحة الرئيسية حين يقترب موعدها، وفي تقويم الطلبات.</div>
+    <table class="set-table occ-tbl"><thead><tr><th style="text-align:right;">المناسبة</th><th>التاريخ</th><th>الهجري</th><th>المتبقي</th><th>مخطط لها</th><th style="text-align:right;">برامج مقترحة</th><th></th></tr></thead><tbody>
+    ${up.map(x=>`<tr class="${x.left<=x.oc.lead&&!x.planned?'occ-warn':''}">
+      <td style="text-align:right;"><b>${escapeHtml(x.oc.name)}</b><div class="helper">${escapeHtml(occRuleLabel(x.oc))}</div></td>
+      <td style="white-space:nowrap;">${dayNameOf(x.date)}<br><b>${fmtDateRaw(x.date)}</b></td>
+      <td style="white-space:nowrap;" class="helper">${escapeHtml(hijriLabel(x.date))}</td>
+      <td><b>${x.left===0?'اليوم':x.left+' يوم'}</b></td>
+      <td>${x.planned?`<span class="st st-done">${x.planned}</span>`:`<span class="st st-late">لا شيء</span>`}</td>
+      <td style="text-align:right;" class="helper">${escapeHtml(x.oc.suggest||'')}</td>
+      <td style="white-space:nowrap;">${currentRole!=='trainer'?`<button class="icon-btn" title="طلب فعالية لهذه المناسبة" aria-label="طلب فعالية" onclick="newOrderForOccasion('${addDaysISO(x.date, 0)}', ${JSON.stringify(x.oc.name).replace(/"/g,'&quot;')})">${icon('filePlus',13)}</button>`:''}
+        ${canEdit?`<button class="icon-btn" title="تعديل" aria-label="تعديل" onclick="editOccasion('${x.oc.id}')">${icon('edit',13)}</button>
+        <button class="icon-btn danger" title="حذف" aria-label="حذف" onclick="if(confirm('حذف المناسبة؟')){state.occasions=state.occasions.filter(o=>o.id!=='${x.oc.id}');saveState();render();}">${icon('trash',13)}</button>`:''}</td></tr>`).join('')
+      || `<tr><td colspan="7"><div class="empty-state">لا توجد مناسبات</div></td></tr>`}
+    </tbody></table></div>`;
+}
+function appendHomeOccasions(c){
+  ensureOccasions();
+  const list = upcomingOccasions(60).filter(x=>x.left <= (x.oc.lead||21));
+  if(!list.length) return;
+  const card = document.createElement('div'); card.className='card home-occ';
+  card.innerHTML = `<h2>${icon('calendar',15)} مناسبات قادمة <button class="btn btn-outline btn-sm" onclick="currentPage='settings';settingsTab='occasions';render();">التقويم الكامل</button></h2>
+    <div class="occ-list">${list.map(x=>`<div class="occ-item${x.planned?'':' warn'}">
+      <div class="occ-d"><b>${x.left===0?'اليوم':x.left}</b><i>${x.left===0?'':'يوم'}</i></div>
+      <div style="flex:1;min-width:0;"><b>${escapeHtml(x.oc.name)}</b>
+        <div class="helper">${dayNameOf(x.date)} ${fmtDateRaw(x.date)} · ${escapeHtml(hijriLabel(x.date))}${x.oc.suggest?` · مقترح: ${escapeHtml(x.oc.suggest)}`:''}</div></div>
+      ${x.planned?`<span class="st st-done">${x.planned} مخطط لها</span>`:`<span class="st st-late">لا فعاليات بعد</span>`}
+      <button class="icon-btn" title="طلب فعالية" aria-label="طلب فعالية" onclick="newOrderForOccasion('${x.date}', ${JSON.stringify(x.oc.name).replace(/"/g,'&quot;')})">${icon('filePlus',14)}</button>
+    </div>`).join('')}</div>`;
+  const anchor = c.querySelector('.home-targets');
+  if(anchor) c.insertBefore(card, anchor); else c.appendChild(card);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   تنبيه الطلب المكرر
+   ══════════════════════════════════════════════════════════════════ */
+function similarTitles(a, b){
+  const na = _pnz(a), nb = _pnz(b); if(!na || !nb) return false;
+  if(na===nb || na.includes(nb) || nb.includes(na)) return true;
+  const A = new Set(_ptoks(a)), B = new Set(_ptoks(b)); if(!A.size || !B.size) return false;
+  const inter = [...A].filter(x=>B.has(x)).length;
+  return inter / Math.min(A.size, B.size) >= 0.6;
+}
+function findSimilarOrders(title, schoolId, venue, date, excludeId){
+  if(!title || !date || (!schoolId && !venue)) return [];
+  const from = addDaysISO(date,-30), to = addDaysISO(date,30);
+  return state.orders.filter(o=>o.id!==excludeId && isLiveOrder(o) && o.date && o.date>=from && o.date<=to
+    && ((schoolId && o.schoolId===schoolId) || (venue && o.venue===venue)) && similarTitles(title, o.title));
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   العمل عند انقطاع الإنترنت
+   التعديلات تُحفظ على هذا الجهاز وتُرفع تلقائيًا (مع الدمج) عند عودة الاتصال
+   ══════════════════════════════════════════════════════════════════ */
+let __offline = false;
+function __lsSet(k, v){
+  try{ localStorage.setItem(k, v); return true; }
+  catch(e){ try{ localStorage.removeItem('backup_prev'); localStorage.setItem(k, v); return true; }catch(e2){ return false; } }
+}
+function queueOfflineSave(){
+  const ok = __lsSet('offline_state', JSON.stringify(state));
+  __lsSet('offline_base_at', String(__baseUpdatedAt==null?'':__baseUpdatedAt));
+  const n = (Number(localStorage.getItem('offline_n'))||0) + 1; __lsSet('offline_n', String(n));
+  const first = !__offline;
+  __offline = true; syncState.ok = false; renderOfflineBar(); try{ renderUserBox(); }catch(e){}
+  if(first) toast(ok ? 'لا يوجد اتصال — حُفظ التعديل على هذا الجهاز وسيُرفع تلقائيًا' : 'لا يوجد اتصال، وتعذّر الحفظ على الجهاز (المساحة ممتلئة)');
+}
+function clearOfflineQueue(){
+  const had = __offline || localStorage.getItem('offline_state');
+  ['offline_state','offline_base_at','offline_n'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  __offline = false; renderOfflineBar();
+  if(had) toast('عاد الاتصال — رُفعت تعديلاتك ودُمجت مع الخادم');
+}
+function renderOfflineBar(){
+  let bar = document.getElementById('offlineBar');
+  if(!__offline){ if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id = 'offlineBar'; document.body.appendChild(bar); }
+  const n = Number(localStorage.getItem('offline_n'))||0;
+  bar.innerHTML = `${icon('alert',15)} <b>غير متصل بالإنترنت</b> — تعديلاتك محفوظة على هذا الجهاز${n?` (${n})`:''} وستُرفع تلقائيًا عند عودة الاتصال.
+    <button type="button" onclick="flushSave()">إعادة المحاولة</button>`;
+}
+/* بدء التشغيل بلا إنترنت: نعمل من آخر نسخة محلية بدل إيقاف النظام */
+function tryOfflineBoot(){
+  let raw = null, baseAt = null;
+  try{ raw = localStorage.getItem('offline_state'); baseAt = localStorage.getItem('offline_base_at'); }catch(e){}
+  if(!raw){ try{ raw = localStorage.getItem('backup_last'); baseAt = localStorage.getItem('backup_base_at'); }catch(e){} }
+  if(!raw) return false;
+  try{ state = JSON.parse(raw); }catch(e){ return false; }
+  if(!state || !Array.isArray(state.orders)) return false;
+  /* الأساس = النسخة المحلية نفسها؛ وطابع زمني «مجهول» يفرض الدمج عند أول رفع */
+  __rememberBase(raw, baseAt ? Number(baseAt) : -1);
+  __readFailed = false; __offline = true; syncState.ok = false;
+  setTimeout(renderOfflineBar, 50);
+  return true;
+}
+window.addEventListener('online', ()=>{ if(__offline || localStorage.getItem('offline_state')){ setTimeout(()=>flushSave(), 800); } });
+window.addEventListener('offline', ()=>{ syncState.ok = false; try{ renderUserBox(); }catch(e){} });
 
 /* ============ Init ============ */
 (async function init(){ await loadState(); renderRoot(); })();
