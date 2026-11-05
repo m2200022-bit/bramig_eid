@@ -15309,17 +15309,31 @@ function avgRating(list){
   const v = list.flatMap(o=>[o.supervisorRating,o.schoolRating,o.studentsRating]).map(Number).filter(x=>x>0);
   return v.length ? Math.round(v.reduce((s,x)=>s+x,0)/v.length*10)/10 : null;
 }
-function profileEventsTable(list, showTrainers){
+function profileEventsTable(list, showTrainers, reopen){
   if(!list.length) return `<div class="empty-state">لا توجد فعاليات</div>`;
   const today = todayStr();
-  return `<div style="max-height:260px;overflow:auto;"><table class="set-table pr-tbl"><thead><tr><th>#</th><th style="text-align:right;">الفعالية</th><th>التاريخ</th><th style="text-align:right;">${showTrainers?'المقدّمون':'الجهة'}</th><th>الحالة</th></tr></thead><tbody>
+  const canEdit = currentRole==='admin' || currentRole==='user';
+  const acts = o => !canEdit ? '' : `<td style="white-space:nowrap;">
+      <button type="button" class="icon-btn" title="تعديل الفعالية" aria-label="تعديل" onclick="profEditOrder('${o.id}')" style="width:26px;height:26px;padding:0;">${icon('edit',12)}</button>
+      ${o.status==='cancelled'
+        ? `<button type="button" class="icon-btn" title="تراجع عن الإلغاء" aria-label="تراجع عن الإلغاء" onclick="profToggleCancel('${o.id}', ${reopen||'null'})" style="width:26px;height:26px;padding:0;">${icon('refresh',12)}</button>`
+        : `<button type="button" class="icon-btn danger" title="إلغاء الفعالية" aria-label="إلغاء الفعالية" onclick="profToggleCancel('${o.id}', ${reopen||'null'})" style="width:26px;height:26px;padding:0;">${icon('ban',12)}</button>`}</td>`;
+  return `<div style="max-height:260px;overflow:auto;"><table class="set-table pr-tbl"><thead><tr><th>#</th><th style="text-align:right;">الفعالية</th><th>التاريخ</th><th style="text-align:right;">${showTrainers?'المقدّمون':'الجهة'}</th><th>الحالة</th>${canEdit?'<th>إجراء</th>':''}</tr></thead><tbody>
     ${list.map(o=>{ const st = orderState(o, today); const sc = state.schools.find(x=>x.id===o.schoolId);
       return `<tr><td><span class="badge">${o.serial}</span></td>
         <td style="text-align:right;"><a href="#" onclick="closeModal();setTimeout(()=>viewOrderReadOnly('${o.id}'),60);return false;">${escapeHtml(o.title||'')}</a></td>
         <td style="white-space:nowrap;">${fmtDateRaw(o.date)}</td>
         <td style="text-align:right;">${showTrainers ? escapeHtml(trainerNames(o)||'—') : escapeHtml(sc?sc.name:'—')}</td>
-        <td><span class="st st-${st.k}">${ST_NAMES[st.k]||st.l}</span></td></tr>`; }).join('')}
+        <td><span class="st st-${st.k}">${ST_NAMES[st.k]||st.l}</span></td>${acts(o)}</tr>`; }).join('')}
   </tbody></table></div>`;
+}
+function profEditOrder(id){ closeModal(); setTimeout(()=>editOrder(id), 60); }
+async function profToggleCancel(id, reopen){
+  const o = state.orders.find(x=>x.id===id); if(!o) return;
+  const wasCancelled = o.status==='cancelled';
+  await toggleCancelOrder(id);
+  if(o.status!=='cancelled' && !wasCancelled) return;           /* أُلغي الإجراء من نافذة التأكيد */
+  if(typeof reopen==='function') setTimeout(reopen, 120);
 }
 function openTrainerProfile(id){
   const t = (state.trainers||[]).find(x=>x.id===id); if(!t) return;
@@ -15359,8 +15373,8 @@ function openTrainerProfile(id){
     </div>
     <div class="pr-sec"><h4>${icon('school',14)} الجهات التي خدمها</h4>
       <div class="pr-chips">${Object.entries(schools).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span class="pr-tag">${escapeHtml(n)} <b>${c}</b></span>`).join('') || '<span class="helper">—</span>'}</div></div>
-    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.length})</h4>${profileEventsTable(upcoming, false)}</div>
-    <div class="pr-sec"><h4>${icon('history',14)} السابقة (آخر ${past.length})</h4>${profileEventsTable(past, false)}</div>
+    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.length})</h4>${profileEventsTable(upcoming, false, `()=>openTrainerProfile('${id}')`)}</div>
+    <div class="pr-sec"><h4>${icon('history',14)} السابقة (آخر ${past.length})</h4>${profileEventsTable(past, false, `()=>openTrainerProfile('${id}')`)}</div>
     <div class="pr-actions"><button class="btn btn-outline btn-sm" id="pr_print">${icon('printer',14)} طباعة الملف</button></div>`;
   showInfoModal(`${icon('user',17)} ملف مقدّم المبادرة`, body, box=>{
     box.style.maxWidth = '860px';
@@ -15398,10 +15412,11 @@ function openTrainerProfile(id){
 function openSchoolProfile(id){
   const s = (state.schools||[]).find(x=>x.id===id); if(!s) return;
   const today = todayStr(), year = acadYearOf(today), yr = acadYearRange(year);
-  const all = state.orders.filter(o=>o.schoolId===id && isLiveOrder(o));
+  const withCancelled = state.orders.filter(o=>o.schoolId===id && o.date);
+  const all = withCancelled.filter(o=>isLiveOrder(o));
   const inYear = all.filter(o=>o.date>=yr.start && o.date<=yr.end);
   const done = inYear.filter(o=>o.completionStatus==='تم');
-  const upcoming = all.filter(o=>o.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming = withCancelled.filter(o=>o.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
   const past = all.filter(o=>o.date<today).sort((a,b)=>b.date.localeCompare(a.date));
   const last = past[0], next = upcoming[0];
   const people = done.reduce((x,o)=>x+(Number(o.participantsCount)||0),0);
@@ -15430,8 +15445,8 @@ function openSchoolProfile(id){
       <div class="pr-chips">${Object.entries(byField).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span class="pr-tag">${escapeHtml(n)} <b>${c}</b></span>`).join('') || '<span class="helper">—</span>'}</div></div>
     <div class="pr-sec"><h4>${icon('user',14)} مقدّمون خدموها</h4>
       <div class="pr-chips">${Object.entries(trs).sort((a,b)=>b[1]-a[1]).map(([tid,c])=>{ const t=state.trainers.find(x=>x.id===tid); return t?`<a href="#" class="pr-tag" onclick="openTrainerProfile('${tid}');return false;">${escapeHtml(t.name)} <b>${c}</b></a>`:''; }).join('') || '<span class="helper">—</span>'}</div></div>
-    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.length})</h4>${profileEventsTable(upcoming, true)}</div>
-    <div class="pr-sec"><h4>${icon('history',14)} السابقة (${past.length})</h4>${profileEventsTable(past.slice(0,40), true)}</div>
+    <div class="pr-sec"><h4>${icon('calendar',14)} القادمة (${upcoming.filter(o=>isLiveOrder(o)).length})</h4>${profileEventsTable(upcoming, true, `()=>openSchoolProfile('${id}')`)}</div>
+    <div class="pr-sec"><h4>${icon('history',14)} السابقة (${past.length})</h4>${profileEventsTable(past.slice(0,40), true, `()=>openSchoolProfile('${id}')`)}</div>
     <div class="pr-actions"><button class="btn btn-outline btn-sm" id="sp_print">${icon('printer',14)} طباعة الملف</button></div>`;
   showInfoModal(`${icon('school',17)} ملف الجهة`, body, box=>{
     box.style.maxWidth = '880px';
