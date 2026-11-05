@@ -3278,6 +3278,26 @@
     border-radius:12px; padding:10px 14px; font-size:12.5px; display:flex; align-items:center; gap:8px; box-shadow:0 10px 30px rgba(0,0,0,.25); max-width:calc(100% - 32px); }
   #offlineBar .lu{ color:#F2C46B; flex:none; }
   #offlineBar button{ all:unset; cursor:pointer; background:rgba(255,255,255,.14); border-radius:8px; padding:4px 10px; font-weight:700; white-space:nowrap; }
+
+  /* فرز حسب نوع المدرسة */
+  .stg-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .stg-chips button{ all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--ds-line);
+    border-radius:20px; font-size:12.5px; font-weight:700; color:var(--ds-ink-2); background:var(--ds-surface); }
+  .stg-chips button b{ background:var(--ds-bg); border-radius:10px; padding:0 7px; font-size:11px; color:var(--ds-ink); }
+  .stg-chips button.on{ background:var(--ds-teal); border-color:var(--ds-teal); color:#fff; }
+  .stg-chips button.on b{ background:rgba(255,255,255,.2); color:#fff; }
+  .stg-chips button[disabled]{ opacity:.45; cursor:default; }
+  .stg-sum{ width:100%; margin-bottom:14px; } .stg-sum td{ font-size:12.5px; }
+  .stg-sum tr.dim td{ opacity:.4; } .stg-sum tr.tot td{ font-weight:800; background:var(--ds-bg) !important; }
+  .stg-sec{ margin-top:12px; } .stg-sec h4{ display:flex; align-items:center; gap:6px; font-size:14px; margin:0 0 6px; color:var(--ds-ink); }
+  .stg-sec h4 .lu{ color:var(--ds-teal); } .stg-sec h4 span{ font-size:12px; font-weight:400; color:var(--ds-ink-3); }
+  .stg-tbl{ width:100%; } .stg-tbl td{ font-size:12px; } .stg-tbl a{ color:var(--ds-ink); }
+
+  .stg-sel{ min-height:30px !important; font-size:12px !important; padding:2px 6px !important; width:auto !important; }
+  .stg-sel.other{ background:#FFF4E0 !important; border-color:#E9B35F !important; color:#8A5A00 !important; font-weight:700; }
+  .stg-chips button.warn:not(.on){ border-color:#E9B35F; color:#8A5A00; background:#FFF8EC; }
+  #schoolsTable th{ white-space:nowrap; }
+  .ss-cnt{ background:#FFF1D6; color:#8A5A00; border-radius:8px; padding:0 6px; font-size:11px; }
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
@@ -3559,6 +3579,7 @@ async function loadState(){
       if(!Array.isArray(state.resources)) state.resources=[];
       if(!Array.isArray(state.targets)) state.targets=[];
       try{ ensureOccasions(); }catch(e){}
+      try{ if(ensureSchoolStages()) setTimeout(()=>saveState(), 1500); }catch(e){}
       /* أماكن التنفيذ الفعلية (حين يختلف مكان التنفيذ عن الجهة الطالبة) */
       if(!Array.isArray(state.venues)) state.venues = ['مركز عيد الثقافي - دحل الحمام','مخيم أم العمد','عزبة سمسمة'].map(name=>({id:uid(), name}));
       if(!state.placeTypes || !state.placeTypes.length){
@@ -3805,6 +3826,7 @@ async function flushSave(){
   if(typeof navigator!=='undefined' && navigator.onLine===false){ queueOfflineSave(); return; }
   /* تطبيع قبل الكتابة: لا يُحفظ تاريخ انتهاء أقدم من تاريخ البداية */
   try{ fixInvertedDateRanges(); }catch(e){}
+  try{ ensureSchoolStages(); }catch(e){}
   saving=true;
   try{
     /* نسخة احتياطية محلية قبل كل كتابة — للاسترجاع عند أي خطأ */
@@ -4556,7 +4578,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '3.1';
+const APP_VERSION = '3.2';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -5402,6 +5424,7 @@ function renderSchedulePage(c){
         <button class="btn btn-outline" id="sc_print" style="min-height:34px;font-size:12px;">${icon('printer',14)} طباعة طلبات المقدّمين</button>
         <button class="icon-btn" id="sc_excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:34px;height:34px;padding:0;">${icon('sheet',15)}</button>
         <button class="btn btn-outline" id="sc_plan" style="min-height:34px;font-size:12px;">${icon('sparkles',14)} اقتراح توزيع لجهة</button>
+        <button class="icon-btn" id="sc_stage" title="فرز حسب نوع المدرسة" aria-label="فرز حسب نوع المدرسة" style="width:34px;height:34px;padding:0;">${icon('school',15)}</button>
         <button class="icon-btn mt-btn" id="sc_multi" title="فعاليات يشارك فيها أكثر من مقدّم" aria-label="فعاليات يشارك فيها أكثر من مقدّم" style="width:34px;height:34px;padding:0;position:relative;">${icon('users',15)}<span class="mt-badge" hidden></span></button>
         <button class="icon-btn" id="sc_check" title="فحص التضارب خلال الفترة" aria-label="فحص التضارب" style="width:34px;height:34px;padding:0;">${icon('alert',15)}</button>
       </span>
@@ -5651,6 +5674,7 @@ function renderSchedulePage(c){
   };
   document.getElementById('sc_print').onclick = ()=>sortPick(by=>printTrainerRequests(F, T, by));
   { const mtOrders = (state.orders||[]).filter(o=>inRange(o) && (selTr.size===0 || (o.trainerIds||[]).some(id=>selTr.has(id))));
+    const sb = document.getElementById('sc_stage'); if(sb) sb.onclick = ()=>openStageModal(mtOrders, F, T);
     const n = multiTrainerRows(mtOrders).length, b = document.getElementById('sc_multi');
     if(b){ const bd = b.querySelector('.mt-badge'); if(bd){ bd.textContent = n; bd.hidden = !n; }
       b.onclick = ()=>showInfoModal('', '<div id="mtBox"></div>', box=>{ box.style.maxWidth='1120px';
@@ -7111,6 +7135,7 @@ function renderOrderPage(c){
           <button type="button" data-ov="list" class="${ordersView==='list'?'on':''}">${icon('list',14)} قائمة</button>
           <button type="button" data-ov="cal" class="${ordersView==='cal'?'on':''}">${icon('calendar',14)} تقويم</button>
         </span>
+        <button class="icon-btn" type="button" id="ord_stageBtn" title="فرز حسب نوع المدرسة" aria-label="فرز حسب نوع المدرسة" style="width:32px;height:32px;padding:0;">${icon('school',15)}</button>
         <button class="btn btn-outline btn-sm" type="button" onclick="currentPage='quickSheet';render();" title="تعديل الفعاليات في جدول">${icon('sheet',14)} تعديل سريع</button>
       </span></h2>
       <div class="ord-bar">
@@ -7208,11 +7233,17 @@ function renderOrderPage(c){
         list = list.filter(o=> completionFilter==='__pending' ? !o.completionStatus : o.completionStatus===completionFilter);
       }
       if(statusFilter){ list = list.filter(o=>(o.status||'active')===statusFilter); }
+      window.__ordLastList = list;
       const box = document.getElementById('ord_listResult');
       if(ordersView==='cal'){ renderOrdersCalendar(box, list); return; }
       box.innerHTML = ordersTableHtml(list, 'otbl_order_list');
       enhanceReportTable(box);
     }
+    { const sb = document.getElementById('ord_stageBtn'); if(sb) sb.onclick = ()=>{
+        const L = (window.__ordLastList||[]).filter(o=>isLiveOrder(o) && o.date);
+        if(!L.length){ toast('لا توجد فعاليات في القائمة'); return; }
+        const ds = L.map(o=>o.date).sort(); openStageModal(L, ds[0], L.map(o=>orderEnd(o)).sort().pop());
+      }; }
     sub.querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{
       ordersView = b.dataset.ov; try{ localStorage.setItem('ordersView', ordersView); }catch(e){}
       sub.querySelectorAll('[data-ov]').forEach(x=>x.classList.toggle('on', x===b));
@@ -9571,9 +9602,18 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
         <span><b>المشرف:</b> ${supervisor?escapeHtml(supervisor.name):'—'}${supervisor&&!supervisor.phone?' <i>(المشرف بدون رقم)</i>':''}</span></span>`],
   ];
   if(o.venue) rows.push(['school','مكان التنفيذ', `<b>${escapeHtml(o.venue)}</b>`]);
+  /* رقم قابل للنقر (اتصال) + أيقونتا اتصال وواتساب بجواره */
+  const PH = p => {
+    const raw = String(p||'').trim(); if(!raw) return '';
+    const digits = raw.replace(/[^\d+]/g,''), bare = digits.replace(/^\+/,'').replace(/^0+/,'');
+    const intl = bare.length<=8 ? '974'+bare : bare;
+    return `<span class="ph"><a class="ph-n" href="tel:+${intl}" title="اتصال">${escapeHtml(raw)}</a>`
+      + `<a class="ph-i call" href="tel:+${intl}" title="اتصال" aria-label="اتصال"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>`
+      + `<a class="ph-i wa" href="https://wa.me/${intl}" target="_blank" title="واتساب" aria-label="واتساب">${waIcon(14)}</a></span>`;
+  };
   const phones = [supervisor&&supervisor.phone].filter(Boolean);
-  rows.push(['phone','الجوال', phones.length ? phones.map(p=>N(p)).join(' <span class="sep">|</span> ') : '—']);
-  rows.push(['user','مقدم المبادرة', trainers.length ? trainers.map(t=>`<span class="tp">${escapeHtml(t.name)}${t.phone?N(t.phone):''}</span>`).join('') : '—']);
+  rows.push(['phone','الجوال', phones.length ? phones.map(PH).join(' <span class="sep">|</span> ') : '—']);
+  rows.push(['user','مقدم المبادرة', trainers.length ? trainers.map(t=>`<span class="tp">${escapeHtml(t.name)}${t.phone?PH(t.phone):''}</span>`).join('') : '—']);
   if((o.resourceIds||[]).length){
     const rn = o.resourceIds.map(id=>{ const r=(state.resources||[]).find(x=>x.id===id); return r?r.name:''; }).filter(Boolean);
     if(rn.length) rows.push(['truck','الموارد المحجوزة', escapeHtml(rn.join('، '))]);
@@ -9630,7 +9670,14 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
     .ao-t td.v i{font-style:normal;color:#8C7D82;}
     .ao-t td.v .sep{color:#B9A9AF;margin:0 1.5mm;}
     .ao-t td.v .tp{display:inline-block;margin-inline-end:5mm;}
-    .ao-t td.v .tp .n{margin-inline-start:2.5mm;}
+    .ao-t td.v .tp .ph{margin-inline-start:2.5mm;}
+    .ph{display:inline-flex;align-items:center;gap:1.4mm;white-space:nowrap;vertical-align:middle;}
+    .ph-n{color:#2E1A21;font-weight:700;text-decoration:none;direction:ltr;unicode-bidi:isolate;font-variant-numeric:lining-nums;}
+    .ph-n:hover{text-decoration:underline;}
+    .ph-i{display:inline-flex;align-items:center;justify-content:center;width:5.4mm;height:5.4mm;border-radius:50%;text-decoration:none;}
+    .ph-i svg{width:3.2mm;height:3.2mm;}
+    .ph-i.call{background:#F3E6EB;} .ph-i.call svg{fill:none;stroke:${M};stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+    .ph-i.wa{background:#E3F6EA;color:#1FA855;} .ph-i.wa svg{fill:#1FA855;stroke:none;}
     .ao-t td.v .chip{display:inline-block;border:1px solid #E2D4D9;background:#fff;border-radius:1.2mm;padding:0 2mm;margin:.3mm;font-size:10pt;}
     .ao-side{background:#FAF5F6;border-radius:3mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:5mm 4mm 4mm;gap:3mm;}
     .ao-slogan{font-weight:700;font-size:22pt;line-height:1.35;color:${M};}
@@ -10724,7 +10771,9 @@ const REPORT_GROUPS = [
   { t:'حسب الشخص والمكان', icon:'users', items:[
     ['trainer','تقرير مقدم الفعالية','users','فعاليات مقدّم محدد خلال فترة'],
     ['school','تقرير فعاليات مدرسة','school','فعاليات جهة أو مدرسة خلال فترة'],
-    ['venue','مكان التنفيذ الفعلي','home','ما نُفِّذ في كل مكان خلال فترة'] ]},
+    ['venue','مكان التنفيذ الفعلي','home','ما نُفِّذ في كل مكان خلال فترة'],
+    ['stageType','حسب نوع المدرسة','school','ثانوية، ابتدائية، إعدادية، مشتركة، نموذجية، روضة، أخرى'],
+    ['schoolStages','تصنيف المدارس حسب المرحلة','layers','المدارس المسجّلة «أخرى» لمراجعتها'] ]},
   { t:'حسب التصنيف', icon:'layers', items:[
     ['bypath','حسب المسار / المجال','activity','قائمة الفعاليات مصنّفة'],
     ['fieldSum','ملخّص مجال المبادرة','layers','إجماليات كل مجال'],
@@ -10780,7 +10829,7 @@ function renderReportsPage(c){
         </div>
         <div class="helper" id="rl_none" style="display:none;padding:14px;text-align:center;">لا يوجد تقرير مطابق</div>
         <select id="rl_type" style="display:none;"><option value=""></option>
-          ${['monthly','targets','trainer','school','venue','bypath','fieldSum','topPrograms','periodSum','quran','stats','adminReq','eval','dist']
+          ${['monthly','targets','stageType','schoolStages','trainer','school','venue','bypath','fieldSum','topPrograms','periodSum','quran','stats','adminReq','eval','dist']
             .map(v=>`<option value="${v}">${v}</option>`).join('')}
         </select>
       </div>
@@ -10810,6 +10859,19 @@ function renderReportsPage(c){
       const from = document.getElementById('rl_from').value, to = document.getElementById('rl_to').value;
       const type = document.getElementById('rl_type').value;
       if(type==='monthly'){ mode='monthly'; drawMonthly(from); setActive(); }
+      else if(type==='schoolStages'){ mode='schoolStages'; setActive(); drawSchoolStagesReport(document.getElementById('reportContent'), ()=>{ mode='start'; drawStart(); setActive(); }); }
+      else if(type==='stageType'){ mode='stageType'; setActive();
+        const now = todayStr(); const F0 = from || (now.slice(0,7)+'-01'), T0 = to || addDaysISO(addDaysISO(now.slice(0,7)+'-01', 32).slice(0,7)+'-01', -1);
+        const box = document.getElementById('reportContent');
+        box.innerHTML = `<div class="card" id="stgCard">${stageReportShell('الفعاليات حسب نوع المدرسة', true, F0, T0)}</div>`;
+        const card = box.querySelector('#stgCard');
+        card.querySelector('h2').insertAdjacentHTML('beforeend', `<button class="btn btn-outline btn-sm" type="button" id="stg_back">${icon('chevronRight',14)} كل التقارير</button>`);
+        card.querySelector('#stg_back').onclick = ()=>{ mode='start'; drawStart(); setActive(); };
+        const rng = ()=>[card.querySelector('.stg-from').value, card.querySelector('.stg-to').value];
+        const ords = ()=>{ const [a,b] = rng(); return state.orders.filter(o=>isLiveOrder(o) && o.date && (!a || orderEnd(o)>=a) && (!b || o.date<=b)); };
+        bindStageReport(card, ords, rng, {});
+        card.querySelectorAll('.stg-from,.stg-to').forEach(i=>i.addEventListener('change', ()=>card.__stageDraw()));
+      }
       else if(type==='targets'){ mode='targets'; drawTargetsReport(document.getElementById('reportContent'), ()=>{ mode='start'; drawStart(); setActive(); }); setActive(); }
       else if(type==='trainer'){ mode='trainer'; drawTrainer(); setActive(); if(from) document.getElementById('rp_from').value=from; if(to) document.getElementById('rp_to').value=to; }
       else if(type==='school'){ mode='school'; drawSchool(); setActive(); if(from) document.getElementById('rp_from2').value=from; if(to) document.getElementById('rp_to2').value=to; }
@@ -13429,6 +13491,7 @@ function renderSettingsPage(c){
           style="width:230px;min-height:30px;font-size:12px;padding:0 10px;">
         <button class="icon-btn" onclick="document.getElementById('schoolImportFile').click()" title="استيراد إكسل" aria-label="استيراد إكسل" style="width:28px;height:28px;padding:0;">${icon('download',14)}</button>
         <input type="file" id="schoolImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importSchoolsExcel(this.files[0])">
+        <button class="icon-btn" onclick="openSchoolStagesModal()" title="المدارس المصنّفة «أخرى» ومراجعة المراحل" aria-label="مراجعة المراحل" style="width:auto;height:28px;padding:0 8px;font-size:12px;gap:4px;">${icon('layers',14)} المراحل${(state.schools||[]).filter(s=>(s.stage||detectSchoolStage(s))==='أخرى').length?` <b class="ss-cnt">${(state.schools||[]).filter(s=>(s.stage||detectSchoolStage(s))==='أخرى').length} أخرى</b>`:''}</button>
         <button class="icon-btn" onclick="quickAddSchoolSettings()" title="إضافة مدرسة" aria-label="إضافة مدرسة" style="width:28px;height:28px;padding:0;">${icon('plus',14)}</button>
         <button class="icon-btn" onclick="dedupeAll()" title="حذف المكرر (مدارس ومشرفين وأرقام وبريد)" aria-label="حذف المكرر" style="width:28px;height:28px;padding:0;">${icon('copy',14)}</button>
         <button class="icon-btn" onclick="mergeSameSchools()" title="دمج المدارس المتطابقة بالاسم" aria-label="دمج المدارس المتطابقة" style="width:28px;height:28px;padding:0;">${icon('layers',14)}</button>
@@ -13452,7 +13515,7 @@ function renderSettingsPage(c){
           rows.push(`<tr data-find="${escapeHtml((s.name+' '+(s.email||'')).toLowerCase())}"${flag?' style="background:#FFF8EC;"':''}>
             <td><input type="checkbox" class="schRow" data-school="${s.id}"></td>
             <td style="text-align:right;"><a href="#" onclick="openSchoolProfile('${s.id}');return false;">${escapeHtml(s.name)}</a></td>
-            <td>${escapeHtml(s.level||'غير مصنّف')}</td>
+            <td>${stageSelectHtml(s)}</td>
             <td style="text-align:right;">${escapeHtml(s.email||'—')}</td>
             <td colspan="3" class="helper">لا يوجد مشرفون</td>
             <td><button class="icon-btn" title="إضافة مشرف" onclick="quickAddSupervisorSettings('${s.id}')" style="width:24px;height:24px;padding:0;">${icon('plus',12)}</button>
@@ -13462,7 +13525,7 @@ function renderSettingsPage(c){
           rows.push(`<tr data-find="${escapeHtml((s.name+' '+sv.name+' '+(sv.phone||'')+' '+(sv.email||'')+' '+(s.email||'')).toLowerCase())}"${flag?' style="background:#FFF8EC;"':''}>
             <td><input type="checkbox" class="schRow" data-school="${s.id}" data-sv="${sv.id}"></td>
             <td style="text-align:right;">${i===0?`<a href="#" onclick="openSchoolProfile('${s.id}');return false;">${escapeHtml(s.name)}</a>`:''}</td>
-            <td>${i===0?escapeHtml(s.level||'غير مصنّف'):''}</td>
+            <td>${i===0?stageSelectHtml(s):''}</td>
             <td style="text-align:right;">${i===0?escapeHtml(s.email||'—'):''}</td>
             <td style="text-align:right;">${escapeHtml(sv.name)}</td>
             <td style="direction:ltr;">${escapeHtml(sv.phone||'—')}</td>
@@ -15601,6 +15664,231 @@ function tryOfflineBoot(){
 }
 window.addEventListener('online', ()=>{ if(__offline || localStorage.getItem('offline_state')){ setTimeout(()=>flushSave(), 800); } });
 window.addEventListener('offline', ()=>{ syncState.ok = false; try{ renderUserBox(); }catch(e){} });
+
+/* ══════════════════════════════════════════════════════════════════
+   فرز الفعاليات حسب نوع المدرسة: ثانوية، ابتدائية، إعدادية، مشتركة، نموذجية، أخرى
+   (يُستنتج من اسم المدرسة، وعند غيابه من مرحلتها المسجّلة)
+   ══════════════════════════════════════════════════════════════════ */
+const SCHOOL_TYPES = ['ثانوية','ابتدائية','إعدادية','مشتركة','نموذجية','روضة','أخرى'];
+function schoolTypeOf(s){
+  if(!s) return 'أخرى';
+  if(s.stage && SCHOOL_TYPES.includes(s.stage)) return s.stage;
+  return detectSchoolStage(s);
+  const n = _pnz(s.name||'');
+  if(/نموذج/.test(n)) return 'نموذجية';
+  const prim = /ابتدا/.test(n), prep = /اعداد/.test(n), sec = /ثانو/.test(n);
+  if(/مشترك|مجمع/.test(n) || (prim+prep+sec) >= 2) return 'مشتركة';
+  if(sec) return 'ثانوية';
+  if(prep) return 'إعدادية';
+  if(prim) return 'ابتدائية';
+  const lv = String(s.level||'');
+  if(lv==='ثانوي') return 'ثانوية';
+  if(lv==='إعدادي') return 'إعدادية';
+  if(lv==='ابتدائي') return 'ابتدائية';
+  return 'أخرى';
+}
+function stageGroups(orders){
+  const g = {}; SCHOOL_TYPES.forEach(t=>g[t]=[]);
+  orders.forEach(o=>{ const s = state.schools.find(x=>x.id===o.schoolId); g[schoolTypeOf(s)].push(o); });
+  SCHOOL_TYPES.forEach(t=>g[t].sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.timeFrom||'').localeCompare(b.timeFrom||'')));
+  return g;
+}
+function stageSummary(list){
+  return { events:list.length,
+    schools:new Set(list.map(o=>o.schoolId).filter(Boolean)).size,
+    people:list.reduce((s,o)=>s+(Number(o.participantsCount)||0),0),
+    hours:Math.round(list.reduce((s,o)=>s+computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo),0)*10)/10,
+    trainers:new Set(list.flatMap(o=>o.trainerIds||[])).size };
+}
+/* واجهة التقرير — تُستخدم في جدول المقدّمين (نافذة) وفي صفحة التقارير */
+function bindStageReport(box, getOrders, getRange, opts){
+  opts = opts || {};
+  let pick = '';
+  const COLS = ['#','الفعالية','التاريخ','الوقت','المدرسة','مقدّمو المبادرة','المستهدفون'];
+  const rowArr = o => { const s = state.schools.find(x=>x.id===o.schoolId);
+    return [o.serial, o.title||'', `${dayNameOf(o.date)} ${fmtDateRaw(o.date)}`, (o.timeFrom||o.timeTo)?`${o.timeFrom||'—'} - ${o.timeTo||'—'}`:'—',
+      s?s.name:'—', trainerNames(o)||'—', o.participantsCount||'']; };
+  function draw(){
+    const orders = getOrders(), [F,T] = getRange();
+    const G = stageGroups(orders);
+    const types = SCHOOL_TYPES.filter(t=>!pick || t===pick);
+    const body = box.querySelector('.stg-body');
+    body.innerHTML = `
+      <div class="stg-chips">
+        <button type="button" data-st="" class="${pick?'':'on'}">الكل <b>${orders.length}</b></button>
+        ${SCHOOL_TYPES.map(t=>`<button type="button" data-st="${t}" class="${pick===t?'on':''}" ${G[t].length?'':'disabled'}>${t} <b>${G[t].length}</b></button>`).join('')}
+      </div>
+      <table class="set-table stg-sum"><thead><tr><th style="text-align:right;">نوع المدرسة</th><th>الفعاليات</th><th>المدارس</th><th>المقدّمون</th><th>المستهدفون</th><th>الساعات</th></tr></thead><tbody>
+        ${SCHOOL_TYPES.map(t=>{ const x = stageSummary(G[t]); return `<tr class="${pick&&pick!==t?'dim':''}"><td style="text-align:right;font-weight:700;">${t}</td><td>${x.events}</td><td>${x.schools}</td><td>${x.trainers}</td><td>${x.people}</td><td>${x.hours}</td></tr>`; }).join('')}
+        ${(()=>{ const x = stageSummary(orders); return `<tr class="tot"><td style="text-align:right;">الإجمالي</td><td>${x.events}</td><td>${x.schools}</td><td>${x.trainers}</td><td>${x.people}</td><td>${x.hours}</td></tr>`; })()}
+      </tbody></table>
+      ${types.filter(t=>G[t].length).map(t=>`<div class="stg-sec"><h4>${icon('school',14)} ${t} <span>${G[t].length} ${eventWord(G[t].length)}</span></h4>
+        <div class="tbl-scroll"><table class="set-table stg-tbl"><thead><tr>${COLS.map((c,i)=>`<th${[1,4,5].includes(i)?' style="text-align:right;"':''}>${c}</th>`).join('')}</tr></thead><tbody>
+        ${G[t].map(o=>{ const r = rowArr(o); return `<tr><td><span class="badge">${r[0]}</span></td>
+          <td style="text-align:right;"><a href="#" onclick="${opts.inModal?'closeModal();setTimeout(()=>viewOrderReadOnly(\''+o.id+'\'),60)':'viewOrderReadOnly(\''+o.id+'\')'};return false;">${escapeHtml(r[1])}</a></td>
+          <td style="white-space:nowrap;">${escapeHtml(r[2])}</td><td style="white-space:nowrap;">${escapeHtml(r[3])}</td>
+          <td style="text-align:right;">${escapeHtml(r[4])}</td><td style="text-align:right;">${escapeHtml(r[5])}</td><td>${escapeHtml(String(r[6]))}</td></tr>`; }).join('')}
+        </tbody></table></div></div>`).join('') || `<div class="empty-state">لا توجد فعاليات خلال هذه الفترة</div>`}`;
+    body.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ pick = b.dataset.st; draw(); });
+  }
+  box.querySelector('.stg-print').onclick = ()=>{
+    const orders = getOrders(), [F,T] = getRange();
+    if(!orders.length){ toast('لا توجد فعاليات'); return; }
+    const G = stageGroups(orders);
+    const types = SCHOOL_TYPES.filter(t=>(!pick || t===pick) && G[t].length);
+    const sumRows = SCHOOL_TYPES.filter(t=>!pick || t===pick).map(t=>{ const x = stageSummary(G[t]); return [t, x.events, x.schools, x.trainers, x.people, x.hours].map(String); });
+    if(!pick){ const x = stageSummary(orders); sumRows.push(['الإجمالي', x.events, x.schools, x.trainers, x.people, x.hours].map(v=>`<b>${v}</b>`)); }
+    const W = ['10mm','58mm','34mm','26mm','58mm','auto','20mm'];
+    const extra = `<div class="sec-t">الملخّص حسب نوع المدرسة</div>`
+      + repTableHtml(['نوع المدرسة','الفعاليات','المدارس','المقدّمون','المستهدفون','الساعات'], sumRows.map(r=>({cells:r, tdAttr:{0:' style="text-align:center;font-weight:700;"'}})), {colWidths:['46mm','40mm','40mm','40mm','40mm','auto']})
+      + types.map(t=>`<div class="sec-t">${t} — ${G[t].length} ${eventWord(G[t].length)}</div>`
+          + repTableHtml(COLS, G[t].map(o=>rowArr(o).map(v=>escapeHtml(String(v)))), {colWidths:W})).join('');
+    doPrintDoc(buildReportDoc({
+      titleAr: pick ? `فعاليات المدارس ${pick==='أخرى'?'الأخرى':pick}` : 'الفعاليات حسب نوع المدرسة',
+      subtitle: `من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)}`,
+      kpis: SCHOOL_TYPES.map((t,i)=>({v:G[t].length, l:`🏫 ${t}`})),
+      extraHtml: extra
+    }), true, 'A4');
+  };
+  box.querySelector('.stg-excel').onclick = ()=>{
+    const orders = getOrders(), [F,T] = getRange();
+    if(!orders.length){ toast('لا توجد فعاليات'); return; }
+    const G = stageGroups(orders);
+    const types = SCHOOL_TYPES.filter(t=>(!pick || t===pick) && G[t].length);
+    exportToExcel(`الفعاليات_حسب_نوع_المدرسة_${F}_${T}.xlsx`, ['نوع المدرسة'].concat(COLS),
+      types.flatMap(t=>G[t].map(o=>[t].concat(rowArr(o)))), `الفعاليات حسب نوع المدرسة — من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)}`);
+  };
+  box.__stageDraw = draw;
+  draw();
+}
+function stageReportShell(title, withDates, F, T){
+  return `<h2>${icon('school',15)} ${title}
+      <span style="display:inline-flex;gap:6px;">
+        <button class="icon-btn stg-print" title="طباعة" aria-label="طباعة" style="width:32px;height:32px;padding:0;">${icon('printer',15)}</button>
+        <button class="icon-btn stg-excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:32px;height:32px;padding:0;">${icon('sheet',15)}</button>
+      </span></h2>
+    ${withDates ? `<div class="rp-dates" style="margin-bottom:10px;">
+        <div class="rp-date"><label>من تاريخ</label><input class="stg-from" type="date" lang="en-GB" value="${F}"></div>
+        <div class="rp-date"><label>إلى تاريخ</label><input class="stg-to" type="date" lang="en-GB" value="${T}"></div></div>`
+      : `<div class="helper" style="margin-bottom:10px;">الفترة: من ${fmtDateRaw(F)} إلى ${fmtDateRaw(T)} — حسب الفعاليات المعروضة في الصفحة وتصفيتها.</div>`}
+    <div class="helper" style="margin-bottom:8px;">نوع المدرسة = المرحلة المسجّلة لها (تُحدَّد تلقائيًا من الاسم ويمكن تعديلها من الإعدادات أو تقرير «تصنيف المدارس حسب المرحلة»).</div>
+    <div class="stg-body"></div>`;
+}
+function openStageModal(orders, F, T){
+  showInfoModal('', `<div id="stgBox">${stageReportShell('الفعاليات حسب نوع المدرسة', false, F, T)}</div>`, box=>{
+    box.style.maxWidth = '1120px';
+    const h = box.querySelector('h3'); if(h) h.remove();
+    bindStageReport(box.querySelector('#stgBox'), ()=>orders, ()=>[F,T], {inModal:true});
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   مرحلة الجهة — تُسجَّل تلقائيًا من الاسم، ويمكن تعديلها يدويًا
+   ══════════════════════════════════════════════════════════════════ */
+/* مدارس صنّفها المستخدم بنفسه — تُطبَّق مرة واحدة وتُحفظ كاختيار يدوي */
+const STAGE_OVERRIDES = [
+  ['عثمان بن عفان','ابتدائية'], ['جابر بن حيان','ابتدائية'], ['سعد بن ابي وقاص','ابتدائية'], ['روضه النور','روضة'],
+];
+function detectSchoolStage(s){
+  const n = _pnz((s && s.name)||'');
+  if(/روضه|رياض الاطفال|رياض اطفال/.test(n)) return 'روضة';
+  if(/نموذج/.test(n)) return 'نموذجية';
+  const prim = /ابتدا/.test(n), prep = /اعداد/.test(n), sec = /ثانو/.test(n);
+  if(/مشترك|مجمع/.test(n) || (prim+prep+sec) >= 2) return 'مشتركة';
+  if(sec) return 'ثانوية';
+  if(prep) return 'إعدادية';
+  if(prim) return 'ابتدائية';
+  const lv = String((s && s.level)||'');
+  if(lv==='ثانوي') return 'ثانوية';
+  if(lv==='إعدادي') return 'إعدادية';
+  if(lv==='ابتدائي') return 'ابتدائية';
+  return 'أخرى';
+}
+function ensureSchoolStages(){
+  let changed = 0;
+  (state.schools||[]).forEach(s=>{
+    if(!s.stageManual){
+      const n = _pnz(s.name||'');
+      const ov = STAGE_OVERRIDES.find(([k])=>n.includes(_pnz(k)));
+      if(ov){ s.stage = ov[1]; s.stageManual = true; changed++; return; }
+      const st = detectSchoolStage(s);
+      if(s.stage !== st){ s.stage = st; changed++; }
+    }
+  });
+  return changed;
+}
+function stageSelectHtml(s){
+  const cur = s.stage || detectSchoolStage(s);
+  return `<select class="stg-sel${cur==='أخرى'?' other':''}" onchange="setSchoolStage('${s.id}', this.value)" title="${s.stageManual?'محدّدة يدويًا':'محدّدة تلقائيًا من الاسم'}">
+    ${SCHOOL_TYPES.map(t=>`<option value="${t}" ${cur===t?'selected':''}>${t}</option>`).join('')}
+    <option value="__auto">↺ تلقائي من الاسم</option></select>`;
+}
+async function setSchoolStage(id, v){
+  const s = state.schools.find(x=>x.id===id); if(!s) return;
+  if(v==='__auto'){ s.stageManual = false; s.stage = detectSchoolStage(s); }
+  else { s.stage = v; s.stageManual = true; }
+  await saveState(); toast(`المرحلة: ${s.stage}`);
+  const d = document.getElementById('stgSchoolsBox'); if(d && d.__redraw) d.__redraw();
+}
+/* تقرير: المدارس حسب المرحلة — افتراضيًا «أخرى» للمراجعة */
+function drawSchoolStagesReport(box, back){
+  ensureSchoolStages();
+  let pick = 'أخرى', q = '';
+  box.innerHTML = `<div class="card" id="stgSchoolsBox"><h2>${icon('school',15)} تصنيف المدارس حسب المرحلة
+      <span style="display:inline-flex;gap:6px;align-items:center;">
+        <button class="icon-btn" id="ss_print" title="طباعة" aria-label="طباعة" style="width:32px;height:32px;padding:0;">${icon('printer',15)}</button>
+        <button class="icon-btn" id="ss_excel" title="تنزيل Excel" aria-label="تنزيل Excel" style="width:32px;height:32px;padding:0;">${icon('sheet',15)}</button>
+        ${back?`<button class="btn btn-outline btn-sm" type="button" id="ss_back">${icon('chevronRight',14)} كل التقارير</button>`:''}
+      </span></h2>
+    <div class="helper" style="margin-bottom:10px;">يُسجِّل النظام مرحلة كل جهة تلقائيًا من اسمها. المصنّفة «أخرى» لم يُعرف نوعها من الاسم — اختر مرحلتها من القائمة بجانبها فتُحفظ فورًا وتُعتمد في كل التقارير.</div>
+    <div class="ss-body"></div></div>`;
+  const card = box.querySelector('#stgSchoolsBox');
+  const rows = ()=>state.schools.filter(s=>(!pick || (s.stage||detectSchoolStage(s))===pick) && (!q || _pnz(s.name).includes(_pnz(q))))
+    .sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  const evCount = id => state.orders.filter(o=>o.schoolId===id && isLiveOrder(o)).length;
+  function draw(){
+    const cnt = {}; SCHOOL_TYPES.forEach(t=>cnt[t]=0); state.schools.forEach(s=>cnt[s.stage||detectSchoolStage(s)]++);
+    const list = rows();
+    card.querySelector('.ss-body').innerHTML = `
+      <div class="stg-chips">
+        <button type="button" data-ss="" class="${pick?'':'on'}">الكل <b>${state.schools.length}</b></button>
+        ${SCHOOL_TYPES.map(t=>`<button type="button" data-ss="${t}" class="${pick===t?'on':''}${t==='أخرى'&&cnt[t]?' warn':''}">${t} <b>${cnt[t]}</b></button>`).join('')}
+      </div>
+      <input class="ss-q" placeholder="بحث باسم المدرسة..." value="${escapeHtml(q)}" style="width:100%;margin-bottom:10px;">
+      ${list.length ? `<div class="tbl-scroll"><table class="set-table" style="width:100%;"><thead><tr><th>#</th><th style="text-align:right;">اسم الجهة</th><th style="width:170px;">المرحلة</th><th>الطريقة</th><th style="text-align:right;">المشرفون</th><th>الفعاليات</th><th></th></tr></thead><tbody>
+        ${list.map((s,i)=>`<tr><td>${i+1}</td><td style="text-align:right;font-weight:700;">${escapeHtml(s.name)}</td>
+          <td>${stageSelectHtml(s)}</td><td class="helper">${s.stageManual?'يدوي':'من الاسم'}</td>
+          <td style="text-align:right;" class="helper">${(s.supervisors||[]).map(v=>escapeHtml(v.name)+(v.phone?` (${escapeHtml(v.phone)})`:'')).join('، ')||'—'}</td>
+          <td>${evCount(s.id)}</td>
+          <td><button class="icon-btn" title="ملف الجهة" aria-label="ملف الجهة" onclick="openSchoolProfile('${s.id}')" style="width:28px;height:28px;padding:0;">${icon('school',13)}</button></td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="empty-state">${pick==='أخرى'?'لا توجد مدارس مصنّفة «أخرى» — كل المدارس معروفة المرحلة':'لا توجد مدارس'}</div>`}`;
+    card.querySelectorAll('[data-ss]').forEach(b=>b.onclick=()=>{ pick=b.dataset.ss; draw(); });
+    const qi = card.querySelector('.ss-q'); qi.oninput = ()=>{ q = qi.value; clearTimeout(qi.__t); qi.__t = setTimeout(()=>{ draw(); const n=card.querySelector('.ss-q'); n.focus(); n.setSelectionRange(n.value.length,n.value.length); }, 250); };
+  }
+  card.__redraw = draw;
+  const COLS = ['#','اسم الجهة','المرحلة','الطريقة','المشرفون','الفعاليات'];
+  const arr = list => list.map((s,i)=>[i+1, s.name, s.stage||detectSchoolStage(s), s.stageManual?'يدوي':'من الاسم',
+    (s.supervisors||[]).map(v=>v.name+(v.phone?` (${v.phone})`:'')).join('، ')||'—', evCount(s.id)]);
+  card.querySelector('#ss_print').onclick = ()=>{
+    const list = rows(); if(!list.length){ toast('لا توجد بيانات'); return; }
+    const cnt = {}; SCHOOL_TYPES.forEach(t=>cnt[t]=0); state.schools.forEach(s=>cnt[s.stage||detectSchoolStage(s)]++);
+    doPrintDoc(buildReportDoc({ titleAr: pick ? `المدارس المصنّفة: ${pick}` : 'تصنيف المدارس حسب المرحلة',
+      subtitle: `${list.length} جهة — ${fmtDateRaw(todayStr())}`,
+      kpis: SCHOOL_TYPES.map(t=>({v:cnt[t], l:`🏫 ${t}`})),
+      headers: COLS, colWidths:['10mm','80mm','28mm','22mm','auto','20mm'],
+      rows: arr(list).map(r=>r.map(v=>escapeHtml(String(v)))) }), true, 'A4');
+  };
+  card.querySelector('#ss_excel').onclick = ()=>{
+    const list = rows(); if(!list.length){ toast('لا توجد بيانات'); return; }
+    exportToExcel(`تصنيف_المدارس${pick?'_'+pick:''}.xlsx`, COLS, arr(list), pick?`المدارس المصنّفة: ${pick}`:'تصنيف المدارس حسب المرحلة');
+  };
+  const bk = card.querySelector('#ss_back'); if(bk) bk.onclick = back;
+  draw();
+}
+function openSchoolStagesModal(){
+  showInfoModal('', '<div id="ssHost"></div>', box=>{ box.style.maxWidth='1000px'; const h=box.querySelector('h3'); if(h) h.remove();
+    drawSchoolStagesReport(box.querySelector('#ssHost')); });
+}
 
 /* ============ Init ============ */
 (async function init(){ await loadState(); renderRoot(); })();
