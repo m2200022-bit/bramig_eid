@@ -3298,6 +3298,13 @@
   .stg-chips button.warn:not(.on){ border-color:#E9B35F; color:#8A5A00; background:#FFF8EC; }
   #schoolsTable th{ white-space:nowrap; }
   .ss-cnt{ background:#FFF1D6; color:#8A5A00; border-radius:8px; padding:0 6px; font-size:11px; }
+
+  .bp-search{ position:relative; display:flex; align-items:center; margin:4px 0 12px; }
+  .bp-search input{ width:100%; min-height:44px; padding-inline-start:40px !important; padding-inline-end:36px !important; font-size:14px; border-radius:12px !important; }
+  .bp-search input:focus{ border-color:var(--ds-teal) !important; box-shadow:0 0 0 3px rgba(138,31,66,.12) !important; }
+  .bp-sic{ position:absolute; inset-inline-start:13px; color:var(--ds-ink-3); display:flex; pointer-events:none; }
+  .bp-clear{ all:unset; cursor:pointer; position:absolute; inset-inline-end:10px; color:var(--ds-ink-3); display:flex; padding:4px; border-radius:6px; }
+  .bp-clear:hover{ background:var(--ds-bg); color:var(--ds-ink); }
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
@@ -4580,7 +4587,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '3.3';
+const APP_VERSION = '3.5';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -11816,8 +11823,22 @@ function renderReportsPage(c){
     const box=document.getElementById('reportContent');
     box.innerHTML = `<div class="card"><h2>تقرير حسب مسار / مجال المبادرة</h2>
       <div class="grid">
-        <div class="field"><label>من تاريخ</label><input id="bp_from" type="date" lang="en-GB" value="2025-08-11"></div>
-        <div class="field"><label>إلى تاريخ</label><input id="bp_to" type="date" lang="en-GB" value="2026-06-16"></div>
+        <div class="field"><label>من تاريخ</label><input id="bp_from" type="date" lang="en-GB" value="${acadYearRange(acadYearOf(todayStr())).start}"></div>
+        <div class="field"><label>إلى تاريخ</label><input id="bp_to" type="date" lang="en-GB" value="${acadYearRange(acadYearOf(todayStr())).end}"></div>
+      </div>
+      <div class="bp-search">
+        <span class="bp-sic">${icon('search',16)}</span>
+        <input id="bp_q" list="bp_qList" autocomplete="off" placeholder="ابحث باسم المسار أو المجال أو عنوان المبادرة… (مثال: مواهب ومسابقات، التنمر)">
+        <button type="button" class="bp-clear" id="bp_qClear" title="مسح البحث" aria-label="مسح البحث">${icon('x',14)}</button>
+        <datalist id="bp_qList">
+          ${state.programTypes.map(p=>`<option value="${escapeHtml(p.name)}">مسار</option>`).join('')}
+          ${state.fields.map(f=>`<option value="${escapeHtml(f.name)}">مجال</option>`).join('')}
+          ${Array.from(new Set(state.orders.map(o=>(o.title||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ar')).slice(0,400).map(t=>`<option value="${escapeHtml(t)}">عنوان</option>`).join('')}
+        </datalist>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+        <label class="checkbox-chip"><input type="checkbox" id="bp_doneOnly" checked> المنجزة فقط</label>
+        <span class="helper" id="bp_qHint"></span>
       </div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
         <label class="checkbox-chip"><input type="checkbox" id="bp_byPath" checked> مسار المبادرة</label>
@@ -11845,7 +11866,12 @@ function renderReportsPage(c){
     function rowOf(o, extraCols){
       const school = state.schools.find(s=>s.id===o.schoolId);
       const supervisor = school ? school.supervisors.find(s=>s.id===o.supervisorId) : null;
-      const base = [o.serial, o.title, repPeriodCell(o), fullTimeRange(o.timeFrom,o.timeTo), repPlacePhone(o), repTrainers(o)];
+      const done = o.completionStatus==='تم';
+      const mark = done
+        ? `<b class="bp-done" title="منجزة" style="color:#15803d;font-size:17px;font-weight:900;line-height:1;flex:none">✓</b>`
+        : `<b class="bp-notdone" title="لم تنجز" style="color:#94a3b8;font-weight:700;letter-spacing:1px;line-height:1;flex:none">---</b>`;
+      const trCell = `<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center">${repTrainers(o)}${mark}</span>`;
+      const base = [o.serial, o.title, repPeriodCell(o), fullTimeRange(o.timeFrom,o.timeTo), repPlacePhone(o), trCell];
       const extra = (extraCols||[]).map(c=>{
         if(c==='مسار المبادرة'){ const pt=state.programTypes.find(p=>p.id===o.programTypeId); return pt?pt.name:''; }
         if(c==='مجال المبادرة'){ const f=state.fields.find(x=>x.id===o.fieldId); return f?f.name:''; }
@@ -11858,7 +11884,11 @@ function renderReportsPage(c){
       const byPath = document.getElementById('bp_byPath').checked;
       const byField = document.getElementById('bp_byField').checked;
       const mode = document.querySelector('input[name="bp_mode"]:checked')?.value || 'separate';
-      const baseList = state.orders.filter(o=>o.completionStatus==='تم' && (!from||o.date>=from) && (!to||o.date<=to));
+      const doneOnly = document.getElementById('bp_doneOnly').checked;
+      const q = _pnz((document.getElementById('bp_q').value||'').trim()).replace(/\s+/g,' ');
+      const nm = (arr,id)=>{ const x=(arr||[]).find(y=>y.id===id); return x?x.name:''; };
+      const baseList = state.orders.filter(o=>(doneOnly ? o.completionStatus==='تم' : isLiveOrder(o)) && (!from||o.date>=from) && (!to||o.date<=to)
+        && (!q || [o.title, nm(state.programTypes,o.programTypeId), nm(state.fields,o.fieldId)].some(t=>_pnz(t||'').replace(/\s+/g,' ').includes(q))));
 
       if(byPath && byField && mode==='combined'){
         return { mode:'combined', columns:[...baseCols,'مسار المبادرة','مجال المبادرة'], list: baseList.sort((a,b)=>(a.date||'').localeCompare(b.date||'')) };
@@ -11880,19 +11910,30 @@ function renderReportsPage(c){
       groups = groups.filter(g=>g.list.length>0).sort((a,b)=>b.list.length-a.list.length);
       return { mode:'separate', columns:baseCols, groups };
     }
+    { const qi = document.getElementById('bp_q');
+      const run = ()=>document.getElementById('bp_go').click();
+      qi.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); } });
+      qi.addEventListener('change', run);
+      qi.addEventListener('input', ()=>{ clearTimeout(qi.__t); qi.__t = setTimeout(run, 450); });
+      document.getElementById('bp_qClear').onclick = ()=>{ qi.value=''; run(); qi.focus(); };
+      ['bp_from','bp_to','bp_doneOnly','bp_byPath','bp_byField'].forEach(id=>document.getElementById(id).addEventListener('change', run));
+      document.querySelectorAll('input[name="bp_mode"]').forEach(r=>r.addEventListener('change', run)); }
     document.getElementById('bp_go').onclick=()=>{
       const data = gen();
       const box = document.getElementById('bp_result');
+      { const qv = (document.getElementById('bp_q').value||'').trim();
+        const n = data.mode==='combined' ? data.list.length : new Set(data.groups.flatMap(g=>g.list.map(o=>o.id))).size;
+        document.getElementById('bp_qHint').innerHTML = qv ? `نتائج البحث عن «${escapeHtml(qv)}»: <b>${n}</b> ${eventWord(n)}` : `${n} ${eventWord(n)} في الفترة`; }
       if(data.mode==='combined'){
         box.innerHTML = data.list.length ? `<table style="text-align:center;"><thead><tr>${data.columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
           ${data.list.map(o=>`<tr>${rowOf(o,['مسار المبادرة','مجال المبادرة']).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-        </tbody></table>` : `<div class="empty-state">لا توجد فعاليات منجزة ضمن هذه الفترة</div>`;
+        </tbody></table>` : `<div class="empty-state">لا توجد فعاليات مطابقة ضمن هذه الفترة</div>`;
       } else {
         box.innerHTML = data.groups.length ? data.groups.map(g=>`
           <h3 style="font-family:var(--font-head);color:var(--maroon-800);margin:14px 0 8px;">${escapeHtml(g.label)} <span class="badge">${g.list.length} ${eventWord(g.list.length)}</span></h3>
           <table style="text-align:center;"><thead><tr>${data.columns.map(c=>`<th>${cellHtml(c)}</th>`).join('')}</tr></thead><tbody>
             ${g.list.map(o=>`<tr>${rowOf(o).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
-          </tbody></table>`).join('') : `<div class="empty-state">لا توجد فعاليات منجزة ضمن هذه الفترة</div>`;
+          </tbody></table>`).join('') : `<div class="empty-state">لا توجد فعاليات مطابقة ضمن هذه الفترة</div>`;
       }
       enhanceReportTable(box);
     };
@@ -11904,8 +11945,9 @@ function renderReportsPage(c){
         exportToExcel('تقرير_حسب_المسار_والمجال.xlsx', data.columns, data.list.map(o=>rowOf(o,['مسار المبادرة','مجال المبادرة'])), `تقرير حسب المسار والمجال (من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'})`);
       } else {
         if(!data.groups.length){ toast('لا توجد بيانات لتصديرها'); return; }
-        const sheets = data.groups.map(g=>({name:g.label.slice(0,30), headers:data.columns, rows:g.list.map(o=>rowOf(o))}));
-        exportToExcelMultiSheet('تقرير_حسب_مسار_المبادرة.xlsx', sheets, `تقرير حسب مسار/مجال المبادرة (من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'})`);
+        const qv = (document.getElementById('bp_q').value||'').trim();
+        const sheets = data.groups.map(g=>({name:g.label.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,30), headers:data.columns, rows:g.list.map(o=>rowOf(o))}));
+        exportToExcelMultiSheet('تقرير_حسب_مسار_المبادرة.xlsx', sheets, `تقرير حسب مسار/مجال المبادرة (من ${from?fmtDate(from):'—'} إلى ${to?fmtDate(to):'—'})${qv?` — البحث: ${qv}`:''}`);
       }
     };
     function printIt(){
@@ -11929,9 +11971,12 @@ function renderReportsPage(c){
             ${g.list.map(o=>`<tr>${rowOf(o).map(v=>`<td>${cellHtml(v)}</td>`).join('')}</tr>`).join('')}
           </tbody></table>`).join('');
       }
+      const qv = (document.getElementById('bp_q').value||'').trim();
+      const doneOnly = document.getElementById('bp_doneOnly').checked;
       doPrintDoc(buildReportDoc({
         titleAr:'تقرير حسب مسار / مجال المبادرة',
-        kpis:[{v:totalEvents,l:'عدد الفعاليات المنجزة'}],
+        subtitle: qv ? `نتائج البحث عن: «${qv}»` : '',
+        kpis:[{v:totalEvents,l:doneOnly?'عدد الفعاليات المنجزة':'عدد الفعاليات'}],
         extraHtml: dateBox + bodyHtml
       }), true, 'A4');
     }
