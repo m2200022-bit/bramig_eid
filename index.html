@@ -4485,6 +4485,8 @@ const LU = {
   fileText:    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   chevronLeft: '<path d="m15 18-6-6 6-6"/>',
   chevronDown: '<path d="m6 9 6 6 6-6"/>',
+  megaphone:   '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  fileEdit:    '<path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v10"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/>',
   more:        '<circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/><circle cx="5" cy="12" r="1.3"/>',
   filter:      '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
   star:        '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
@@ -5155,7 +5157,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.4';
+const APP_VERSION = '4.6';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -10549,7 +10551,7 @@ function printDocOpen(theme){
   th{background:${theme};color:#fff;padding:5px 7px;border:1px solid ${PRINT_LINE_COLOR};text-align:center;vertical-align:middle;font-weight:700;font-size:9.5pt}
   td{padding:5px 7px;border:1px solid ${PRINT_LINE_COLOR};text-align:center;vertical-align:middle;font-weight:400;font-size:9.5pt}
   td.num, th.num{text-align:center}
-  tr:nth-child(even) td{background:#f8fafc}
+  tr:nth-child(even) td{background:#FAF6F7}
   tfoot td{background:#f0f4f8;font-weight:700}
   /* خط فاصل رفيع جدًا: شرطات دقيقة بفواصل واسعة وشفافية منخفضة —
      يُرسم كخلفية متدرجة بدل border ليمكن التحكم في سمك الشرطة وطولها بدقة */
@@ -11304,7 +11306,7 @@ const REP_COL_W = [
      لا توسّعه: مجموع العروض الثابتة في التقارير العريضة يقارب عرض
      الورقة، وكل مليمتر هنا يُقتطع من الأعمدة النصّية. */
   [/^#$|^م$|^أمر التكليف$|^رقم التكليف$|^رقم الأمر$/, '17mm', true],
-  [/^المدة$/,                                          '16mm', true],
+  [/^المدة$/,                                          '21mm', true],
   [/عدد الأيام|^الأيام$/,                              '15mm', true],
   [/عدد الساعات|^الساعات$/,                            '19mm', true],
   /* «المستهدفون» كلمة واحدة لا تُلَفّ؛ قياس مستند الطباعة يقول إنها
@@ -11351,48 +11353,208 @@ function repTableHtml(headers, rows, opts){
        + `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   التصميم الرسمي للتقارير (عدا نسختَي أمر التكليف)
+   شريط عنوان عنابي بإطار ذهبي، بطاقات مؤشرات بأيقونات معيّنة،
+   جدول برأس عنابي وأيقونات للأعمدة، وتذييل بخط ذهبي.
+   ══════════════════════════════════════════════════════════════ */
+const REP_TH_IC = [
+  [/^#$|^م$|^رقم التكليف$|^أمر التكليف$|^رقم الأمر$/, null],
+  [/مقدم|مقدّم|المدرب|المعلم/, 'user'],
+  [/هاتف|جوال|رقم المشرف/, 'phone'],
+  [/المشرف/, 'user'],
+  [/الطلبات|طلب/, 'fileText'],
+  [/عنوان|الفعالية|المبادرة|البرنامج|اسم/, 'megaphone'],
+  [/تاريخ|الشهر|اليوم/, 'calendar'],
+  [/الوقت|^الساعة$/, 'clock'],
+  [/المدة|الساعات|الأيام/, 'hourglass'],
+  [/المكان|الجهة|المدرسة|مكان|المسجد/, 'mapPin'],
+  [/المجال|المسار|التصنيف|النوع|المرحلة/, 'layers'],
+  [/الحالة|الإنجاز|التقييم|النتيجة/, 'checkCircle'],
+  [/المستهدف|المستفيد|الطلاب|المشارك|عدد/, 'users'],
+  [/نسبة|%/, 'barChart'],
+];
+function repThIcon(t){ for(const [re,ic] of REP_TH_IC) if(re.test(t)) return ic; return null; }
+function repKpiIcon(l){
+  l = String(l||'');
+  if(/طلب/.test(l)) return 'fileText';
+  if(/مستفيد|مستهدف|طلاب|مشارك/.test(l)) return 'users';
+  if(/ساع/.test(l)) return 'clock';
+  if(/مدرس|جه|أماكن|مكان|مدارس/.test(l)) return 'school';
+  if(/مقدم|مقدّم|مدرب|معلم/.test(l)) return 'user';
+  if(/تضارب|تعارض/.test(l)) return 'alert';
+  if(/يوم|أيام/.test(l)) return 'calendar';
+  if(/منجز|مكتمل|إنجاز|تم/.test(l)) return 'checkCircle';
+  if(/فعالي|برامج|مبادر/.test(l)) return 'calendar';
+  if(/نسبة|%/.test(l)) return 'barChart';
+  return 'barChart';
+}
+const REP_V2_CSS = `<style>
+  .rep-doc.v2{position:relative; overflow:hidden; background:#FDFBFA !important; border:1px solid #E6D9DE !important;
+    border-radius:4px !important; padding:5mm 7mm 4mm !important; box-shadow:none;}
+  .rep-doc.v2 > *{position:relative; z-index:1;}
+  .rep-doc.v2 > .v2-deco{position:absolute; z-index:0; pointer-events:none;}
+  .v2-deco.tl{top:0; left:0; width:46mm; height:40mm;}
+  .v2-deco.tr{top:40mm; left:3mm; width:16mm; height:12mm;}
+  .v2-deco.bl{bottom:0; left:0; width:52mm; height:34mm;}
+  .v2-deco.br{bottom:0; right:0; width:44mm; height:30mm;}
+  .v2-hdr{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:5mm; margin:0 0 4mm;}
+  .v2-org{text-align:right; line-height:1.35; padding-right:3mm;}
+  .v2-org .l1{font-family:'Tajawal',Arial; font-weight:800; font-size:17pt; color:#8A1F42; line-height:1.2;}
+  .v2-org .l2, .v2-org .l3{font-family:'Tajawal',Arial; font-weight:700; font-size:11pt; color:#8A1F42;}
+  .v2-org .l3{display:inline-block; padding-bottom:1mm; border-bottom:1.6px solid #B08D57;}
+  .v2-ttl{display:flex; align-items:center; justify-content:center;}
+  .v2-docic{width:21mm; height:18mm; flex:none; display:flex; align-items:center; justify-content:center; color:#3E0D21;
+    background:linear-gradient(135deg,#F3ECE4,#E4D5C3); clip-path:polygon(18% 0,100% 0,82% 100%,0 100%);
+    margin-inline-end:-6mm; z-index:2; position:relative;}
+  .v2-docic svg{width:10mm; height:10mm; stroke-width:1.7;}
+  .v2-rib-g{background:linear-gradient(135deg,#D7B57C,#A9854D); clip-path:polygon(5% 0,100% 0,95% 100%,0 100%); padding:1.1mm 1.4mm;}
+  .v2-rib{background:linear-gradient(135deg,#8A1F42 0%,#5E1430 60%,#3E0D21 100%); clip-path:polygon(5% 0,100% 0,95% 100%,0 100%);
+    color:#fff; text-align:center; padding:2.4mm 15mm 2.6mm; min-width:110mm;}
+  .v2-rib .title-ar{color:#fff !important; margin:0 !important; font-family:'Tajawal',Arial; font-weight:800; font-size:20pt; line-height:1.2; letter-spacing:.2px;}
+  .v2-rib .s{font-family:'IBM Plex Sans Arabic','Tajawal',Arial; font-weight:600; font-size:10.5pt; opacity:.95; margin-top:.6mm;}
+  .v2-logo{display:flex; align-items:center; justify-content:flex-start; gap:3mm; direction:ltr; padding-left:3mm;}
+  .v2-logo .lg{width:19mm; height:19mm; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(62,13,33,.18);
+    display:flex; align-items:center; justify-content:center; overflow:hidden; color:#8A1F42; flex:none;}
+  .v2-logo .lg img{width:100%; height:100%; object-fit:contain;}
+  .v2-logo .tx{direction:rtl; text-align:right; line-height:1.15;}
+  .v2-logo .tx b{display:block; font-family:'Tajawal',Arial; font-weight:800; font-size:14pt; color:#8A1F42; white-space:nowrap;}
+  .v2-logo .tx i{display:block; font-style:normal; font-size:9.5pt; color:#3E0D21; direction:ltr; text-align:left;}
+  .v2-kpis{display:flex; align-items:stretch; justify-content:center; margin:0 0 4mm; gap:0;}
+  .v2-k{flex:0 1 66mm; min-width:0; display:flex; align-items:center; gap:5mm; background:#fff; border:1px solid #EADFE3;
+    border-radius:9px; padding:2.4mm 5mm 2.4mm 4mm; box-shadow:0 1px 5px rgba(62,13,33,.07);}
+  .v2-k .dm{width:12mm; height:12mm; flex:none; transform:rotate(45deg); border-radius:2.6mm; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#9A2A4E,#4A0F27); box-shadow:0 2px 5px rgba(62,13,33,.25); margin:0 1.5mm;}
+  .v2-k .dm svg{transform:rotate(-45deg); color:#fff; width:6.4mm; height:6.4mm;}
+  .v2-k .tx{flex:1; text-align:center; min-width:0;}
+  .v2-k .v{font-family:'IBM Plex Sans Arabic','Tajawal',Arial; font-weight:800; font-size:21pt; color:#3E0D21; line-height:1.05;}
+  .v2-k .l{font-family:'Tajawal',Arial; font-weight:700; font-size:11pt; color:#3E0D21; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .v2-k.slogan{background:linear-gradient(135deg,#fff,#F8F3EF);} 
+  .v2-k.slogan .tx b{display:block; font-family:'Tajawal',Arial; font-weight:800; font-size:15pt; color:#3E0D21; line-height:1.25; white-space:nowrap;}
+  .v2-k.slogan{flex:0 0 auto;}
+  .v2-k.slogan .pp{color:#8A1F42; flex:none;} .v2-k.slogan .pp svg{width:12mm; height:12mm; stroke-width:2;}
+  .v2-sep{width:1.2px; flex:none; background:linear-gradient(#fff0,#B08D57,#fff0); margin:2mm 4.5mm;}
+  .v2-kpis.many .v2-k{flex:1 1 0; padding:2mm 3mm; gap:3mm;} .v2-kpis.many .v2-k .v{font-size:17pt;} .v2-kpis.many .v2-k .l{font-size:9.5pt;}
+  .v2-kpis.many .v2-k .l{white-space:normal; line-height:1.15; overflow:visible; text-overflow:clip;}
+  .v2-kpis.many .v2-k .dm{width:9.5mm; height:9.5mm; margin:0 1mm;} .v2-kpis.many .v2-sep{margin:2mm 2mm;}
+  .v2-kpis.many .v2-k.slogan .tx b{font-size:11.5pt;} .v2-kpis.many .v2-k.slogan .pp svg{width:9mm; height:9mm;}
+  /* الجدول */
+  .rep-doc.v2 table{border-collapse:separate !important; border-spacing:0; border:1px solid #DCCBD2 !important; border-radius:10px; overflow:hidden;
+    background:#fff; margin-bottom:4mm;}
+  .rep-doc.v2 th{background:linear-gradient(180deg,#8A1F42,#6A1733) !important; color:#fff !important; border:none !important;
+    border-left:1px solid rgba(255,255,255,.16) !important; padding:2mm 1.5mm !important; font-family:'Tajawal',Arial; font-weight:800; font-size:10.5pt !important;
+    vertical-align:bottom; line-height:1.2;}
+  .rep-doc.v2 th:last-child{border-left:none !important;}
+  .rep-doc.v2 th:first-child, .rep-doc.v2 td:first-child{width:11mm; min-width:10mm; white-space:nowrap;}
+  .rep-doc.v2 th .th-ic{display:block; margin:0 auto 1mm; line-height:0;} .rep-doc.v2 th .th-ic svg{width:5mm; height:5mm; color:#fff; stroke-width:1.9;}
+  .rep-doc.v2 td{border:none !important; border-bottom:1px solid #EFE5E9 !important; border-left:1px solid #EFE5E9 !important;
+    padding:1.8mm 2mm !important; font-size:10.5pt; color:#2A1A20;}
+  .rep-doc.v2 td:last-child{border-left:none !important;}
+  .rep-doc.v2 tbody tr:last-child td{border-bottom:none !important;}
+  .rep-doc.v2 tfoot td{background:#F3EAEE !important; font-weight:800; color:#3E0D21;}
+  .rep-doc.v2 .sec-t{border:none !important; border-right:4px solid #B08D57 !important; padding:0 3mm 0 0 !important; margin:3mm 0 2mm !important;
+    color:#8A1F42; font-size:12.5pt;}
+
+  /* رأس الصفحة: شريط أفقي واحد */
+  .v3-hdr{display:grid; grid-template-columns:13mm auto 1.4px 1fr auto 15mm; align-items:center; gap:0; height:24mm; margin:0 0 4mm;
+    background:#fff; border:1px solid #E3D6DC; border-radius:4px; overflow:hidden; box-shadow:0 1px 4px rgba(62,13,33,.06);}
+  .v3-end{width:100%; height:100%; display:block;}
+  .v3-org{text-align:right; padding:0 3mm 0 6mm; line-height:1.4;}
+  .v3-org .l1{font-family:'Tajawal',Arial; font-weight:800; font-size:13.5pt; color:#7A1A3A; line-height:1.3; white-space:nowrap;}
+  .v3-org .l2{font-family:'Tajawal',Arial; font-weight:700; font-size:10pt; color:#3E0D21; white-space:nowrap;}
+  .v3-div{width:1.4px; height:62%; background:linear-gradient(#C9A46A00,#C9A46A,#C9A46A00);}
+  .v3-ttl{text-align:center; padding:0 5mm; min-width:0;}
+  .v3-hdr .v3-ttl .title-ar{font-family:'Tajawal',Arial; font-weight:800; font-size:18pt; color:#7A1A3A !important; line-height:1.25; margin:0;}
+  .v3-sub{display:inline-flex; align-items:center; gap:2.5mm; margin-top:1mm; font-size:10.5pt; font-weight:700; color:#3E0D21;}
+  .v3-sub .cal{width:7mm; height:7mm; border-radius:1.6mm; background:#7A1A3A; color:#fff; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .v3-sub .cal svg{width:4.4mm; height:4.4mm;}
+  .v3-logo{display:flex; align-items:center; gap:3mm; direction:ltr; padding:0 2mm 0 4mm;}
+  .v3-logo .lg{width:17mm; height:17mm; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(62,13,33,.18); display:flex; align-items:center; justify-content:center;
+    overflow:hidden; color:#7A1A3A; flex:none;}
+  .v3-logo .lg img{width:100%; height:100%; object-fit:contain;} .v3-logo .lg svg{width:9mm; height:9mm;}
+  .v3-logo .tx{direction:rtl; text-align:right; line-height:1.2;}
+  .v3-logo .tx b{display:block; font-family:'Tajawal',Arial; font-weight:800; font-size:12pt; color:#7A1A3A; white-space:nowrap;}
+  .v3-logo .tx i{display:block; font-style:normal; font-size:8.5pt; color:#3E0D21; direction:ltr; text-align:left;}
+  /* التذييل */
+  .v2-ftr{margin-top:5mm; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:4mm; break-inside:avoid; page-break-inside:avoid;}
+  .v2-ftr .ln{height:0; border-top:1.4px solid #B08D57; position:relative;}
+  .v2-ftr .ln::before{content:''; position:absolute; top:-2.1mm; width:3mm; height:3mm; border:1.3px solid #B08D57; background:#FDFBFA; transform:rotate(45deg);}
+  .v2-ftr .ln.r::before{left:-1mm;} .v2-ftr .ln.l::before{right:-1mm;}
+  .v2-ftr .mid{display:flex; align-items:center; gap:3mm; font-size:9.5pt; color:#3E0D21; line-height:1.5;}
+  .v2-ftr .pr{width:10mm; height:10mm; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(62,13,33,.2); display:flex; align-items:center; justify-content:center; color:#8A1F42; flex:none;}
+  .v2-ftr .pr svg{width:5.4mm; height:5.4mm;}
+  .v2-ftr .mid b{font-weight:700;}
+  @media print{ .rep-doc.v2{border:none !important;} }
+</style>`;
+const REP_V2_DECO = `
+  <svg class="v2-deco bl" viewBox="0 0 52 34" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="0,34 0,6 30,34" fill="#8A1F42" opacity=".9"/><polygon points="0,34 0,18 46,34" fill="#B08D57" opacity=".35"/>
+    <polygon points="18,34 52,10 52,34" fill="#5E1430" opacity=".12"/></svg>
+  <svg class="v2-deco br" viewBox="0 0 44 30" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="44,30 44,4 18,30" fill="#8A1F42" opacity=".9"/><polygon points="44,30 44,14 4,30" fill="#B08D57" opacity=".35"/></svg>`;
+function repV2Header(titleAr, subtitle){
+  const ph = Object.assign({line1:'مؤسسة عيد الخيرية', line2:'مركز عيد الثقافي', line3:'قسم البرامج المجتمعية'}, state.printHeader||{});
+  const en = /عيد الثقافي/.test(ph.line2||'') ? 'Eid Cultural Center' : '';
+  const hasDate = /\d{2}\/\d{2}\/\d{4}/.test(subtitle||'');
+  return `<div class="v3-hdr">
+    <svg class="v3-end r" viewBox="0 0 40 60" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="22,0 40,0 40,60 22,60 33,30" fill="#7A1A3A"/>
+      <polygon points="26,0 40,0 40,60 26,60 37,30" fill="#5E1430"/>
+      <polyline points="15,0 27,30 15,60" fill="none" stroke="#C9A46A" stroke-width="3"/></svg>
+    <div class="v3-org"><div class="l1">${escapeHtml(ph.line1||'')}</div><div class="l2">${escapeHtml(ph.line2||'')}</div>${ph.line3?`<div class="l2">${escapeHtml(ph.line3)}</div>`:''}</div>
+    <span class="v3-div"></span>
+    <div class="v3-ttl"><div class="title-ar">${escapeHtml(titleAr||'')}</div>
+      ${subtitle?`<div class="v3-sub"><span>${escapeHtml(subtitle)}</span>${hasDate?`<span class="cal">${icon('calendar',16)}</span>`:''}</div>`:''}</div>
+    <div class="v3-logo"><div class="lg">${state.logo?`<img src="${state.logo}" alt="">`:BRAND_MARK_SVG}</div>
+      <div class="tx"><b>${escapeHtml(ph.line2||'')}</b>${en?`<i>${en}</i>`:''}</div></div>
+    <svg class="v3-end l" viewBox="0 0 40 60" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="0,0 26,0 0,44" fill="#7A1A3A"/><polygon points="0,0 14,0 0,24" fill="#5E1430"/>
+      <line x1="33" y1="0" x2="0" y2="56" stroke="#C9A46A" stroke-width="3"/></svg>
+  </div>`;
+}
+function repV2Kpis(kpis){
+  const ph = Object.assign({slogan:'معاً.. نبنى جيل المستقبل'}, state.printHeader||{});
+  const sl = String(ph.slogan||'').replace(/\.\.+\s*/,'…|').split('|');
+  const cards = (kpis||[]).length>=5 ? [] : [`<div class="v2-k slogan"><span class="pp">${icon('users',40)}</span><span class="tx"><b>${escapeHtml(sl[0]||'')}</b>${sl[1]?`<b>${escapeHtml(sl[1])}</b>`:''}</span></div>`];
+  (kpis||[]).forEach(k=>{
+    const m = String(k.l).match(/^((?:\p{Extended_Pictographic}|️|‍)+)\s*(.*)$/u);
+    const tx = m ? m[2] : String(k.l);
+    cards.push(`<div class="v2-k"><span class="tx"><div class="v">${escapeHtml(String(k.v))}</div><div class="l">${escapeHtml(tx)}</div></span>
+      <span class="dm">${icon(repKpiIcon(tx),24)}</span></div>`);
+  });
+  if(!cards.length) return '';
+  return `<div class="v2-kpis${cards.length>4?' many':''}">${cards.join('<span class="v2-sep"></span>')}</div>`;
+}
+function repV2Footer(){
+  const ph = state.printHeader || {};
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('ar-QA-u-nu-latn', {hour:'2-digit', minute:'2-digit'});
+  return `<div class="v2-ftr"><span class="ln r"></span>
+    <div class="mid"><span class="pr">${icon('printer',20)}</span>
+      <span><b>${escapeHtml([ph.line1, ph.line2].filter(Boolean).join(' – '))}</b><br>تمت الطباعة بتاريخ ${fmtDate(todayStr())} الساعة ${timeStr}</span></div>
+    <span class="ln l"></span></div>`;
+}
+function repV2ThIcons(html){
+  html = html.replace(/من الساعة\s*([\d:]+)\s*إلى الساعة\s*([\d:]+)/g, 'من $1<br>إلى $2');
+  return html.replace(/<th([^>]*)>([^<]+)<\/th>/g, (all, attrs, txt)=>{
+    const t = txt.replace(/&[a-z#0-9]+;/gi,' ').trim();
+    const ic = repThIcon(t);
+    return ic ? `<th${attrs}><span class="th-ic">${icon(ic,18)}</span>${txt}</th>` : all;
+  });
+}
 function buildReportDoc(opts){
-  // opts: {titleAr, subtitle, kpis:[{v,l}], headers:[...], rows:[[...]], theme}
   const theme = opts.theme || PRINT_THEME;
   let html = printDocOpen(theme);
-  html = html.replace('</head>', REPORT_STYLES + '</head>');
-  html = html.replace('<div class="doc">', '<div class="doc rep-doc">');
-  html += printDocHeaderBlock();
-  const subCls = opts.subtitleNumFont ? ' num-f" style="font-size:12px;' : '';
-  const titleBlk = `<div class="title-blk"><div class="title-ar">${escapeHtml(opts.titleAr)}</div><div class="title-sub${subCls}">${escapeHtml(opts.subtitle||'')}</div></div>`;
-  if(opts.kpis && opts.kpis.length){
-    /* توزيع تلقائي متوازن: النصف الأول يمينًا والنصف الآخر يسارًا والعنوان في المنتصف.
-       يعمل مع أي عدد من المؤشرات (يُعاد التوزيع تلقائيًا عند الإضافة أو الحذف). */
-    const half = Math.ceil(opts.kpis.length / 2);
-    const rightK = opts.kpis.slice(0, half);
-    const leftK  = opts.kpis.slice(half);
-    // نفصل الأيقونة عن النص لنتحكم في حجمها على حدة
-    const kpiCard = k => {
-      const m = String(k.l).match(/^((?:\p{Extended_Pictographic}|\uFE0F|\u200D)+)\s*(.*)$/u);
-      const ic = m ? m[1] : '';
-      const tx = m ? m[2] : String(k.l);
-      return `<div class="kpi">
-        ${ic?`<span class="kpi-ic">${emojiToIcon(ic,10)||''}</span>`:''}
-        <div class="kpi-v">${escapeHtml(String(k.v))}</div>
-        <div class="kpi-l">${escapeHtml(tx)}</div>
-      </div>`;
-    };
-    html += `<div class="kpi-around">
-      <div class="kpi-side">${rightK.map(kpiCard).join('')}</div>
-      <div class="kpi-center">${titleBlk}</div>
-      <div class="kpi-side">${leftK.map(kpiCard).join('')}</div>
-    </div>`;
-  } else {
-    html += titleBlk;
-  }
-  if(opts.headers && opts.rows){
-    /* أعراض أعمدة صريحة عند تمريرها — تتجاوز التوزيع التلقائي */
-    /* أعراض صريحة عند تمريرها، وإلا تُحسب تلقائيًا من عناوين الأعمدة */
-    html += repTableHtml(opts.headers, opts.rows,
-      { colWidths: opts.colWidths, tableClass: opts.tableClass });
-  }
-  if(opts.extraHtml) html += opts.extraHtml;
-  html += printDocFooter();
+  html = html.replace('</head>', REPORT_STYLES + REP_V2_CSS + '</head>');
+  html = html.replace('<div class="doc">', '<div class="doc rep-doc v2">');
+  html += REP_V2_DECO;
+  html += repV2Header(opts.titleAr, opts.subtitle);
+  html += repV2Kpis(opts.kpis);
+  let body = '';
+  if(opts.headers && opts.rows) body += repTableHtml(opts.headers, opts.rows, { colWidths: opts.colWidths, tableClass: opts.tableClass });
+  if(opts.extraHtml) body += opts.extraHtml;
+  html += repV2ThIcons(body);
+  html += repV2Footer();
   html += REPORT_FIT_SCRIPT;
   html += printDocClose();
   return html;
@@ -11606,7 +11768,7 @@ function renderAdminRequestsReportPage(c){
   function placeCell(o){ return repPlacePhone(o); }
   /* الطلبات الإدارية في مربع واحد — كل طلب في سطر */
   function reqsCell(r){
-    return r.reqs.map(x=>`<div style="padding:1px 0;white-space:nowrap;">• ${escapeHtml(x)}</div>`).join('');
+    return r.reqs.map(x=>`<div style="padding:1px 0;white-space:normal;overflow-wrap:anywhere;font-size:.9em;line-height:1.3;text-align:right;">• ${escapeHtml(x)}</div>`).join('');
   }
   function draw(){
     const {list} = getList();
