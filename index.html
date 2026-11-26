@@ -5387,7 +5387,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.9';
+const APP_VERSION = '4.10';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -8365,6 +8365,12 @@ function renderOrderPage(c){
         {ic:'printer', l:'طباعة القائمة', run:()=>ordPrintList(L, desc)},
         {ic:'download', l:'تنزيل PDF', hint:'حفظ كـ PDF', run:()=>ordPrintList(L, desc)},
         {ic:'sheet', l:'تصدير Excel', run:()=>ordExcelList(L, desc)},
+        ...(()=>{ const A = (state.orders||[]).slice().sort((x,y)=>String(x.date||'').localeCompare(String(y.date||''))||(x.serial-y.serial));
+          if(A.length===L.length) return [];
+          return [{hd:`كل الطلبات (دون تصفية) — ${A.length} ${eventWord(A.length)}`},
+            {ic:'printer', l:'طباعة كل الطلبات', run:()=>ordPrintList(A, 'كل الطلبات')},
+            {ic:'download', l:'تنزيل PDF للكل', hint:'حفظ كـ PDF', run:()=>ordPrintList(A, 'كل الطلبات')},
+            {ic:'sheet', l:'تصدير Excel للكل', run:()=>ordExcelList(A, 'كل الطلبات')}]; })(),
       ]);
     };
     function ordListDesc(){
