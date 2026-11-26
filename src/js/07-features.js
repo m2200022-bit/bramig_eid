@@ -1230,24 +1230,9 @@ function openYearArchive(){
       if(!confirm(`سيُنقل ${list.length} طلب (حتى ${fmtDate(to)}) إلى أرشيف العام ${label}.\nتبقى بأرقامها، ويمكن عرضها وطباعتها في أي وقت.\nستُنزَّل نسخة احتياطية كاملة أولًا.\n\nمتابعة؟`)) return;
       const btn = box.querySelector('#ya_go'); btn.disabled = true;
       try{
-        downloadBackup();
+        await backupNow();
         btn.textContent = 'جارٍ حفظ الأرشيف…';
-        const ids = new Set(list.map(o=>o.id));
-        const audit = (state.auditLog||[]).filter(a=>ids.has(a.orderId));
-        const meta = {key, label, to, count:list.length, archivedAt:new Date().toISOString(), by: curUserName()};
-        await archiveWrite(meta, {orders:list, auditLog:audit, meta});
-        btn.textContent = 'جارٍ التحقق…';
-        const back = await archiveRead(key);
-        if(!back.data || (back.data.orders||[]).length!==list.length) throw new Error('التحقق من الأرشيف فشل — لم يُنقل شيء');
-        /* بعد التحقق فقط: إزالة من العام الحالي */
-        const mx = (state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0);
-        state.nextSerial = Math.max(Number(state.nextSerial)||1, mx+1);
-        state.orders = state.orders.filter(o=>!ids.has(o.id));
-        state.auditLog = (state.auditLog||[]).filter(a=>!ids.has(a.orderId));
-        state.archives = (state.archives||[]).concat([meta]);
-        state.archivedIds = (state.archivedIds||[]).concat(list.map(o=>o.id));
-        logAudit('archive', null, `أرشفة العام ${label}: ${list.length} طلب`, true);
-        await saveState();
+        await archiveRun({key, label, to});
         alert(`تمت أرشفة ${list.length} طلب في «أرشيف العام ${label}».\nحجم بيانات العام الحالي الآن: ${fmtKB(stateBytes())}`);
         closeModal(); render();
       }catch(e){ console.error(e); alert('تعذّرت الأرشفة: '+(e.message||e.code)+'\nلم يُحذف أي طلب من العام الحالي.'); btn.disabled=false; btn.textContent='أرشفة الآن'; }
@@ -1293,7 +1278,7 @@ function dailyBackupPrompt(){
         ? `قمتَ بعمل نسخة احتياطية يوم <b>${escapeHtml(bi.day)} ${bi.date}</b> الساعة <b dir="ltr">${bi.time}</b>${days?` (قبل ${days} يوم)`:' (اليوم)'}${bi.dir?`<br>في مجلد: <b>${escapeHtml(bi.dir)}</b>`:''}<br>هل تريد تحديث النسخة؟`
         : 'لم تُعمل أي نسخة احتياطية من هذا الجهاز بعد. اختر مجلدًا ثابتًا لحفظ النسخ فيه.'}</div>
       <p class="helper">${bkSupported()
-        ? `تُحفظ النسخة دائمًا في المجلد نفسه باسم «${BK_FILE}»، وتبقى النسخة التي قبلها باسم «…-السابقة». (${(state.orders||[]).length} طلب في العام الحالي)`
+        ? `تُحفظ النسخة دائمًا في المجلد نفسه باسم «${BK_FILE}»، وتبقى النسخة التي قبلها باسم «…-السابقة». لتصبح النسخة <b>تلقائية</b> كل يوم: عندما يسألك المتصفح عن الإذن اختر «السماح في كل زيارة» (Allow on every visit).`
         : 'متصفحك لا يدعم الحفظ في مجلد ثابت — ستُنزَّل النسخة إلى مجلد التنزيلات. (يدعمه Chrome وEdge على الكمبيوتر)'}</p>
       ${endedYear ? `<div class="dbk-st">يوجد طلبات من عام دراسي منتهٍ (حتى ${fmtDate(endedYear)}) — يمكنك نقلها إلى الأرشيف من «أرشيف الأعوام».</div>`:''}
       <div class="dbk-acts"><button class="pk-btn pri" id="dbk_go">${icon('refresh',15)} ${bi?'تحديث النسخة':'عمل نسخة احتياطية'}</button>
@@ -2522,5 +2507,78 @@ function scTimelineInit(c, ctx){
     {ic:'calendar', l: window.__tlWork!==false ? 'إظهار أيام العطلة' : 'أيام العمل فقط', run:()=>{ window.__tlWork = window.__tlWork===false; draw(); }},
   ]);
   draw();
+}
+
+
+
+/* ══════ الأرشفة والنسخ تلقائيًا ══════ */
+async function archiveRun({key, label, to, auto}){
+  const list = (state.orders||[]).filter(o=>o.date && o.date<=to);
+  if(!list.length) return 0;
+  const ids = new Set(list.map(o=>o.id));
+  const audit = (state.auditLog||[]).filter(a=>ids.has(a.orderId));
+  const meta = {key, label, to, count:list.length, archivedAt:new Date().toISOString(), by: auto ? 'تلقائي' : curUserName()};
+  await archiveWrite(meta, {orders:list, auditLog:audit, meta});
+  const back = await archiveRead(key);
+  if(!back.data || (back.data.orders||[]).length!==list.length) throw new Error('التحقق من الأرشيف فشل — لم يُنقل شيء');
+  /* بعد التحقق فقط: إزالة من العام الحالي */
+  const mx = (state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0);
+  state.nextSerial = Math.max(Number(state.nextSerial)||1, mx+1);
+  state.orders = state.orders.filter(o=>!ids.has(o.id));
+  state.auditLog = (state.auditLog||[]).filter(a=>!ids.has(a.orderId));
+  state.archives = (state.archives||[]).concat([meta]);
+  state.archivedIds = (state.archivedIds||[]).concat(list.map(o=>o.id));
+  logAudit('archive', null, `أرشفة ${auto?'تلقائية ':''}للعام ${label}: ${list.length} طلب`, true);
+  await saveState();
+  return list.length;
+}
+/* آخر 31 مايو مضى ← العام الدراسي المنتهي */
+function endedAcadYear(){
+  const t = todayStr(), y = Number(t.slice(0,4)), m = Number(t.slice(5,7));
+  const cy = m >= 6 ? y : y-1;
+  return {to:`${cy}-05-31`, label:`${cy-1}/${cy}`, key:`${cy-1}-${cy}`};
+}
+/* نسخ صامت في المجلد المحفوظ إن كان الإذن قائمًا (بلا أي نافذة) */
+async function bkTrySilent(){
+  if(!bkSupported()) return false;
+  try{
+    const dir = await bkGetDir(); if(!dir) return false;
+    if((await dir.queryPermission({mode:'readwrite'}))!=='granted') return false;
+    try{ const old = await dir.getFileHandle(BK_FILE); const txt = await (await old.getFile()).text();
+         if(txt){ const pv = await dir.getFileHandle(BK_PREV, {create:true}); const w = await pv.createWritable(); await w.write(txt); await w.close(); } }catch(e){}
+    const fh = await dir.getFileHandle(BK_FILE, {create:true}); const w = await fh.createWritable(); await w.write(bkPayload()); await w.close();
+    try{ localStorage.setItem('backup_dl_at', new Date().toISOString()); localStorage.setItem('backup_dir_name', dir.name); }catch(e){}
+    return dir.name;
+  }catch(e){ console.warn('silent backup', e); return false; }
+}
+/* عند الدخول: أرشفة العام المنتهي تلقائيًا (للمدير) ثم النسخة اليومية */
+async function autoOnLogin(){
+  if(currentRole==='admin'){
+    try{
+      const ey = endedAcadYear();
+      const pending = (state.orders||[]).filter(o=>o.date && o.date<=ey.to).length;
+      if(pending && !(state.archives||[]).some(a=>a.key===ey.key)){
+        toast(`جارٍ أرشفة العام ${ey.label} تلقائيًا…`);
+        await (bkTrySilent().then(ok=>{ if(!ok) downloadBackupFile(); }));
+        const n = await archiveRun({key:ey.key, label:ey.label, to:ey.to, auto:true});
+        render();
+        await new Promise(r=>showInfoModal(`${icon('inbox',17)} أرشفة تلقائية`, `<div class="dbk">
+          <p>انتهى العام الدراسي <b>${ey.label}</b>، فنُقلت طلباته (<b>${n}</b> طلب حتى ${fmtDate(ey.to)}) إلى «أرشيف العام ${ey.label}» بأرقامها كما هي.</p>
+          <div class="dbk-st">العام الحالي يبدأ الآن بطلباته فقط. يمكنك عرض الأرشيف وطباعته في أي وقت من زر «الأرشيف» في صفحة الطلبات.</div>
+          <p class="helper">حجم بيانات العام الحالي: ${fmtKB(stateBytes())} من 1024 KB.</p></div>`, box=>{ box.style.maxWidth='480px';
+            const ov=document.getElementById('modalOverlay'); const t=setInterval(()=>{ if(!ov.classList.contains('open')){ clearInterval(t); r(); } }, 400); }));
+      }
+    }catch(e){ console.error('auto archive', e); toast('تعذّرت الأرشفة التلقائية — ستُعاد المحاولة عند الدخول القادم'); }
+  }
+  /* النسخة اليومية: صامتة إن أمكن، وإلا الرسالة */
+  if(currentRole==='admin' || currentRole==='user'){
+    const today = todayStr();
+    let shown=''; try{ shown = localStorage.getItem('dailyBackupShown')||''; }catch(e){}
+    if(shown===today) return;
+    const dirName = await bkTrySilent();
+    if(dirName){ try{ localStorage.setItem('dailyBackupShown', today); }catch(e){}
+      toast(`✅ حُدّثت النسخة الاحتياطية اليومية تلقائيًا في مجلد «${dirName}»`); return; }
+    dailyBackupPrompt();
+  }
 }
 

@@ -1109,7 +1109,7 @@ function finishLogin(match, u){
   loggedTrainerId = match.role==='trainer' ? match.trainerId : null;
   currentPage='home'; trainerPortalTab='upcoming'; tpAutoOpened=false;
   renderRoot();
-  try{ dailyBackupPrompt(); }catch(e){ console.warn(e); }
+  setTimeout(()=>{ autoOnLogin().catch(e=>console.warn(e)); }, 600);
 }
 
 function navPrefKey(){
