@@ -4020,11 +4020,85 @@
   .av2.is-loading .av-body{ position:relative; }
   .av2.is-loading .av-body::after{ content:''; position:absolute; top:120px; left:50%; width:34px; height:34px; margin-left:-17px; border-radius:50%;
     border:3px solid var(--ds-teal-l); border-top-color:var(--ds-teal); animation:wzSpin .7s linear infinite; }
+
+  /* الهواتف في التقارير على الشاشة */
+  #reportContent .rph{ display:inline-flex; align-items:center; gap:4px; white-space:nowrap; direction:ltr; vertical-align:middle; }
+  #reportContent .rph-n{ color:inherit; text-decoration:none; border-bottom:1px dashed var(--ds-line); }
+  #reportContent .rph-n:hover{ color:var(--ds-teal); border-bottom-color:var(--ds-teal); }
+  #reportContent .rph-w{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:6px; background:#E5F6EC; color:#1E8E4E; }
+  #reportContent .rph-w:hover{ background:#1E8E4E; color:#fff; }
+  #reportContent .rph-w svg{ width:12px; height:12px; }
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
   body.dark .mr-chip{ background:#212935; }
 
+</style>
+<style id="compactUI">
+/* ══════════════════════════════════════════════════════════════
+   الواجهة المضغوطة (Compact) — مقاسات موحّدة لكل الصفحات
+   حقول وأزرار 32–36px · صفوف جداول 36–42px · أيقونات 16–18px
+   مسافات 8–12px · حشوة البطاقات 12–16px
+   ══════════════════════════════════════════════════════════════ */
+@media screen{
+  body{ font-size:13px; line-height:1.55; }
+  /* الحقول */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select{
+    min-height:34px !important; padding-block:5px !important; padding-inline:10px; font-size:13px; border-radius:9px !important; }
+  textarea{ min-height:58px; padding:7px 10px !important; border-radius:9px !important; font-size:13px; }
+  .field{ gap:4px !important; } .field > label, .grid label{ font-size:12px; }
+  .grid{ gap:10px !important; margin-bottom:8px; }
+  /* الأزرار */
+  .btn{ min-height:34px !important; padding:6px 13px !important; border-radius:9px !important; font-size:12.5px; gap:6px; }
+  .btn-sm{ min-height:30px !important; padding:4px 10px !important; font-size:12px !important; }
+  .btn svg, .pk-btn svg:not(.caret){ width:16px; height:16px; }
+  .btn-sm svg, .pk-btn.sm svg:not(.caret){ width:14px; height:14px; }
+  .pk-btn{ min-height:34px; padding:0 12px; border-radius:9px; font-size:12.5px; gap:6px; }
+  .pk-btn.ic{ width:34px; padding:0; } .pk-btn.sm{ min-height:30px; padding:0 10px; font-size:12px; } .pk-btn.ic.sm{ width:30px; padding:0; }
+  .icon-btn{ width:30px !important; height:30px !important; } .icon-btn svg{ width:16px; height:16px; }
+  .pk-seg{ padding:2px; border-radius:9px; } .pk-seg button{ min-height:28px; padding:0 11px; font-size:12px; border-radius:7px; }
+  .pk-search input, .pk-toolbar select, .pk-date{ min-height:34px !important; border-radius:9px !important; }
+  .pk-date input{ min-height:32px !important; }
+  .plus-btn{ min-height:28px; }
+  /* البطاقات */
+  .card{ padding:0 14px 12px !important; margin-bottom:12px !important; }
+  .card > h2, .card h2:first-child{ font-size:14.5px; margin-block:12px 10px; }
+  .pk-card{ margin-bottom:12px; border-radius:14px; }
+  .pk-head{ padding:10px 14px; gap:8px; } .pk-title{ font-size:14.5px; gap:8px; } .pk-title svg{ width:17px; height:17px; }
+  .pk-toolbar{ padding:9px 14px; gap:8px; } .pk-pager{ padding:9px 14px; } .pk-selbar{ padding:8px 14px; }
+  .pk-kpis{ gap:10px; margin-bottom:12px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+  .pk-kpi{ padding:10px 12px; gap:10px; border-radius:12px; }
+  .pk-kpi .ic{ width:36px; height:36px; border-radius:10px; } .pk-kpi .ic svg{ width:18px; height:18px; }
+  .pk-kpi .v{ font-size:20px; } .pk-kpi .l{ font-size:11.5px; } .pk-kpi .s{ font-size:10.5px; }
+  .kpi-row{ gap:10px !important; } .kpi{ padding:10px 12px !important; }
+  /* الجداول */
+  thead th{ padding:8px 10px !important; font-size:11.5px; }
+  tbody td{ padding:7px 10px !important; line-height:1.5; }
+  table.pk-tbl > thead > tr > th{ padding:8px 10px !important; }
+  table.pk-tbl > tbody > tr > td{ padding:7px 10px !important; }
+  .pk-acts{ gap:2px; } .pk-acts button{ width:28px; height:28px; } .pk-acts svg{ width:15px; height:15px; }
+  .pk-no{ height:22px; font-size:11px; }
+  .st{ padding:2px 9px !important; font-size:11px !important; }
+  /* القائمة الجانبية */
+  .sn-item{ padding:7px 0 !important; } .sn-item .sn-ic svg{ width:17px; height:17px; }
+  /* المعالج */
+  .wz-step{ padding:4px 14px 14px; } .wz-sh{ padding:8px 0 10px; gap:10px; } .wz-sh .ic{ width:38px; height:38px; border-radius:11px; }
+  .wz-sh .ic svg{ width:18px; height:18px; } .wz-sh h3{ font-size:15.5px; }
+  .wz-grp{ padding:10px 12px 12px; margin-top:10px; border-radius:12px; } .wz-gt{ margin-bottom:8px; font-size:12.5px; }
+  .wz-grid{ gap:10px; } .wz-grid input:not([type=checkbox]):not([type=radio]), .wz-grid select{ min-height:36px !important; border-radius:9px !important; font-size:13px !important; }
+  .wz-pt button{ min-height:36px; }
+  .wz-steps-side, .wz-prev{ padding:12px; } .wz-pv{ padding:8px 2px; } .wz-pv .ic{ width:28px; height:28px; }
+  .wz-bar{ padding:9px 14px; } .wz-ring svg{ width:64px; height:64px; } .wz-ring{ grid-template-columns:64px 1fr; padding-bottom:10px; }
+  /* الإتاحة والتفاصيل */
+  table.av-tbl td.c button{ width:30px; height:28px; } .av-body{ padding:12px 14px 14px; }
+  .ev-hero{ padding:14px 16px 12px; } .ev-hero h2{ font-size:18px; margin:8px 0 5px; } .ev-hero .facts > div{ padding:7px 9px; } .ev-hero .fi{ width:28px; height:28px; }
+  .ev-c > header{ padding:8px 12px 7px; } .ev-c .bd{ padding:9px 12px 10px; } .ev-grid{ gap:9px; }
+  /* التقارير */
+  .rp-groups{ padding:12px 14px 14px; } .cu-body{ padding:4px 14px 14px; } .cu-sec{ padding:10px 0; }
+  .qa2-body{ padding:12px 14px 14px; } .qa2-n{ padding:8px 10px; } .qa2-ring{ width:130px; height:130px; }
+  /* النوافذ */
+  #modalBox{ padding:16px 18px !important; } .modal-actions{ margin-top:12px !important; gap:8px !important; }
+}
 </style>
 </head>
 <body>
@@ -5313,7 +5387,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.8';
+const APP_VERSION = '4.9';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -11770,6 +11844,11 @@ const REP_V2_CSS = `<style>
   .v2-ftr .pr{width:10mm; height:10mm; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(62,13,33,.2); display:flex; align-items:center; justify-content:center; color:#8A1F42; flex:none;}
   .v2-ftr .pr svg{width:5.4mm; height:5.4mm;}
   .v2-ftr .mid b{font-weight:700;}
+  .rph{display:inline-flex; align-items:center; gap:1mm; white-space:nowrap; direction:ltr;}
+  .rph-n{color:inherit !important; text-decoration:none;}
+  .rph-n:hover{text-decoration:underline;}
+  .rph-w{display:inline-flex; color:#1E8E4E !important; text-decoration:none; line-height:0;}
+  .rph-w svg{width:3.4mm; height:3.4mm;}
   @media print{ .rep-doc.v2{border:none !important;} }
 </style>`;
 const REP_V2_DECO = `
@@ -11820,6 +11899,45 @@ function repV2Footer(){
       <span><b>${escapeHtml([ph.line1, ph.line2].filter(Boolean).join(' – '))}</b><br>تمت الطباعة بتاريخ ${fmtDate(todayStr())} الساعة ${timeStr}</span></div>
     <span class="ln l"></span></div>`;
 }
+/* ══════ الهواتف في التقارير: رقم قابل للنقر للاتصال + أيقونة واتساب ══════ */
+const REP_PH_RE = /(^|[^\d\/:.\-])((?:\+?974[\s-]?)?[3-7]\d{7})(?![\d\/:.])/g;
+function repPhIntl(num){ const bare = String(num).replace(/\D/g,''); return bare.length===8 ? '974'+bare : bare; }
+function repPhoneLinks(html){
+  return String(html||'').replace(/>([^<]+)</g, (m, txt)=>'>' + txt.replace(REP_PH_RE, (mm, pre, num)=>{
+    const intl = repPhIntl(num);
+    return `${pre}<span class="rph"><a class="rph-n" href="tel:+${intl}" title="اتصال">${num}</a><a class="rph-w" href="https://wa.me/${intl}" target="_blank" rel="noopener" title="واتساب">${waIcon(12)}</a></span>`;
+  }) + '<');
+}
+function linkifyPhonesIn(root){
+  if(!root) return;
+  const skip = n=>{ for(let p=n.parentElement; p && p!==root; p=p.parentElement){ if(/^(A|BUTTON|INPUT|TEXTAREA|SELECT|OPTION|SCRIPT|STYLE|LABEL)$/.test(p.tagName) || p.classList.contains('rph')) return true; } return false; };
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n=>{
+    if(!n.nodeValue || !/[3-7]\d{7}/.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+    return skip(n) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+  const nodes = []; while(w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n=>{
+    REP_PH_RE.lastIndex = 0;
+    const html = escapeHtml(n.nodeValue).replace(REP_PH_RE, (mm, pre, num)=>{
+      const intl = repPhIntl(num);
+      return `${pre}<span class="rph"><a class="rph-n" href="tel:+${intl}" title="اتصال">${num}</a><a class="rph-w" href="https://wa.me/${intl}" target="_blank" rel="noopener" title="واتساب" aria-label="واتساب">${waIcon(13)}</a></span>`;
+    });
+    if(html === escapeHtml(n.nodeValue)) return;
+    const span = document.createElement('span'); span.innerHTML = html;
+    n.replaceWith(...span.childNodes);
+  });
+}
+(function(){
+  let t = null;
+  const run = ()=>{ t = null; const rc = document.getElementById('reportContent'); if(rc) linkifyPhonesIn(rc); };
+  const mo = new MutationObserver(muts=>{
+    if(!document.getElementById('reportContent')) return;
+    if(muts.every(m=>m.target.closest && m.target.closest('.rph'))) return;
+    if(!t) t = setTimeout(run, 120);
+  });
+  const start = ()=>mo.observe(document.body, {childList:true, subtree:true});
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+
 function repV2ThIcons(html){
   html = html.replace(/من الساعة\s*([\d:]+)\s*إلى الساعة\s*([\d:]+)/g, 'من $1<br>إلى $2');
   return html.replace(/<th([^>]*)>([^<]+)<\/th>/g, (all, attrs, txt)=>{
@@ -11839,7 +11957,7 @@ function buildReportDoc(opts){
   let body = '';
   if(opts.headers && opts.rows) body += repTableHtml(opts.headers, opts.rows, { colWidths: opts.colWidths, tableClass: opts.tableClass });
   if(opts.extraHtml) body += opts.extraHtml;
-  html += repV2ThIcons(body);
+  html += repPhoneLinks(repV2ThIcons(body));
   html += repV2Footer();
   html += REPORT_FIT_SCRIPT;
   html += printDocClose();
