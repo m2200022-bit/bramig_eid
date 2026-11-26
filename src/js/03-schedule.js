@@ -319,9 +319,32 @@ function renderSchedulePage(c){
     </div>
   </div>
 
+  <div class="sc-views" role="tablist" aria-label="طريقة العرض">
+    ${[['tl','calendar','التقويم الزمني'],['list','list','قائمة الفعاليات'],['av','users','الإتاحة والتعارضات'],['req','clipboard','الطلبات لكل مقدّم']]
+      .map(v=>`<button type="button" role="tab" data-sv="${v[0]}" class="${(window.__schedView||'tl')===v[0]?'on':''}">${icon(v[1],15)} ${v[2]}</button>`).join('')}
+  </div>
+
   <div id="sc_qResult"></div>
 
-  <div class="pk-card" id="sc_listCard">
+  <div class="pk-card sc-tl" id="sc_tlCard" data-svp="tl">
+    <div class="pk-head">
+      <h2 class="pk-title">${icon('calendar',18)} التقويم الزمني للمقدّمين <span class="pk-sub">${escapeHtml(fmtDate(F))} — ${escapeHtml(fmtDate(T))}</span></h2>
+      <span class="sp">
+        <span class="av-nav" role="group" aria-label="التنقل">
+          <button type="button" class="pk-btn ic sm" id="tl_prev" title="الفترة السابقة" aria-label="الفترة السابقة">${icon('chevronRight',15)}</button>
+          <button type="button" class="pk-btn sm" id="tl_today">اليوم</button>
+          <button type="button" class="pk-btn ic sm" id="tl_next" title="الفترة التالية" aria-label="الفترة التالية">${icon('chevronLeft',15)}</button>
+        </span>
+        <span class="pk-seg" id="tl_span"><button type="button" data-tls="7">أسبوع</button><button type="button" data-tls="14">أسبوعان</button><button type="button" data-tls="30">شهر</button></span>
+        <label class="tl-ck"><input type="checkbox" id="tl_work" ${window.__tlWork!==false?'checked':''}> أيام العمل فقط</label>
+        <button type="button" class="pk-btn" id="tl_print">${icon('printer',15)} طباعة</button>
+      </span>
+    </div>
+    <div class="tl-legend"><span><i class="lg free"></i>متاح</span><span><i class="lg busy"></i>فعالية</span><span><i class="lg leave"></i>إجازة</span><span><i class="lg clash">!</i>تعارض</span><span class="hint">${icon('info',13)} اضغط على أي فعالية لعرض تفاصيلها</span></div>
+    <div id="tl_grid" class="tl-wrap"></div>
+  </div>
+
+  <div class="pk-card" id="sc_listCard" data-svp="list">
     <div class="pk-head">
       <h2 class="pk-title">${icon('list',17)} فعاليات الفترة <span class="n" id="sc_count">${list.length}</span></h2>
       <span class="sp pk-sub" id="sc_stLbl"></span>
@@ -330,7 +353,7 @@ function renderSchedulePage(c){
   </div>
 
 
-  <div class="pk-card av2" id="av2">
+  <div class="pk-card av2" id="av2" data-svp="av">
     <div class="pk-head">
       <h2 class="pk-title">${icon('users',18)} إتاحة مقدّمي المبادرات <span class="pk-sub">${escapeHtml(fmtDate(F))} — ${escapeHtml(fmtDate(T))}</span></h2>
       <span class="sp">
@@ -362,7 +385,7 @@ function renderSchedulePage(c){
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-svp="req">
     <h2>${icon('clipboard',15)} الطلبات المقدَّمة لكل مقدّم مبادرة</h2>
     ${trainers.map(t=>{
       const mine = list.filter(o=>(o.trainerIds||[]).includes(t.id));
@@ -387,6 +410,7 @@ function renderSchedulePage(c){
   </div>`;
 
   /* التفاعل */
+  try{ scTimelineInit(c, {F, T, days, trainers, clashBy, isOff}); }catch(e){ console.error('timeline', e); }
   c.querySelectorAll('[data-span]').forEach(b=>{
     b.onclick = ()=>{ schedRange=b.dataset.span;
       window.__schedFrom = spans[schedRange].from; window.__schedTo = spans[schedRange].to; render(); };

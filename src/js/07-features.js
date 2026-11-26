@@ -2440,3 +2440,69 @@ async function backupNow(opts){
   }
 }
 
+
+
+/* ══════ جدول المقدّمين: التقويم الزمني (صف لكل مقدّم × عمود لكل يوم) ══════ */
+function scTimelineInit(c, ctx){
+  const view = window.__schedView || 'tl';
+  c.classList.add('sc-page'); c.dataset.view = view;
+  c.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{ window.__schedView=b.dataset.sv; c.dataset.view=b.dataset.sv;
+    c.querySelectorAll('[data-sv]').forEach(x=>x.classList.toggle('on', x===b)); });
+  const {F, T, trainers, clashBy, isOff} = ctx;
+  const spanLen = Math.round((new Date(T)-new Date(F))/86400000)+1;
+  c.querySelectorAll('#tl_span [data-tls]').forEach(b=>{
+    const n = Number(b.dataset.tls); b.classList.toggle('on', Math.abs(spanLen-n)<=1);
+    b.onclick = ()=>{ window.__schedTo = addDaysISO(window.__schedFrom, n-1); render(); };
+  });
+  const shift = dir=>{ window.__schedFrom = addDaysISO(F, dir*spanLen); window.__schedTo = addDaysISO(T, dir*spanLen); render(); };
+  c.querySelector('#tl_prev').onclick = ()=>shift(-1);
+  c.querySelector('#tl_next').onclick = ()=>shift(1);
+  c.querySelector('#tl_today').onclick = ()=>{ const t=todayStr(); window.__schedFrom=t; window.__schedTo=addDaysISO(t, spanLen-1); render(); };
+  c.querySelector('#tl_work').onchange = e=>{ window.__tlWork = e.target.checked; draw(); };
+  const today = todayStr();
+  const evOf = (tid, d) => (state.orders||[]).filter(o=>isLiveOrder(o) && o.date && (o.trainerIds||[]).includes(tid) && d>=o.date && d<=orderEnd(o))
+      .sort((a,b)=>(a.timeFrom||'').localeCompare(b.timeFrom||''));
+  const schoolName = o=>{ const s=(state.schools||[]).find(x=>x.id===o.schoolId); return s?s.name:''; };
+  const leaveOf = (tid,d)=>{ try{ return trainerLeaveOn(tid,d); }catch(e){ return null; } };
+  function cols(){ const out=[]; let d=F, g=0; while(d<=T && g<62){ if(!(window.__tlWork!==false && isOff(d))) out.push(d); d=addDaysISO(d,1); g++; } return out; }
+  function draw(){
+    const D = cols(), box = c.querySelector('#tl_grid');
+    if(!trainers.length){ box.innerHTML = '<div class="pk-empty">لا يوجد مقدّمون مختارون</div>'; return; }
+    const DN = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+    let busyT = 0, freeT = 0, clashT = 0;
+    const rows = trainers.map(t=>{
+      let nEv = 0;
+      const cells = D.map(d=>{
+        const off = isOff(d), lv = leaveOf(t.id,d), evs = evOf(t.id,d);
+        const clash = !!(clashBy[t.id] && clashBy[t.id][d]);
+        nEv += evs.length; if(clash) clashT++;
+        const cls = ['tl-c', off?'off':'', d===today?'today':'', clash?'clash':''];
+        if(evs.length){ busyT++;
+          return `<td class="${cls.join(' ')} busy">${clash?`<span class="tl-x" title="تعارض">!</span>`:''}${evs.map(o=>`<button type="button" class="tl-ev" data-oid="${o.id}" title="${escapeHtml((o.title||'')+' — '+schoolName(o))}">
+              <b dir="ltr">${escapeHtml(o.timeFrom||'—')}</b><span>${escapeHtml(schoolName(o)||o.title||'')}</span></button>`).join('')}</td>`; }
+        if(lv) return `<td class="${cls.join(' ')} leave"><span class="tl-tag">إجازة</span></td>`;
+        if(off) return `<td class="${cls.join(' ')}"><span class="tl-tag">عطلة</span></td>`;
+        freeT++;
+        return `<td class="${cls.join(' ')} free"><span class="tl-tag">متاح</span></td>`;
+      }).join('');
+      return `<tr><th class="tl-tr" scope="row"><b>${escapeHtml(t.name)}</b>${t.phone?`<small dir="ltr">${escapeHtml(t.phone)}</small>`:''}<em>${nEv} ${eventWord(nEv)}</em></th>${cells}</tr>`;
+    }).join('');
+    box.innerHTML = `<div class="tl-sum"><span><b>${trainers.length}</b> مقدّم</span><span class="b"><b>${busyT}</b> يوم عمل مشغول</span><span class="g"><b>${freeT}</b> يوم متاح</span>${clashT?`<span class="r"><b>${clashT}</b> تعارض</span>`:''}</div>
+      <div class="tl-scroll"><table class="tl-tbl"><thead><tr><th class="tl-tr">المقدّم</th>${D.map(d=>`<th class="${d===today?'today':''}${isOff(d)?' off':''}"><span>${DN[new Date(d+'T00:00:00').getDay()]}</span><b>${Number(d.slice(8,10))}/${Number(d.slice(5,7))}</b></th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+    box.querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>viewOrderReadOnly(b.dataset.oid));
+    window.__tlPrint = ()=>{
+      const H = ['المقدّم', ...D.map(d=>`${DN[new Date(d+'T00:00:00').getDay()]}<br>${fmtDate(d)}`)];
+      const R = trainers.map(t=>[escapeHtml(t.name), ...D.map(d=>{
+        const evs = evOf(t.id,d); if(evs.length) return evs.map(o=>`<b>${escapeHtml(o.timeFrom||'')}</b> ${escapeHtml(schoolName(o)||o.title||'')}`).join('<br>');
+        if(leaveOf(t.id,d)) return '<span style="color:#9A6A00">إجازة</span>';
+        if(isOff(d)) return '<span style="color:#aaa">عطلة</span>';
+        return '<span style="color:#1E7A46">متاح</span>'; })]);
+      doPrintDoc(buildReportDoc({ titleAr:'التقويم الزمني لمقدّمي المبادرات', subtitle:`الفترة من ${fmtDate(F)} إلى ${fmtDate(T)}`,
+        kpis:[{v:trainers.length,l:'المقدّمون'},{v:busyT,l:'أيام مشغولة'},{v:freeT,l:'أيام متاحة'}], headers:H, rows:R }), true, 'A4');
+    };
+  }
+  c.querySelector('#tl_print').onclick = ()=>window.__tlPrint && window.__tlPrint();
+  draw();
+}
+

@@ -971,11 +971,14 @@ function renderReportsPage(c){
     const cats = [['all','كل التقارير','layers'], ...REPORT_GROUPS.map((g,i)=>[String(i), g.t, g.icon])];
     const curCat = window.__repCat || 'all';
     box.innerHTML = `
-      <div class="pk-card rp-hub">
+      <div class="pk-card rp-hub rp2">
         <div class="pk-head">
-          <h2 class="pk-title">${icon('barChart',18)} مركز التقارير <span class="pk-sub">حدّد الفترة، ثم اختر التقرير ليُفتح عليها مباشرة</span></h2>
+          <h2 class="pk-title">${icon('barChart',18)} التقارير</h2>
+          <span class="sp"><div class="pk-search rp2-q">${icon('search',15)}
+            <input id="rl_search" placeholder="ابحث عن تقرير..." autocomplete="off" aria-label="ابحث عن تقرير"></div></span>
         </div>
         <div class="pk-toolbar rp-period">
+          <span class="rp2-lbl">${icon('calendar',14)} الفترة</span>
           <span class="pk-seg" id="rl_presets" role="tablist" aria-label="الفترة">
             ${REP_PRESETS.map(p=>`<button type="button" data-preset="${p[0]}" class="${preset===p[0]?'on':''}">${p[1]}</button>`).join('')}
           </span>
@@ -984,31 +987,22 @@ function renderReportsPage(c){
             <label class="pk-date"><span>إلى</span><input id="rl_to" type="date" lang="en-GB" value="${rng.to}"></label>
           </span>
         </div>
-      </div>
-      <div id="rl_summary"></div>
-      <div class="pk-card">
-        <div class="pk-head">
-          <h2 class="pk-title">${icon('fileText',17)} أنواع التقارير</h2>
-          <span class="sp"><div class="pk-search" style="min-width:240px;">${icon('search',15)}
-            <input id="rl_search" placeholder="ابحث عن تقرير..." autocomplete="off" aria-label="ابحث عن تقرير"></div></span>
+        <div id="rl_summary" hidden></div>
+        <div class="rp2-sec" id="rl_featWrap"><div class="rp2-h">${icon('star',15)} الأكثر استخدامًا</div><div class="rp2-feat" id="rl_feat"></div></div>
+        <div class="rp2-sec">
+          <div class="rp2-h">${icon('layers',15)} كل التقارير</div>
+          <div class="rp2-groups" id="rl_list">
+            ${REPORT_GROUPS.map((g,gi)=>`<section class="rt-grp rp2-grp" data-grp="${gi}">
+              <div class="rp2-gt">${icon(g.icon,14)} ${escapeHtml(g.t)}</div>
+              ${g.items.map(t=>`<button type="button" class="rt-item rp2-it" data-rt="${t[0]}" title="${escapeHtml(t[3])}"
+                  data-find="${escapeHtml((t[1]+' '+t[3]+' '+g.t).toLowerCase())}">
+                <span class="rt-ic">${icon(t[2],15)}</span><span class="rp2-n">${escapeHtml(t[1])}</span>${t[4]?'<em>جديد</em>':''}
+                <span class="rt-go">${icon('chevronLeft',13)}</span>
+              </button>`).join('')}
+            </section>`).join('')}
+          </div>
+          <div class="pk-empty" id="rl_none" style="display:none;">${icon('search',30)}لا يوجد تقرير مطابق</div>
         </div>
-        <div class="pk-toolbar rp-cats" role="tablist" aria-label="تصنيفات التقارير">
-          ${cats.map(c=>`<button type="button" class="rp-cat${curCat===c[0]?' on':''}" data-cat="${c[0]}">${icon(c[2],14)} ${escapeHtml(c[1])}
-            <i>${c[0]==='all'?REPORT_GROUPS.reduce((s,g)=>s+g.items.length,0):REPORT_GROUPS[Number(c[0])].items.length}</i></button>`).join('')}
-        </div>
-        <div class="rt-groups rp-groups" id="rl_list">
-          ${REPORT_GROUPS.map((g,gi)=>`<section class="rt-grp" data-grp="${gi}">
-            <div class="rt-grp-t">${icon(g.icon,14)} ${escapeHtml(g.t)}</div>
-            <div class="rt-grid">
-            ${g.items.map(t=>`<button type="button" class="rt-item${t[4]?' rt-feat':''}" data-rt="${t[0]}"
-                data-find="${escapeHtml((t[1]+' '+t[3]+' '+g.t).toLowerCase())}">
-              <span class="rt-ic">${icon(t[2],17)}</span>
-              <span class="rt-body"><b>${escapeHtml(t[1])}${t[4]?' <em>جديد</em>':''}</b><i>${escapeHtml(t[3])}</i></span>
-              <span class="rt-go">${icon('chevronLeft',14)}</span>
-            </button>`).join('')}
-            </div></section>`).join('')}
-        </div>
-        <div class="pk-empty" id="rl_none" style="display:none;">${icon('search',30)}لا يوجد تقرير مطابق</div>
         <select id="rl_type" style="display:none;"><option value=""></option>
           ${REPORT_GROUPS.flatMap(g=>g.items.map(t=>t[0])).map(v=>`<option value="${v}">${v}</option>`).join('')}
         </select>
@@ -1083,6 +1077,21 @@ function renderReportsPage(c){
           </div>
         </div>`;
       document.querySelectorAll('#rl_summary [data-kopen]').forEach(b=>b.onclick = ()=>openRep(b.dataset.kopen));
+      /* بطاقات «الأكثر استخدامًا» مع رقم حيّ للفترة */
+      const schoolsN = new Set(L.map(o=>o.schoolId).filter(Boolean)).size;
+      const STAT = { monthly:[L.length,'فعالية'], periodSum:[L.length,'فعالية'], trainer:[trs,'مقدّم'], school:[schoolsN,'جهة'],
+        venue:[places,'مكان'], eval:[done.length,'مكتملة'], stats:[L.length,'فعالية'], targets:[pct+'%','إنجاز'],
+        adminReq:[L.filter(o=>(o.adminRequests||[]).length).length,'فعالية بطلبات'], dist:[trs,'مقدّم'], bypath:[Object.keys(byP).length,'مسار'],
+        fieldSum:[new Set(L.map(o=>o.fieldId).filter(Boolean)).size,'مجال'], topPrograms:[topP.length,'مسار'], stageType:[schoolsN,'جهة'],
+        quran:[(state.quranActivities||[]).length,'سجل'], schoolStages:[(state.schools||[]).length,'مدرسة'], custom:['+','فلاتر وأعمدة'] };
+      const u = repUsage();
+      const used = Object.entries(u).filter(([k])=>repItemOf(k)).sort((a,b)=>b[1].n-a[1].n).map(x=>x[0]);
+      const keys = [...new Set([...used, 'monthly','trainer','school','custom'])].slice(0,4);
+      const fb = document.getElementById('rl_feat');
+      if(fb){ fb.innerHTML = keys.map(k=>{ const it = repItemOf(k); const st = STAT[k] || [L.length,'فعالية'];
+          return `<button type="button" class="rp2-fc" data-fopen="${k}"><span class="rt-ic">${icon(it[2],18)}</span>
+            <b>${escapeHtml(it[1])}</b><span class="v">${st[0]}<small>${st[1]}</small></span><i>${escapeHtml(it[3])}</i></button>`; }).join('');
+        fb.querySelectorAll('[data-fopen]').forEach(b=>b.onclick = ()=>openRep(b.dataset.fopen)); }
     }
     /* الوصول السريع: الأخيرة والأكثر استخدامًا */
     function drawQuick(){
@@ -1118,6 +1127,7 @@ function renderReportsPage(c){
       });
       none.style.display = n ? 'none' : 'block';
     };
+    window.__repCat = 'all';
     q.addEventListener('input', upd);
     box.querySelectorAll('[data-cat]').forEach(b=>b.onclick = ()=>{
       window.__repCat = b.dataset.cat; box.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('on', x===b)); upd(); });
