@@ -4014,6 +4014,12 @@
   .av-dd p{ margin:0 0 8px; font-size:12.5px; color:var(--ds-ink-2); }
   .av-dd .ev-r{ border:1px solid var(--ds-line-2); border-radius:11px; margin-top:6px; }
   @media (max-width:760px){ .av-body{ padding:12px; } .av-cl-list{ grid-template-columns:1fr; } table.av-tbl .nm{ min-width:140px; } .av-legend .hint{ margin:0; width:100%; } }
+
+  .ev-r .acts{ display:inline-flex; gap:4px; flex:none; }
+  .av2.is-loading #av_grid, .av2.is-loading #av_clash, .av2.is-loading #av_kpis{ opacity:.35; pointer-events:none; transition:opacity .15s; }
+  .av2.is-loading .av-body{ position:relative; }
+  .av2.is-loading .av-body::after{ content:''; position:absolute; top:120px; left:50%; width:34px; height:34px; margin-left:-17px; border-radius:50%;
+    border:3px solid var(--ds-teal-l); border-top-color:var(--ds-teal); animation:wzSpin .7s linear infinite; }
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
@@ -5307,7 +5313,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.7';
+const APP_VERSION = '4.8';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -6442,6 +6448,7 @@ function renderSchedulePage(c){
     {ic:'sheet', l:'قائمة الفعاليات Excel', run:()=>ordExcelList(window.__schedLastList||list, scDesc())},
   ]);
   /* ══════ إتاحة مقدّمي المبادرات: جدول ملوّن + بحث وتصفية + تفاصيل اليوم + تفاصيل التعارض ══════ */
+  const avCanEdit = currentRole === 'admin' || currentRole === 'user';
   const AV_MN = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const avStatus = (t, d)=>{
     if(isOff(d)) return {k:'off'};
@@ -6515,7 +6522,9 @@ function renderSchedulePage(c){
           return `<div class="ev-r"><span class="pk-no">${o.serial}</span>
             <span class="tx"><b>${escapeHtml(o.title||'بلا عنوان')}</b>
               <i>${icon('mapPin',11)} ${s2?escapeHtml(s2.name):'—'}${o.venue?` · ${escapeHtml(o.venue)}`:''} &nbsp; ${icon('clock',11)} <span dir="ltr">${escapeHtml((o.timeFrom||'—')+' – '+(o.timeTo||'—'))}</span></i></span>
-            <button type="button" class="pk-btn sm" data-avv="${o.id}">${icon('eye',13)} عرض الفعالية</button></div>`; }).join('')}
+            <span class="acts"><button type="button" class="pk-btn sm" data-avv="${o.id}">${icon('eye',13)} عرض الفعالية</button>${avCanEdit?`
+              <button type="button" class="pk-btn sm ic warn" data-avp="${o.id}" title="تأجيل / تاريخ جديد" aria-label="تأجيل إلى تاريخ جديد">${icon('calendar',13)}</button>
+              <button type="button" class="pk-btn sm ic dang" data-avx="${o.id}" title="إلغاء الفعالية" aria-label="إلغاء الفعالية">${icon('ban',13)}</button>`:''}</span></div>`; }).join('')}
       </article>`).join('')}</div>`
       : `<div class="av-ok">${icon('checkCircle',18)} لا توجد تعارضات${q||f?' مطابقة':''} في هذه الفترة.</div>`}`;
   }
@@ -6536,9 +6545,13 @@ function renderSchedulePage(c){
       ${all.map(o=>{ const s2 = state.schools.find(y=>y.id===o.schoolId);
         return `<div class="ev-r"><span class="pk-no">${o.serial}</span><span class="tx"><b>${escapeHtml(o.title||'')}</b>
           <i>${s2?escapeHtml(s2.name):'—'} · <span dir="ltr">${escapeHtml(fullTimeRange(o.timeFrom,o.timeTo))}</span></i></span>
-          <button type="button" class="pk-btn sm" data-avv="${o.id}">${icon('eye',13)} عرض</button></div>`; }).join('')}</div>`, box=>{
+          <span class="acts"><button type="button" class="pk-btn sm" data-avv="${o.id}">${icon('eye',13)} عرض</button>${avCanEdit?`
+          <button type="button" class="pk-btn sm ic warn" data-avp="${o.id}" title="تأجيل / تاريخ جديد" aria-label="تأجيل إلى تاريخ جديد">${icon('calendar',13)}</button>
+          <button type="button" class="pk-btn sm ic dang" data-avx="${o.id}" title="إلغاء الفعالية" aria-label="إلغاء الفعالية">${icon('ban',13)}</button>`:''}</span></div>`; }).join('')}</div>`, box=>{
       box.style.maxWidth = '560px';
       box.querySelectorAll('[data-avv]').forEach(b=>b.onclick = ()=>{ closeModal(); setTimeout(()=>viewOrderReadOnly(b.dataset.avv), 60); });
+      box.querySelectorAll('[data-avp]').forEach(b=>b.onclick = ()=>{ closeModal(); setTimeout(()=>openPostponeModal(b.dataset.avp), 60); });
+      box.querySelectorAll('[data-avx]').forEach(b=>b.onclick = ()=>{ closeModal(); setTimeout(()=>toggleCancelOrder(b.dataset.avx), 60); });
     });
   }
   function avExcel(){
@@ -6554,7 +6567,7 @@ function renderSchedulePage(c){
   { const av = document.getElementById('av2');
     if(av){
       const goRange = (f2, t2)=>{ const y = window.scrollY; window.__schedFrom = f2; window.__schedTo = t2; window.__schedPage = 1;
-        render(); setTimeout(()=>{ const el = document.getElementById('av2'); if(el) el.scrollIntoView({block:'start'}); else window.scrollTo(0,y); }, 30); };
+        av.classList.add('is-loading'); setTimeout(()=>{ render(); setTimeout(()=>{ const el = document.getElementById('av2'); if(el) el.scrollIntoView({block:'start'}); else window.scrollTo(0,y); }, 30); }, 30); };
       const span = days.length || 7;
       document.getElementById('av_prev').onclick = ()=>goRange(addDaysISO(F, -span), addDaysISO(T, -span));
       document.getElementById('av_next').onclick = ()=>goRange(addDaysISO(F, span), addDaysISO(T, span));
@@ -6574,6 +6587,8 @@ function renderSchedulePage(c){
         if(c1){ av.querySelectorAll('.av-tbl td.sel').forEach(x=>x.classList.remove('sel')); c1.parentElement.classList.add('sel');
           const [tid, d] = c1.dataset.avc.split('|'); avDayDetails(tid, d); return; }
         const v1 = e.target.closest('[data-avv]'); if(v1){ viewOrderReadOnly(v1.dataset.avv); return; }
+        const p2 = e.target.closest('[data-avp]'); if(p2){ openPostponeModal(p2.dataset.avp); return; }
+        const x2 = e.target.closest('[data-avx]'); if(x2){ toggleCancelOrder(x2.dataset.avx); return; }
         const p1 = e.target.closest('[data-tp]'); if(p1 && av.contains(p1)){ openTrainerProfile(p1.dataset.tp); }
       });
       drawAvail();
@@ -17351,6 +17366,7 @@ function profileEventsTable(list, showTrainers, reopen){
   const canEdit = currentRole==='admin' || currentRole==='user';
   const acts = o => !canEdit ? '' : `<td style="white-space:nowrap;">
       <button type="button" class="icon-btn" title="تعديل الفعالية" aria-label="تعديل" onclick="profEditOrder('${o.id}')" style="width:26px;height:26px;padding:0;">${icon('edit',12)}</button>
+      ${(o.status||'active')!=='cancelled' ? `<button type="button" class="icon-btn" title="تأجيل / تاريخ جديد" aria-label="تأجيل إلى تاريخ جديد" onclick="profPostpone('${o.id}')" style="width:26px;height:26px;padding:0;">${icon('calendar',12)}</button>` : ''}
       ${o.status==='cancelled'
         ? `<button type="button" class="icon-btn" title="تراجع عن الإلغاء" aria-label="تراجع عن الإلغاء" onclick="profToggleCancel('${o.id}', ${reopen||'null'})" style="width:26px;height:26px;padding:0;">${icon('refresh',12)}</button>`
         : `<button type="button" class="icon-btn danger" title="إلغاء الفعالية" aria-label="إلغاء الفعالية" onclick="profToggleCancel('${o.id}', ${reopen||'null'})" style="width:26px;height:26px;padding:0;">${icon('ban',12)}</button>`}</td>`;
@@ -17364,6 +17380,7 @@ function profileEventsTable(list, showTrainers, reopen){
   </tbody></table></div>`;
 }
 function profEditOrder(id){ closeModal(); setTimeout(()=>editOrder(id), 60); }
+function profPostpone(id){ closeModal(); setTimeout(()=>openPostponeModal(id), 60); }
 async function profToggleCancel(id, reopen){
   const o = state.orders.find(x=>x.id===id); if(!o) return;
   const wasCancelled = o.status==='cancelled';
