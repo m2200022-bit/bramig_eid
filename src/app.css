@@ -4232,3 +4232,19 @@
 .tl-tbl tbody tr:hover .tl-tr b{color:var(--ds-teal);}
 @media (max-width:700px){ .tl-nav{width:100%;justify-content:space-between;margin:0;} .tl-range{min-width:0;flex:1;} .tl-find{flex:1;} .tl-find input{width:100%;} .tl-top .pk-seg{width:100%;} .tl-top .pk-seg button{flex:1;} }
 
+
+/* ═══ جدول الإتاحة (أسابيع/أشهر) أصغر وأكثر إحكامًا ═══ */
+table.av-tbl{ font-size:11.5px; }
+table.av-tbl thead th{ padding:4px 2px !important; }
+table.av-tbl thead th i{ font-size:9.5px; } table.av-tbl thead th b{ font-size:11.5px; } table.av-tbl thead th em{ font-size:8.5px; }
+table.av-tbl .nm{ min-width:150px !important; max-width:180px !important; padding:4px 10px !important; }
+table.av-tbl .nm .av-ph, table.av-tbl .nm small{ font-size:10.5px !important; }
+table.av-tbl .nm .av-av, table.av-tbl .nm .avatar, table.av-tbl .nm .av-ava{ width:24px !important; height:24px !important; font-size:11px !important; }
+table.av-tbl td.c{ padding:2px !important; }
+table.av-tbl td.c button{ width:24px !important; height:22px !important; border-radius:6px !important; }
+table.av-tbl td.busy .dot{ width:6px; height:6px; }
+table.av-tbl td.sum, table.av-tbl th.sum{ min-width:40px !important; font-size:12px; }
+.av-grid-wrap{ max-height:60vh; overflow:auto; }
+.av-who{ padding:3px 8px !important; gap:6px !important; }
+.av-who .av{ width:22px !important; height:22px !important; font-size:10.5px !important; }
+.av-who b{ font-size:12px !important; }
