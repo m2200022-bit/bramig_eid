@@ -4630,6 +4630,8 @@ let saving=false, pendingSave=false;
    ══════════════════════════════════════════════════════════════════ */
 let __saveTimer = null, __pendingBase = null;
 function saveState(){
+  try{ const mx=(state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0);
+       if(mx+1 > (Number(state.nextSerial)||0)) state.nextSerial = mx+1; }catch(e){}
   return new Promise(resolve=>{
     if(__saveTimer) clearTimeout(__saveTimer);
     __saveTimer = setTimeout(()=>{ __saveTimer=null; flushSave().then(resolve); }, 600);
@@ -5095,7 +5097,8 @@ function dayWord(n){
   return 'يومًا';
 }
 function nextOrderSerial(){
-  return (state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0) + 1;
+  const mx = (state.orders||[]).reduce((m,o)=>Math.max(m, Number(o.serial)||0), 0);
+  return Math.max(mx + 1, Number(state.nextSerial)||1);   /* لا يُعاد استخدام رقم سبق إصداره */
 }
 function schoolSameDay(schoolId, date, excludeOrderId){
   if(!schoolId||!date) return null;
@@ -5411,7 +5414,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.11';
+const APP_VERSION = '4.12';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -5438,7 +5441,7 @@ function renderBell(){
     notifList = state.notifications.filter(n=>n.trainerId===loggedTrainerId).sort((a,b)=>b.createdAt-a.createdAt).slice(0,10);
     notifKind='trainer';
   } else {
-    upcomingList = state.orders.filter(o=>{ const d=daysDiffSafe(today,o.date); return d!==null && d>=0 && d<=2; });
+    upcomingList = state.orders.filter(o=>{ if(!isLiveOrder(o)) return false; const d=daysDiffSafe(today,o.date); return d!==null && d>=0 && d<=2; });
     notifList = state.adminNotifications.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,10);
     notifKind='admin';
   }
@@ -7206,7 +7209,7 @@ function renderOperationsCenter(c){
 
   /* تنبيهات التدخل */
   const soon = orders.filter(o=>{
-    if(o.completionStatus==='تم') return false;
+    if(o.completionStatus==='تم' || !isLiveOrder(o)) return false;
     if(!o.date || o.date < t) return false;
     const diff = (new Date(o.date+'T00:00:00') - new Date(t+'T00:00:00'))/86400000;
     return diff <= 3;
@@ -7353,7 +7356,7 @@ function renderOperationsCenter(c){
       ids.forEach(id=>{
         const o = state.orders.find(x=>x.id===id); if(!o) return;
         o.completionStatus = v; logAudit('status', o, v);
-        if(v === 'الغيت') o.status = 'cancelled';
+        if(v === 'الغيت' && o.status!=='cancelled') markCancelled(o, 'سُجّل الإنجاز «أُلغيت»');
         o.evaluatedBy = currentRole==='trainer' ? 'trainer' : 'admin';
         n++;
       });
@@ -7935,11 +7938,13 @@ function otblExportSelected(containerId){
 async function otblBulkDelete(containerId){
   const ids = __orderTableSelections[containerId] ? Array.from(__orderTableSelections[containerId]) : [];
   if(!ids.length){ toast('حدد فعالية واحدة على الأقل'); return; }
-  if(!confirm(`سيتم حذف ${ids.length} فعالية محددة نهائيًا. متابعة؟`)) return;
-  state.orders.filter(o=>ids.includes(o.id)).forEach(o=>logAudit('delete', o));
-  state.orders = state.orders.filter(o=>!ids.includes(o.id));
+  /* لا حذف: تُلغى الطلبات المحددة وتبقى بأرقامها */
+  const tgt = state.orders.filter(o=>ids.includes(o.id) && !isCancelledOrder(o));
+  if(!tgt.length){ toast('الطلبات المحددة ملغاة مسبقًا'); return; }
+  const why = askCancelReason(tgt.length); if(why===null) return;
+  tgt.forEach(o=>{ markCancelled(o, why); logAudit('cancel', o, why||'', true); });
   __orderTableSelections[containerId] = new Set();
-  await saveState(); toast(`تم حذف ${ids.length} فعالية`); render();
+  await saveState(); toast(`أُلغي ${tgt.length} طلب — محفوظة بأرقامها بحالة «ملغي»`); render();
 }
 async function otblBulkStatus(containerId){
   const set = __orderTableSelections[containerId] || new Set();
@@ -8039,7 +8044,7 @@ function orderRowMenu(anchor, id, after){
     {ic:'qr', l:'رمز QR', run:()=>openQrCodeModal(id)},
     '-',
     {ic:cancelled?'refresh':'x', l:cancelled?'تراجع عن الإلغاء':'إلغاء الفعالية', run:()=>{ Promise.resolve(toggleCancelOrder(id)).then(done); }},
-    {ic:'trash', l:'حذف', danger:true, run:()=>{ Promise.resolve(deleteOrder(id)).then(done); }},
+    {ic:'ban', l:'إلغاء الطلب (يبقى برقمه)', danger:true, run:()=>{ Promise.resolve(deleteOrder(id)).then(done); }},
   ]);
 }
 function otblSyncBar(containerId){
@@ -8091,7 +8096,7 @@ function ordersTableHtml(list, containerId, opts){
     <span class="pk-sep"></span>
     <button class="icon-btn rect multi-ok" ${set.size?'':'disabled'} title="طباعة تقرير المحدد" aria-label="طباعة تقرير المحدد" onclick="otblPrintSelected('${containerId}')">${icon('printer',16)}</button>
     <button class="icon-btn rect multi-ok" ${set.size?'':'disabled'} title="تصدير المحدد Excel" aria-label="تصدير المحدد Excel" onclick="otblExportSelected('${containerId}')">${icon('sheet',16)}</button>
-    <button class="icon-btn rect danger multi-ok" ${set.size?'':'disabled'} title="حذف المحدد" aria-label="حذف المحدد" onclick="otblBulkDelete('${containerId}')">${icon('trash',16)}</button>
+    <button class="icon-btn rect danger multi-ok" ${set.size?'':'disabled'} title="إلغاء المحدد (يبقى برقمه)" aria-label="إلغاء المحدد" onclick="otblBulkDelete('${containerId}')">${icon('ban',16)}</button>
     <button class="pk-btn sm" type="button" style="margin-inline-start:auto;" onclick="otblClearSel('${containerId}')">${icon('x',13)} إلغاء التحديد</button>
   </div>`;
   const allOn = rows.length && rows.every(o=>set.has(o.id));
@@ -8399,6 +8404,9 @@ function renderOrderPage(c){
             {ic:'printer', l:'طباعة كل الطلبات', run:()=>ordPrintList(A, 'كل الطلبات')},
             {ic:'download', l:'تنزيل PDF للكل', hint:'حفظ كـ PDF', run:()=>ordPrintList(A, 'كل الطلبات')},
             {ic:'sheet', l:'تصدير Excel للكل', run:()=>ordExcelList(A, 'كل الطلبات')}]; })(),
+        '-', {hd:'سجل الطلبات الملغاة والمؤجّلة'},
+        {ic:'printer', l:'طباعة السجل', run:()=>cxPpRegister('print')},
+        {ic:'sheet', l:'السجل Excel', run:()=>cxPpRegister('xls')},
       ]);
     };
     function ordListDesc(){
@@ -8571,7 +8579,7 @@ function renderQuickEditSheet(sub){
       </select>
       <button class="icon-btn rect" id="qs_bulkApplyPath" disabled data-tip="تطبيق المسار" title="تطبيق المسار">✅</button>
       <span style="border-right:1.5px solid var(--line); height:24px; margin:0 4px;"></span>
-      <button class="icon-btn rect danger" id="qs_bulkDelete" disabled data-tip="حذف المحدد" title="حذف المحدد" aria-label="حذف المحدد">${icon('trash',17)}</button>
+      <button class="icon-btn rect danger" id="qs_bulkDelete" disabled data-tip="إلغاء المحدد (يبقى برقمه)" title="إلغاء المحدد (يبقى برقمه)" aria-label="إلغاء المحدد">${icon('ban',17)}</button>
     </div>
     <div id="qs_tableWrap" class="tbl-scroll"></div>
   </div>`;
@@ -8647,9 +8655,8 @@ function renderQuickEditSheet(sub){
         supervisorId = sv.id;
       }
       const yr = (r.date || todayStr()).slice(0,4);
-      const maxSerial = state.orders.filter(o=>o.date && o.date.slice(0,4)===yr).reduce((m,o)=>Math.max(m,o.serial||0),0);
       state.orders.push({
-        id:uid(), serial:maxSerial+1, createdAt:Date.now(), title:r.title,
+        id:uid(), serial:nextOrderSerial(), createdAt:Date.now(), title:r.title,
         fieldId: state.fields[0]?state.fields[0].id:'', participantsCount:r.participantsCount,
         date:r.date, dateTo:r.date, timeFrom:r.timeFrom, timeTo:r.timeTo, programTypeId,
         schoolId: sch?sch.id:'', supervisorId, trainerIds, requesterNote:'', adminNote:'مُدخل باللصق',
@@ -8673,10 +8680,13 @@ function renderQuickEditSheet(sub){
   }
   document.getElementById('qs_bulkDelete').onclick = async ()=>{
     if(selectedIds.size<1){ toast('حدد فعالية واحدة على الأقل'); return; }
-    if(!confirm(`سيتم حذف ${selectedIds.size} فعالية محددة نهائيًا. متابعة؟`)) return;
-    state.orders = state.orders.filter(o=>!selectedIds.has(o.id));
-    const n = selectedIds.size; selectedIds.clear();
-    await saveState(); toast(`تم حذف ${n} فعالية`); draw();
+    /* لا حذف: تُلغى المحددة وتبقى بأرقامها */
+    const tgt = state.orders.filter(o=>selectedIds.has(o.id) && !isCancelledOrder(o));
+    if(!tgt.length){ toast('المحددة ملغاة مسبقًا'); return; }
+    const why = askCancelReason(tgt.length); if(why===null) return;
+    tgt.forEach(o=>{ markCancelled(o, why); logAudit('cancel', o, why||'', true); });
+    selectedIds.clear();
+    await saveState(); toast(`أُلغي ${tgt.length} طلب — محفوظة بأرقامها`); draw();
   };
   document.getElementById('qs_bulkApply').onclick = async ()=>{
     const fieldId = document.getElementById('qs_bulkField').value;
@@ -8897,11 +8907,7 @@ function renderQuickEditSheet(sub){
   ['qs_fFilter','qs_pFilter','qs_placeFilter','qs_levelFilter','qs_emptyFilter'].forEach(id=>document.getElementById(id).addEventListener('change', draw));
   draw();
 }
-async function qsDeleteRow(id){
-  if(!confirm('هل تريد حذف هذه الفعالية؟')) return;
-  state.orders = state.orders.filter(o=>o.id!==id);
-  await saveState(); toast('تم الحذف'); render();
-}
+async function qsDeleteRow(id){ return deleteOrder(id); }
 
 function renderOrderForm(sub){
   const editing = editingOrderId ? state.orders.find(o=>o.id===editingOrderId) : null;
@@ -9680,7 +9686,7 @@ function renderOrderForm(sub){
                     /* متاح ما لم يكن مطلوبًا لفعالية أخرى في نفس التاريخ */
                     const d = currentDate();
                     const clash = d ? state.orders.find(o=>
-                      (!editing || o.id!==editing.id) && o.date===d && (o.adminRequests||[]).includes(r.id)) : null;
+                      (!editing || o.id!==editing.id) && isLiveOrder(o) && d>=(o.date||'') && d<=orderEnd(o) && (o.adminRequests||[]).includes(r.id)) : null;
                     const taken = !!clash, free = !!d && !taken;
                     return `<label class="opt-row acc-item${selectedReqIds.has(r.id)?' on':''}${taken?' is-busy':''}${free?' is-free':''}"
                       data-id="${r.id}" title="${taken?escapeHtml('مطلوب في: '+(clash.title||'')):''}">
@@ -9729,7 +9735,7 @@ function renderOrderForm(sub){
         if(cb.checked){
           const date = currentDate();
           if(date){
-            const conflictOrder = state.orders.find(o=> (!editing || o.id!==editing.id) && o.date===date && (o.adminRequests||[]).includes(id));
+            const conflictOrder = state.orders.find(o=> (!editing || o.id!==editing.id) && isLiveOrder(o) && date>=(o.date||'') && date<=orderEnd(o) && (o.adminRequests||[]).includes(id));
             if(conflictOrder){
               const ok = confirm(`تنبيه: هذا الطلب الإداري "${state.adminRequestsList.find(r=>r.id===id)?.name||''}" مطلوب مسبقًا لبرنامج آخر (${conflictOrder.title}) في نفس التاريخ. هل تريد المواصلة؟`);
               if(!ok){ cb.checked=false; return; }
@@ -10457,6 +10463,7 @@ function viewOrderReadOnly(id){
       {hd:'طباعة أمر التكليف'},
       {ic:'school', l:'نسخة الجهة الطالبة', run:()=>{ closeModal(); printOrderSchoolCopy(o.id); }},
       {ic:'clipboard', l:'نسخة الإدارة', run:()=>{ closeModal(); printOrderAdminCopy(o.id); }},
+      ...((isCancelledOrder(o)||o.status==='postponed') ? ['-', {ic:'fileText', l: isCancelledOrder(o)?'سند الإلغاء':'سند التأجيل', run:()=>{ closeModal(); printOrderVoucher(o.id); }}] : []),
     ]);
     box.querySelectorAll('[data-sp]').forEach(b=>b.onclick = go(()=>openSchoolProfile(b.dataset.sp)));
     box.querySelectorAll('[data-tp]').forEach(b=>b.onclick = go(()=>openTrainerProfile(b.dataset.tp)));
@@ -10464,10 +10471,10 @@ function viewOrderReadOnly(id){
 }
 function editOrder(id){ editingOrderId=id; orderSubTab='new'; currentPage='order'; render(); }
 async function deleteOrder(id){
-  if(!confirm('هل تريد حذف هذا الطلب؟')) return;
-  logAudit('delete', state.orders.find(o=>o.id===id));
-  state.orders = state.orders.filter(o=>o.id!==id);
-  await saveState(); toast('تم الحذف'); render();
+  /* لا يُحذف أي طلب: يُلغى ويبقى برقمه في النظام */
+  const o = state.orders.find(x=>x.id===id); if(!o) return;
+  if(isCancelledOrder(o)){ toast('الطلب ملغي مسبقًا — يبقى محفوظًا برقمه'); return; }
+  return toggleCancelOrder(id);
 }
 async function toggleCancelOrder(id){
   const o = state.orders.find(x=>x.id===id); if(!o) return;
@@ -10475,8 +10482,9 @@ async function toggleCancelOrder(id){
     if(!confirm('هل تريد التراجع عن إلغاء هذه الفعالية؟')) return;
     o.status='active'; if(o.completionStatus==='الغيت') o.completionStatus=''; logAudit('uncancel', o); await saveState(); toast('تم التراجع عن الإلغاء'); render(); return;
   }
-  if(!confirm('هل تريد إلغاء هذه الفعالية؟ ستبقى مسجلة لكن بحالة "ملغاة".')) return;
-  o.status='cancelled'; logAudit('cancel', o); await saveState(); toast('تم إلغاء الفعالية'); render();
+  const why = askCancelReason(1); if(why===null) return;
+  markCancelled(o, why); logAudit('cancel', o, why||''); await saveState(); toast(`أُلغي الطلب ${o.serial} — محفوظ برقمه بحالة «ملغي»`); render();
+  if(confirm(`تم إلغاء الطلب رقم ${o.serial}.\nهل تريد طباعة سند الإلغاء الآن؟`)) printOrderVoucher(o.id);
 }
 /* ══════════════════════════════════════════════════════════════════
    فحص التعارض عند الترحيل — يجمع تعارض المقدّمين وتعارض الجهة
@@ -10526,6 +10534,7 @@ function openPostponeModal(id){
     {name:'date', label:'التاريخ الجديد', type:'date', required:true},
     {name:'timeFrom', label:'من الساعة', type:'time'},
     {name:'timeTo', label:'إلى الساعة', type:'time'},
+    {name:'reason', label:'سبب التأجيل (يُطبع في سند التأجيل)', type:'text', placeholder:'اختياري'},
   ], async v=>{
     const oldDate = o.date, oldDateTo = orderEnd(o);
     const oldFrom = o.timeFrom, oldTo = o.timeTo;
@@ -10560,14 +10569,17 @@ function openPostponeModal(id){
     o.postponedFromTo   = (oldDateTo && oldDateTo!==oldDate) ? oldDateTo : '';
     o.postponedFromTime = (oldFrom||oldTo) ? `${oldFrom||'—'} - ${oldTo||'—'}` : '';
     o.postponedAt       = todayStr();
+    o.postponedStamp    = nowStamp(); o.postponedBy = curUserName();
+    o.postponeReason    = (v.reason||'').trim();
     o.postponedHadClash = cf.length ? cf.length : 0;
     o.adminNote = (o.adminNote?o.adminNote+' | ':'')
       + `تم ترحيلها من ${fmtDateRaw(oldDate)}${oldDateTo&&oldDateTo!==oldDate?` — ${fmtDateRaw(oldDateTo)}`:''}`
       + ` (${oldFrom||''}-${oldTo||''}) إلى ${fmtDateRaw(o.date)}${o.dateTo&&o.dateTo!==o.date?` — ${fmtDateRaw(o.dateTo)}`:''}`
       + ` (${o.timeFrom||''}-${o.timeTo||''})`;
     await saveState();
-    toast(`تم ترحيل الفعالية إلى ${fmtDateRaw(o.date)}`);
+    toast(`تم تأجيل الطلب ${o.serial} إلى ${fmtDateRaw(o.date)} — بنفس الرقم`);
     render();
+    setTimeout(()=>{ if(confirm(`تم تأجيل الطلب رقم ${o.serial}.\nهل تريد طباعة سند التأجيل الآن؟`)) printOrderVoucher(o.id); }, 80);
   });
   setTimeout(()=>{ const f=document.getElementById('mf_date'); if(f) f.value=o.date; const tf=document.getElementById('mf_timeFrom'); if(tf) tf.value=o.timeFrom||''; const tt=document.getElementById('mf_timeTo'); if(tt) tt.value=o.timeTo||''; },0);
 }
@@ -11393,6 +11405,7 @@ async function buildOrderPrintDoc(o, opts, copyLabel){
       if(h > avail){ document.body.style.zoom = (avail/h).toFixed(3); } }
     if(document.readyState==='complete') fit(); else window.addEventListener('load', fit); setTimeout(fit, 300); })();<\/script>`;
 
+  if(isCancelledOrder(o)) html += `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:50;"><div style="transform:rotate(-18deg);border:2mm solid rgba(179,38,30,.55);color:rgba(179,38,30,.55);border-radius:4mm;padding:3mm 14mm;font:900 54pt Tajawal,sans-serif;letter-spacing:2mm;">ملغي</div></div>`;
   html += printDocClose();
   return html;
 }
@@ -16411,7 +16424,7 @@ function diagnoseToday(){
   const today = todayStr();
   const orders = state.orders || [];
   const madeToday = orders.filter(o=>String(o.createdAt||'').slice(0,10) === today);
-  const forToday  = orders.filter(o=>o.date === today);
+  const forToday  = orders.filter(o=>o.date === today && isLiveOrder(o));
   const info = backupInfo();
   let bkLine = 'لا توجد نسخة محلية في هذا المتصفح.';
   if(info.last){
@@ -16893,7 +16906,7 @@ async function cancelSeriesFrom(id){
   const rest = state.orders.filter(x=>x.seriesId===o.seriesId && (x.date||'') >= (o.date||'') && x.status!=='cancelled' && x.completionStatus!=='تم');
   if(!rest.length){ toast('لا توجد مواعيد قادمة قابلة للإلغاء'); return; }
   if(!confirm(`سيُلغى ${rest.length} موعدًا من ${fmtDateRaw(o.date)} فما بعد.\nتبقى مسجّلة بحالة «ملغاة» ويمكن التراجع عن كل موعد منفردًا.\n\nمتابعة؟`)) return;
-  rest.forEach(x=>{ x.status='cancelled'; logAudit('cancel', x, 'ضمن إلغاء بقية السلسلة', true); });
+  rest.forEach(x=>{ markCancelled(x, 'ضمن إلغاء بقية السلسلة'); logAudit('cancel', x, 'ضمن إلغاء بقية السلسلة', true); });
   await saveState(); toast(`أُلغي ${rest.length} موعدًا`); render();
 }
 
@@ -17454,6 +17467,96 @@ function openTrainerGroup(){
     };
     chips(); draw();
   });
+}
+
+/* ══════ الإلغاء والتأجيل: الطلب يبقى برقمه في النظام + سند إلغاء / سند تأجيل ══════ */
+function curUserName(){ return currentUser ? (currentUser.displayName || currentUser.username || '—') : '—'; }
+function nowStamp(){ const d=new Date(); return `${dateToISO(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function markCancelled(o, reason){
+  o.status = 'cancelled';
+  o.cancelledAt = nowStamp(); o.cancelledBy = curUserName();
+  if(reason!=null) o.cancelReason = String(reason||'').trim();
+}
+function askCancelReason(n){
+  const r = prompt(`سبب إلغاء ${n>1?`${n} طلبات`:'الطلب'} (يُطبع في سند الإلغاء — يمكن تركه فارغًا):\nملاحظة: الطلب لا يُحذف، يبقى في النظام برقمه بحالة «ملغي».`, '');
+  return r; /* null = تراجع */
+}
+function printOrderVoucher(id){
+  const o = state.orders.find(x=>x.id===id); if(!o) return;
+  const cx = isCancelledOrder(o), pp = !cx && o.status==='postponed';
+  if(!cx && !pp){ toast('الطلب ليس ملغيًا ولا مؤجلًا'); return; }
+  const sc = state.schools.find(x=>x.id===o.schoolId);
+  const sv = sc ? (sc.supervisors||[]).find(x=>x.id===o.supervisorId) : null;
+  const trs = (o.trainerIds||[]).map(t=>{ const x=state.trainers.find(y=>y.id===t); return x?x.name:''; }).filter(Boolean).join('، ');
+  const fd = state.fields.find(x=>x.id===o.fieldId), pt = state.programTypes.find(x=>x.id===o.programTypeId);
+  const dt = (a,b)=> a ? (b && b!==a ? `${fmtDate(a)} — ${fmtDate(b)}` : `${escapeHtml(dayNameOf(a))} ${fmtDate(a)}`) : '—';
+  const hist = (state.auditLog||[]).filter(a=>a.orderId===o.id).sort((a,b)=>b.at-a.at);
+  const hc = hist.find(a=>a.action==='cancel' || (a.action==='status'&&a.note==='الغيت'));
+  const hp = hist.find(a=>a.action==='postpone');
+  const atStr = s=>{ if(!s) return '—'; const [d,t]=String(s).split(' '); return `${fmtDate(d)}${t?` الساعة ${t}`:''}`; };
+  const fromAudit = a=>{ if(!a) return '—'; const d=new Date(a.at); return `${fmtDate(dateToISO(d))} الساعة ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  const rows = [
+    ['رقم أمر التكليف', `<b style="font-size:13pt">${o.serial}</b>`],
+    ['عنوان المبادرة', escapeHtml(o.title||'—')],
+    ['المجال / المسار', escapeHtml([fd&&fd.name, pt&&pt.name].filter(Boolean).join(' — ')||'—')],
+    ['الجهة الطالبة', escapeHtml(sc?sc.name:'—') + (sv?` — المشرف: ${escapeHtml(sv.name)}${sv.phone?` (${escapeHtml(sv.phone)})`:''}`:'')],
+    ['مقدّم المبادرة', escapeHtml(trs||'—')],
+  ];
+  if(cx){
+    rows.push(['تاريخ المبادرة الملغاة', dt(o.date, orderEnd(o)) + (o.timeFrom?` · ${escapeHtml(fullTimeRange(o.timeFrom,o.timeTo))}`:'')]);
+    rows.push(['تاريخ الإلغاء', o.cancelledAt ? atStr(o.cancelledAt) : fromAudit(hc)]);
+    rows.push(['أُلغي بواسطة', escapeHtml(o.cancelledBy || (hc&&hc.user) || '—')]);
+    rows.push(['سبب الإلغاء', escapeHtml(o.cancelReason || (o.completionStatus==='الغيت'?'سُجّل الإنجاز «أُلغيت»':'') || (hc&&hc.note) || '—')]);
+  } else {
+    rows.push(['الموعد السابق', dt(o.postponedFrom, o.postponedFromTo||o.postponedFrom) + (o.postponedFromTime?` · ${escapeHtml(o.postponedFromTime)}`:'')]);
+    rows.push(['الموعد الجديد', `<b>${dt(o.date, orderEnd(o))}</b>` + (o.timeFrom?` · ${escapeHtml(fullTimeRange(o.timeFrom,o.timeTo))}`:'')]);
+    rows.push(['تاريخ التأجيل', o.postponedStamp ? atStr(o.postponedStamp) : (o.postponedAt ? fmtDate(o.postponedAt) : fromAudit(hp))]);
+    rows.push(['أُجّل بواسطة', escapeHtml(o.postponedBy || (hp&&hp.user) || '—')]);
+    rows.push(['سبب التأجيل', escapeHtml(o.postponeReason || '—')]);
+  }
+  const stampTxt = cx ? 'ملغي' : 'مؤجَّل', stampCol = cx ? '#B3261E' : '#B26A00';
+  const extra = `<style>
+      .vch{border:1px solid #E6D3DA;border-radius:3mm;overflow:hidden;position:relative;margin-top:2mm}
+      .vch table{width:100%;border-collapse:collapse;font-size:11pt}
+      .vch td{padding:2.6mm 4mm !important;border-bottom:1px dashed #E6D3DA;vertical-align:top;text-align:right !important}
+      .vch td.k{width:46mm;font-weight:800;color:#6B1834;background:#FBF6F8;white-space:nowrap}
+      .vch-stamp{position:absolute;left:10mm;top:8mm;transform:rotate(-14deg);border:1.2mm solid ${stampCol};color:${stampCol};
+        border-radius:3mm;padding:1.5mm 7mm;font-size:24pt;font-weight:900;opacity:.85;letter-spacing:1mm}
+      .vch-note{margin:4mm 0 0;font-size:10pt;color:#555;line-height:1.8}
+      .vch-sign{display:flex;justify-content:space-between;gap:10mm;margin-top:12mm;font-size:10.5pt;font-weight:700;color:#6B1834}
+      .vch-sign div{flex:1;text-align:center;border-top:1px solid #B08D57;padding-top:2mm}
+    </style>
+    <div class="vch"><span class="vch-stamp">${stampTxt}</span>
+      <table>${rows.map(r=>`<tr><td class="k">${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div>
+    <p class="vch-note">${cx
+      ? 'يُفيد هذا السند بإلغاء أمر التكليف المذكور أعلاه، ويبقى الطلب محفوظًا في النظام برقمه وبياناته بحالة «ملغي» ولا يُعاد استخدام رقمه.'
+      : 'يُفيد هذا السند بتأجيل أمر التكليف المذكور أعلاه إلى الموعد الجديد، مع بقاء الطلب برقمه نفسه في النظام بحالة «مؤجَّل».'}</p>
+    <div class="vch-sign"><div>المختص</div><div>رئيس القسم</div><div>الختم</div></div>`;
+  doPrintDoc(buildReportDoc({
+    titleAr: cx ? 'سند إلغاء أمر تكليف' : 'سند تأجيل أمر تكليف',
+    subtitle: `أمر التكليف رقم ${o.serial}`,
+    extraHtml: extra
+  }), false, 'A4');
+}
+function cxPpRegister(kind){
+  const L = (state.orders||[]).filter(o=>isCancelledOrder(o) || o.status==='postponed')
+    .sort((a,b)=>(Number(a.serial)||0)-(Number(b.serial)||0));
+  if(!L.length){ toast('لا توجد طلبات ملغاة أو مؤجلة'); return; }
+  const H = ['رقم التكليف','عنوان المبادرة','الجهة','الحالة','الموعد الأصلي','الموعد الجديد','تاريخ الإجراء','بواسطة','السبب'];
+  const rows = L.map(o=>{
+    const cx = isCancelledOrder(o), sc = state.schools.find(x=>x.id===o.schoolId);
+    const h = (state.auditLog||[]).filter(a=>a.orderId===o.id && (cx ? (a.action==='cancel'||(a.action==='status'&&a.note==='الغيت')) : a.action==='postpone')).sort((a,b)=>b.at-a.at)[0];
+    const hAt = h ? fmtDate(dateToISO(new Date(h.at))) : '—';
+    return cx
+      ? [o.serial, o.title||'', sc?sc.name:'—', 'ملغي', fmtDate(o.date), '—', o.cancelledAt?fmtDate(o.cancelledAt.split(' ')[0]):hAt, o.cancelledBy||(h&&h.user)||'—', o.cancelReason||(o.completionStatus==='الغيت'?'أُلغيت (الإنجاز)':'')||'—']
+      : [o.serial, o.title||'', sc?sc.name:'—', 'مؤجَّل', o.postponedFrom?fmtDate(o.postponedFrom):'—', fmtDate(o.date), o.postponedAt?fmtDate(o.postponedAt):hAt, o.postponedBy||(h&&h.user)||'—', o.postponeReason||'—'];
+  });
+  if(kind==='xls'){ exportToExcel('سجل_الملغاة_والمؤجلة.xlsx', H, rows, 'سجل الطلبات الملغاة والمؤجلة'); return; }
+  doPrintDoc(buildReportDoc({
+    titleAr:'سجل الطلبات الملغاة والمؤجّلة', subtitle:`${L.length} طلب — محفوظة في النظام بأرقامها`,
+    kpis:[{v:rows.filter(r=>r[3]==='ملغي').length,l:'ملغاة'},{v:rows.filter(r=>r[3]!=='ملغي').length,l:'مؤجّلة'}],
+    headers:H, rows: rows.map(r=>r.map(v=>escapeHtml(String(v))))
+  }), true, 'A4');
 }
 
 function _pnz(s){ return String(s||'').replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').toLowerCase().trim(); }
