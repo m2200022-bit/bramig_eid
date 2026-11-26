@@ -985,7 +985,8 @@ function renderSettingsPage(c){
   <div class="card">
     <h2>إدارة البيانات</h2>
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn btn-outline" id="dm_backup">💾 نسخة احتياطية (تنزيل)</button>
+      <button class="btn btn-outline" id="dm_backup">💾 نسخة احتياطية${bkSupported()&&bkInfo()&&bkInfo().dir?` (مجلد «${escapeHtml(bkInfo().dir)}»)`:''}</button>
+      ${bkSupported()?`<button class="btn btn-outline" type="button" onclick="backupNow({change:true})">${icon('folder',15)} تغيير مكان حفظ النسخ</button>`:''}
       <button class="btn btn-outline" onclick="document.getElementById('dm_restoreFile').click()">📥 استيراد نسخة احتياطية</button>
       <input type="file" id="dm_restoreFile" accept=".json" style="display:none" onchange="restoreBackup(this.files[0])">
       <button class="btn btn-outline" id="dm_refresh">🔄 تحديث البيانات من الخادم</button>
@@ -1182,15 +1183,7 @@ function renderSettingsPage(c){
     if(file){ state.logo = await fileToDataUrl(file); }
     await saveState(); toast('تم الحفظ'); render();
   };
-  document.getElementById('dm_backup').onclick=()=>{
-    const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `نسخة_احتياطية_${todayStr()}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 2000);
-    toast('تم تنزيل النسخة الاحتياطية');
-  };
+  document.getElementById('dm_backup').onclick=()=>backupNow();
   document.getElementById('dm_refresh').onclick=async ()=>{
     toast('جارٍ التحديث...');
     await loadState();
@@ -1669,7 +1662,8 @@ function backupInfo(){
   }catch(e){ return {}; }
 }
 /* تنزيل نسخة احتياطية كاملة كملف JSON */
-function downloadBackup(){
+function downloadBackup(){ return backupNow(); }
+function downloadBackupFile(){
   try{
     const src = __archMode ? Object.assign({}, state, {orders: __archMode.savedOrders, auditLog: __archMode.savedAudit}) : state;
     const blob = new Blob([JSON.stringify(src, null, 2)], {type:'application/json'});

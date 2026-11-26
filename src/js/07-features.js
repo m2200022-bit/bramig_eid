@@ -1284,20 +1284,25 @@ function dailyBackupPrompt(){
   let shown=''; try{ shown = localStorage.getItem('dailyBackupShown')||''; }catch(e){}
   if(shown===today) return;
   try{ localStorage.setItem('dailyBackupShown', today); }catch(e){}
-  let last=''; try{ last = localStorage.getItem('backup_dl_at')||''; }catch(e){}
-  const days = last ? Math.round((new Date(today) - new Date(last.slice(0,10)))/86400000) : null;
+  const bi = bkInfo(); const days = bi ? bi.days : null;
   const endedYear = currentRole==='admin' && (()=>{ const t=new Date(today); const y=t.getMonth()>=5 ? t.getFullYear() : t.getFullYear()-1;
       const cut = `${y}-05-31`; return (state.orders||[]).some(o=>o.date && o.date<=cut) ? cut : ''; })();
   setTimeout(()=>showInfoModal(`${icon('shield',17)} النسخة الاحتياطية اليومية`, `<div class="dbk">
       <p>${new Date().getHours()<12?'صباح الخير':'مساء الخير'}${currentUser&&currentUser.displayName?' '+escapeHtml(currentUser.displayName):''} — هذا أول دخول لك اليوم.</p>
-      <div class="dbk-st ${days===null||days>=7?'warn':''}">${last ? `آخر نسخة احتياطية نُزّلت من هذا الجهاز: <b>${fmtDate(last.slice(0,10))}</b>${days?` (قبل ${days} يوم)`:' (اليوم)'}` : 'لم تُنزَّل أي نسخة احتياطية من هذا الجهاز بعد.'}</div>
-      <p class="helper">النسخة ملف واحد فيه كل بيانات العام الحالي (${(state.orders||[]).length} طلب). احفظه في مجلد آمن أو على Google Drive.</p>
+      <div class="dbk-st ${days===null||days>=7?'warn':''}">${bi
+        ? `قمتَ بعمل نسخة احتياطية يوم <b>${escapeHtml(bi.day)} ${bi.date}</b> الساعة <b dir="ltr">${bi.time}</b>${days?` (قبل ${days} يوم)`:' (اليوم)'}${bi.dir?`<br>في مجلد: <b>${escapeHtml(bi.dir)}</b>`:''}<br>هل تريد تحديث النسخة؟`
+        : 'لم تُعمل أي نسخة احتياطية من هذا الجهاز بعد. اختر مجلدًا ثابتًا لحفظ النسخ فيه.'}</div>
+      <p class="helper">${bkSupported()
+        ? `تُحفظ النسخة دائمًا في المجلد نفسه باسم «${BK_FILE}»، وتبقى النسخة التي قبلها باسم «…-السابقة». (${(state.orders||[]).length} طلب في العام الحالي)`
+        : 'متصفحك لا يدعم الحفظ في مجلد ثابت — ستُنزَّل النسخة إلى مجلد التنزيلات. (يدعمه Chrome وEdge على الكمبيوتر)'}</p>
       ${endedYear ? `<div class="dbk-st">يوجد طلبات من عام دراسي منتهٍ (حتى ${fmtDate(endedYear)}) — يمكنك نقلها إلى الأرشيف من «أرشيف الأعوام».</div>`:''}
-      <div class="dbk-acts"><button class="pk-btn pri" id="dbk_go">${icon('download',15)} تنزيل نسخة احتياطية الآن</button>
+      <div class="dbk-acts"><button class="pk-btn pri" id="dbk_go">${icon('refresh',15)} ${bi?'تحديث النسخة':'عمل نسخة احتياطية'}</button>
+        ${bkSupported()&&bi?`<button class="pk-btn" id="dbk_dir">${icon('folder',15)} تغيير مكان الحفظ</button>`:''}
         ${endedYear?`<button class="pk-btn" id="dbk_arch">${icon('inbox',15)} أرشيف الأعوام</button>`:''}
       </div></div>`, box=>{
       box.style.maxWidth = '480px';
-      box.querySelector('#dbk_go').onclick = ()=>{ downloadBackup(); closeModal(); };
+      box.querySelector('#dbk_go').onclick = async ()=>{ const r = await backupNow(); if(r!=='cancel') closeModal(); };
+      const dd = box.querySelector('#dbk_dir'); if(dd) dd.onclick = async ()=>{ const r = await backupNow({change:true}); if(r!=='cancel') closeModal(); };
       const ar = box.querySelector('#dbk_arch'); if(ar) ar.onclick = ()=>{ closeModal(); openYearArchive(); };
     }), 700);
 }
@@ -2383,4 +2388,55 @@ const REQ_TEMPLATE_B64 = 'UEsDBBQAAAAIAAAAIQDm6urDAQIAAI8QAAATAAAAW0NvbnRlbnRfVH
   }catch(e){ console.warn('auth init', e); }
   await loadState(); renderRoot();
 })();
+
+
+
+/* ══════ النسخ الاحتياطي في مجلد ثابت يختاره المستخدم (يُحدَّث الملف نفسه كل مرة) ══════ */
+const BK_FILE = 'نسخة-احتياطية-طلبات-الفعاليات.json', BK_PREV = 'نسخة-احتياطية-طلبات-الفعاليات-السابقة.json';
+function bkIdb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('bramig-backup',1); r.onupgradeneeded=()=>r.result.createObjectStore('h'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function bkGetDir(){ try{ const db=await bkIdb(); return await new Promise(res=>{ const q=db.transaction('h').objectStore('h').get('dir'); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+async function bkSetDir(h){ const db=await bkIdb(); await new Promise(res=>{ const t=db.transaction('h','readwrite'); t.objectStore('h').put(h,'dir'); t.oncomplete=res; t.onerror=res; }); }
+function bkSupported(){ return typeof window.showDirectoryPicker==='function'; }
+function bkPayload(){
+  const src = __archMode ? Object.assign({}, state, {orders: __archMode.savedOrders, auditLog: __archMode.savedAudit}) : state;
+  return JSON.stringify(src, null, 2);
+}
+function bkInfo(){
+  let at='', dir=''; try{ at=localStorage.getItem('backup_dl_at')||''; dir=localStorage.getItem('backup_dir_name')||''; }catch(e){}
+  if(!at) return null;
+  const d=new Date(at);
+  return { at, dir, date: fmtDate(dateToISO(d)), time: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+           days: Math.round((new Date(todayStr()) - new Date(dateToISO(d)))/86400000), day: dayNameOf(dateToISO(d)) };
+}
+async function bkChooseDir(){
+  const h = await window.showDirectoryPicker({id:'bramig-backup', mode:'readwrite', startIn:'documents'});
+  await bkSetDir(h); try{ localStorage.setItem('backup_dir_name', h.name); }catch(e){}
+  return h;
+}
+/* ينسخ احتياطيًا: في المجلد المحفوظ (يحدّث الملف ويحتفظ بالنسخة السابقة) أو تنزيلًا عاديًا */
+async function backupNow(opts){
+  opts = opts||{};
+  if(!bkSupported()){ downloadBackupFile(); return 'download'; }
+  try{
+    let dir = opts.change ? null : await bkGetDir();
+    if(dir){
+      let p = await dir.queryPermission({mode:'readwrite'});
+      if(p!=='granted') p = await dir.requestPermission({mode:'readwrite'});
+      if(p!=='granted') dir = null;
+    }
+    if(!dir) dir = await bkChooseDir();
+    /* الاحتفاظ بالنسخة السابقة قبل التحديث */
+    try{ const old = await dir.getFileHandle(BK_FILE); const txt = await (await old.getFile()).text();
+         if(txt){ const pv = await dir.getFileHandle(BK_PREV, {create:true}); const w = await pv.createWritable(); await w.write(txt); await w.close(); } }catch(e){}
+    const fh = await dir.getFileHandle(BK_FILE, {create:true});
+    const w = await fh.createWritable(); await w.write(bkPayload()); await w.close();
+    try{ localStorage.setItem('backup_dl_at', new Date().toISOString()); localStorage.setItem('backup_dir_name', dir.name); }catch(e){}
+    toast(`✅ تم تحديث النسخة الاحتياطية في مجلد «${dir.name}»`);
+    return 'folder';
+  }catch(e){
+    if(e && e.name==='AbortError'){ toast('لم يُختر مجلد — لم تُحفظ النسخة'); return 'cancel'; }
+    console.warn('backup folder', e);
+    downloadBackupFile(); return 'download';
+  }
+}
 

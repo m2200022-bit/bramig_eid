@@ -1578,28 +1578,6 @@ function renderHome(c){
 
     <section class="dash-2col">
       <div class="dcard">
-        <div class="dcard-h">
-          <span class="t">${icon('barChart',16)} سير الفعاليات</span>
-          <span class="sp">
-            <span class="seg-per" id="dhPer">
-              <button data-per="week"  class="${window.__homePeriod==='week'?'on':''}">الأسبوع</button>
-              <button data-per="month" class="${window.__homePeriod==='month'?'on':''}">٦ أشهر</button>
-              <button data-per="year"  class="${window.__homePeriod==='year'?'on':''}">سنوي</button>
-            </span>
-          </span>
-        </div>
-        <div class="dcard-b">
-          <div class="bars">
-            ${ser.map(x=>`<div class="b${x.n?'':' z'}${x.now?' nowb':''}" title="${escapeHtml(x.label)}: ${x.n}">
-              <u>${x.n}</u>
-              <i style="height:${x.n ? Math.max(8, Math.round(x.n/maxN*100)) : 3}%"></i>
-              <em>${escapeHtml(x.label)}</em>
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>
-
-      <div class="dcard">
         <div class="dcard-h"><span class="t">${icon('alert',16)} تحتاج انتباهك</span>
           ${attTotal?`<span class="sp"><span class="st st-late">${attTotal}</span></span>`:''}</div>
         <div class="dcard-b flush">
@@ -1612,9 +1590,6 @@ function renderHome(c){
           : `<div class="att-empty">${icon('checkCircle',26)}<div>لا شيء متأخر ولا معلّق — كل الأعمال في مسارها.</div></div>`}
         </div>
       </div>
-    </section>
-
-    <section class="dash-2col">
       <div class="dcard">
         <div class="dcard-h">
           <span class="t">${icon('calendar',16)} هذا الأسبوع</span>
@@ -1631,22 +1606,6 @@ function renderHome(c){
         </div>
       </div>
 
-      <div class="dcard">
-        <div class="dcard-h"><span class="t">${icon('layers',16)} توزيع الحالات</span></div>
-        <div class="dcard-b">
-          <div class="donut-wrap">
-            ${donutSvg(dist.map(d=>({v:d.n, c:ST_COLOR[d.k]||'var(--ds-ink-3)'})), live.length)}
-            <div class="donut-lg">
-              ${dist.length ? dist.map(d=>`<div class="r">
-                <i style="background:${ST_COLOR[d.k]||'var(--ds-ink-3)'}"></i>
-                <span>${escapeHtml(ST_LABEL[d.k]||d.l)}</span>
-                <b>${d.n}</b>
-                <span style="color:var(--ds-ink-3);font-size:11px;">${Math.round(d.n/distTotal*100)}%</span>
-              </div>`).join('') : '<div style="color:var(--ds-ink-3);font-size:12.5px;">لا توجد بيانات بعد</div>'}
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <section class="dcard">
