@@ -2446,6 +2446,8 @@ async function backupNow(opts){
 function scTimelineInit(c, ctx){
   const view = window.__schedView || 'tl';
   c.classList.add('sc-page'); c.dataset.view = view;
+  const back = c.querySelector('.sc-views');
+  if(back && !back.querySelector('.sc-back')) back.insertAdjacentHTML('afterbegin', `<span class="sc-back-lbl">طريقة العرض:</span>`);
   c.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{ window.__schedView=b.dataset.sv; c.dataset.view=b.dataset.sv;
     c.querySelectorAll('[data-sv]').forEach(x=>x.classList.toggle('on', x===b)); });
   const {F, T, trainers, clashBy, isOff} = ctx;
@@ -2481,16 +2483,17 @@ function scTimelineInit(c, ctx){
           return `<td class="${cls.join(' ')} busy">${clash?`<span class="tl-x" title="تعارض">!</span>`:''}${evs.map(o=>`<button type="button" class="tl-ev" data-oid="${o.id}" title="${escapeHtml((o.title||'')+' — '+schoolName(o))}">
               <b dir="ltr">${escapeHtml(o.timeFrom||'—')}</b><span>${escapeHtml(schoolName(o)||o.title||'')}</span></button>`).join('')}</td>`; }
         if(lv) return `<td class="${cls.join(' ')} leave"><span class="tl-tag">إجازة</span></td>`;
-        if(off) return `<td class="${cls.join(' ')}"><span class="tl-tag">عطلة</span></td>`;
+        if(off) return `<td class="${cls.join(' ')}"></td>`;
         freeT++;
-        return `<td class="${cls.join(' ')} free"><span class="tl-tag">متاح</span></td>`;
+        return `<td class="${cls.join(' ')} free"></td>`;
       }).join('');
-      return `<tr><th class="tl-tr" scope="row"><b>${escapeHtml(t.name)}</b>${t.phone?`<small dir="ltr">${escapeHtml(t.phone)}</small>`:''}<em>${nEv} ${eventWord(nEv)}</em></th>${cells}</tr>`;
+      return `<tr data-tn="${escapeHtml(_pnz(t.name))}"><th class="tl-tr" scope="row"><b>${escapeHtml(t.name)}</b><em>${nEv?`${nEv} ${eventWord(nEv)}`:'لا فعاليات'}</em></th>${cells}</tr>`;
     }).join('');
-    box.innerHTML = `<div class="tl-sum"><span><b>${trainers.length}</b> مقدّم</span><span class="b"><b>${busyT}</b> يوم عمل مشغول</span><span class="g"><b>${freeT}</b> يوم متاح</span>${clashT?`<span class="r"><b>${clashT}</b> تعارض</span>`:''}</div>
+    box.innerHTML = `${clashT?`<div class="tl-warn">${icon('alert',15)} يوجد <b>${clashT}</b> تعارض في هذه الفترة — مُعلَّم بإطار أحمر</div>`:''}
       <div class="tl-scroll"><table class="tl-tbl"><thead><tr><th class="tl-tr">المقدّم</th>${D.map(d=>`<th class="${d===today?'today':''}${isOff(d)?' off':''}"><span>${DN[new Date(d+'T00:00:00').getDay()]}</span><b>${Number(d.slice(8,10))}/${Number(d.slice(5,7))}</b></th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody></table></div>`;
     box.querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>viewOrderReadOnly(b.dataset.oid));
+    filt();
     window.__tlPrint = ()=>{
       const H = ['المقدّم', ...D.map(d=>`${DN[new Date(d+'T00:00:00').getDay()]}<br>${fmtDate(d)}`)];
       const R = trainers.map(t=>[escapeHtml(t.name), ...D.map(d=>{
@@ -2503,6 +2506,21 @@ function scTimelineInit(c, ctx){
     };
   }
   c.querySelector('#tl_print').onclick = ()=>window.__tlPrint && window.__tlPrint();
+  function filt(){ const q = _pnz(window.__tlQ||''); c.querySelectorAll('#tl_grid tr[data-tn]').forEach(r=>{ r.style.display = !q || r.dataset.tn.includes(q) ? '' : 'none'; }); }
+  const qi = c.querySelector('#tl_q'); if(qi) qi.oninput = ()=>{ window.__tlQ = qi.value.trim(); filt(); };
+  const goView = v=>{ window.__schedView = v; c.dataset.view = v; c.querySelectorAll('[data-sv]').forEach(x=>x.classList.toggle('on', x.dataset.sv===v)); try{ window.scrollTo({top:0}); }catch(e){} };
+  const clk = id=>{ const el = document.getElementById(id); if(el) el.click(); };
+  c.querySelector('#tl_more').onclick = e=>pkMenu(e.currentTarget, [
+    {hd:'عروض أخرى'},
+    {ic:'list', l:'قائمة الفعاليات والتصفية', run:()=>goView('list')},
+    {ic:'users', l:'الإتاحة والتعارضات', run:()=>goView('av')},
+    {ic:'clipboard', l:'الطلبات الإدارية لكل مقدّم', run:()=>goView('req')},
+    '-', {hd:'أدوات'},
+    {ic:'users', l:'مجموعة المقدّمين وكشف الإتاحة', run:()=>openTrainerGroup()},
+    {ic:'sparkles', l:'اقتراح توزيع لجهة', run:()=>clk('sc_plan')},
+    {ic:'sheet', l:'تصدير Excel', run:()=>clk('sc_excel')},
+    {ic:'calendar', l: window.__tlWork!==false ? 'إظهار أيام العطلة' : 'أيام العمل فقط', run:()=>{ window.__tlWork = window.__tlWork===false; draw(); }},
+  ]);
   draw();
 }
 
