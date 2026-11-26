@@ -4028,6 +4028,29 @@
   #reportContent .rph-w{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:6px; background:#E5F6EC; color:#1E8E4E; }
   #reportContent .rph-w:hover{ background:#1E8E4E; color:#fff; }
   #reportContent .rph-w svg{ width:12px; height:12px; }
+  .grp{display:flex;flex-direction:column;gap:10px;}
+  .grp-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .grp-chips .lb{font-size:12px;color:var(--ds-ink-3);font-weight:700;}
+  .grp-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ds-teal);background:var(--ds-teal-50, #F7EBEF);color:var(--ds-teal);border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .grp-chips select{min-height:30px !important;width:auto;font-size:12.5px;}
+  .grp-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:12.5px;}
+  .grp-bar label{display:inline-flex;align-items:center;gap:6px;}
+  .grp-bar input[type=date]{width:auto;}
+  .grp-ck input{width:auto;min-height:0 !important;}
+  .grp-sum{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;}
+  .grp-sum span{background:var(--ds-line-2,#F1EEF0);border-radius:8px;padding:4px 10px;}
+  .grp-sum .g{background:#E8F5EE;color:#1E7A46;} .grp-sum .g2{background:#1E7A46;color:#fff;}
+  .grp-tbl{max-height:52vh;overflow:auto;border:1px solid var(--ds-line);border-radius:10px;}
+  .grp-tbl table{width:100%;} .grp-tbl thead th{position:sticky;top:0;z-index:1;}
+  .grp-tbl td small{display:block;font-size:11px;color:var(--ds-ink-3);margin-top:2px;}
+  .gs{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;}
+  .gs.free{background:#E5F6EC;color:#1E7A46;} .gs.busy{background:#F1EEF0;color:#7A7078;text-decoration:line-through;}
+  .gs.leave{background:#FFF4DE;color:#9A6A00;} .gs.off{background:transparent;color:#AAA;}
+  .grp-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;}
+  .ev-hist{display:flex;flex-direction:column;gap:4px;font-size:12px;}
+  .ev-hist>div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--ds-line);}
+  .ev-hist .t{direction:ltr;color:var(--ds-ink-3);font-variant-numeric:tabular-nums;}
+  .ev-hist small{flex-basis:100%;color:var(--ds-ink-3);}
   .series-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:var(--ds-teal-d);
     background:var(--ds-teal-l); border-radius:6px; padding:1px 6px; vertical-align:1px; white-space:nowrap; }
   body.dark .rep-sw{ background:#3A4555; }
@@ -5023,7 +5046,8 @@ function dateRangesOverlap(aFrom, aTo, bFrom, bTo){
   return aFrom <= (bTo||aFrom) && (aTo||aFrom) >= bFrom;
 }
 /* الفعالية الملغاة لا تُحتسب في أي تعارض — لا للمقدّم ولا للجهة */
-function isLiveOrder(o){ return !!o && (o.status||'active') !== 'cancelled'; }
+function isCancelledOrder(o){ return !!o && ((o.status||'active')==='cancelled' || o.completionStatus==='الغيت'); }
+function isLiveOrder(o){ return !!o && !isCancelledOrder(o); }
 
 function trainerConflictSingle(trainerId, date, timeFrom, timeTo, excludeOrderId, dateTo){
   if(!trainerId || !date) return null;
@@ -5387,7 +5411,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '4.10';
+const APP_VERSION = '4.11';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){
@@ -6001,7 +6025,7 @@ function showPlan(schoolId, perMonth, from, to, pins){
     if(block) return {ok:false, why:block.msg || 'محظور بالتقويم'};
     const warn = notes.find(n=>n && n.type==='warn');
     const busy = (state.orders||[]).some(o=>{
-      if((o.status||'active')==='cancelled') return false;
+      if(isCancelledOrder(o)) return false;
       const s=o.date||''; if(!s) return false;
       const e=orderEnd(o);
       return iso>=s && iso<=e && o.schoolId===schoolId;
@@ -6148,7 +6172,7 @@ function renderSchedulePage(c){
   const inRange = o=>{
     const s=o.date||''; if(!s) return false;
     const e=orderEnd(o);
-    return s<=T && e>=F && (o.status||'active')!=='cancelled';
+    return s<=T && e>=F && !isCancelledOrder(o);
   };
   /* المقدّمون المختارون: مصفوفة فارغة = الكل.
      نحافظ على التوافق مع الاختيار المفرد القديم (__schedTr). */
@@ -6285,6 +6309,7 @@ function renderSchedulePage(c){
           <label class="av-month" title="اختيار الشهر">${icon('calendar',14)}<input type="month" id="av_month" value="${F.slice(0,7)}" aria-label="اختيار الشهر"></label>
           <button type="button" class="pk-btn ic sm" id="av_next" title="الفترة التالية" aria-label="الفترة التالية">${icon('chevronLeft',15)}</button>
         </span>
+        <button type="button" class="pk-btn" id="av_group" title="جمع مقدّمين محددين في جدول واحد وطباعة كشف للجهات">${icon('users',15)} مجموعة المقدّمين</button>
         <button type="button" class="pk-btn" id="av_print">${icon('printer',15)} طباعة</button>
         <button type="button" class="pk-btn pri" id="av_export" aria-haspopup="menu">${icon('download',15)} تصدير ${icon('chevronDown',13,'caret')}</button>
       </span>
@@ -6647,6 +6672,7 @@ function renderSchedulePage(c){
       document.getElementById('av_next').onclick = ()=>goRange(addDaysISO(F, span), addDaysISO(T, span));
       document.getElementById('av_month').onchange = e=>{ const v = e.target.value; if(!v) return;
         const [yy,mm] = v.split('-').map(Number); goRange(`${v}-01`, `${v}-${String(new Date(yy,mm,0).getDate()).padStart(2,'0')}`); };
+      document.getElementById('av_group').onclick = ()=>openTrainerGroup();
       document.getElementById('av_print').onclick = ()=>document.getElementById('sc_printAvail').click();
       document.getElementById('av_export').onclick = e=>pkMenu(e.currentTarget, [
         {hd:'تصدير جدول الإتاحة'},
@@ -6938,7 +6964,7 @@ function printTrainerRequests(from, to, sortBy){
   const list = (state.orders||[]).filter(o=>{
     const s=o.date||''; if(!s) return false;
     const e=orderEnd(o);
-    return s<=to && e>=from && (o.status||'active')!=='cancelled';
+    return s<=to && e>=from && !isCancelledOrder(o);
   });
   if(!list.length){ toast('لا توجد فعاليات في هذه الفترة'); return; }
   const rows = buildTrainerReqRows(list, sortBy);
@@ -7011,7 +7037,7 @@ function exportTrainerRequests(from, to, sortBy){
   const list = (state.orders||[]).filter(o=>{
     const s=o.date||''; if(!s) return false;
     const e=orderEnd(o);
-    return s<=to && e>=from && (o.status||'active')!=='cancelled';
+    return s<=to && e>=from && !isCancelledOrder(o);
   });
   const rows = buildTrainerReqRows(list, sortBy);
   if(!rows.length){ toast('لا توجد طلبات في هذه الفترة'); return; }
@@ -7367,7 +7393,7 @@ const ST_TOKENS = { new:'var(--ds-info)', run:'#0E7C86', done:'var(--ds-ok)',
 const ST_NAMES  = { new:'قادمة', run:'اليوم', done:'منجزة', late:'تحتاج متابعة', hold:'مؤجّلة', draft:'ملغاة' };
 /* حالة الفعالية كما تُعرض للمستخدم */
 function orderState(o, today){
-  if((o.status||'active') === 'cancelled') return {k:'draft', l:'ملغاة'};
+  if(isCancelledOrder(o)) return {k:'draft', l:'ملغاة'};
   if((o.status||'active') === 'postponed') return {k:'hold',  l:'مؤجّلة'};
   if(o.completionStatus === 'تم')          return {k:'done',  l:'مكتملة'};
   if(o.completionStatus)                   return {k:'late',  l:o.completionStatus};
@@ -8358,16 +8384,18 @@ function renderOrderPage(c){
       window.__ordPage = 1; drawFiltered();
     });
     document.getElementById('ord_exportBtn').onclick = e=>{
-      const L = window.__ordLastList||[];
+      const fkv = (document.getElementById('ord_filterKind')||{}).value, fvv = (document.getElementById('ord_filterVal')||{}).value;
+      const wantCx = window.__ordSt==='off' || (fkv==='status' && fvv==='cancelled') || (fkv==='completion' && fvv==='الغيت');
+      const L = (window.__ordLastList||[]).filter(o=>wantCx || isLiveOrder(o));
       const desc = ordListDesc();
       pkMenu(e.currentTarget, [
         {hd:`القائمة الحالية — ${L.length} ${eventWord(L.length)}`},
         {ic:'printer', l:'طباعة القائمة', run:()=>ordPrintList(L, desc)},
         {ic:'download', l:'تنزيل PDF', hint:'حفظ كـ PDF', run:()=>ordPrintList(L, desc)},
         {ic:'sheet', l:'تصدير Excel', run:()=>ordExcelList(L, desc)},
-        ...(()=>{ const A = (state.orders||[]).slice().sort((x,y)=>String(x.date||'').localeCompare(String(y.date||''))||(x.serial-y.serial));
+        ...(()=>{ const A = (state.orders||[]).filter(isLiveOrder).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||''))||(x.serial-y.serial));
           if(A.length===L.length) return [];
-          return [{hd:`كل الطلبات (دون تصفية) — ${A.length} ${eventWord(A.length)}`},
+          return [{hd:`كل الطلبات السارية (دون الملغاة) — ${A.length} ${eventWord(A.length)}`},
             {ic:'printer', l:'طباعة كل الطلبات', run:()=>ordPrintList(A, 'كل الطلبات')},
             {ic:'download', l:'تنزيل PDF للكل', hint:'حفظ كـ PDF', run:()=>ordPrintList(A, 'كل الطلبات')},
             {ic:'sheet', l:'تصدير Excel للكل', run:()=>ordExcelList(A, 'كل الطلبات')}]; })(),
@@ -10354,8 +10382,11 @@ function viewOrderReadOnly(id){
   const d1 = o.date, d2 = orderEnd(o);
   const nDays = d1 ? daysCount(d1,d2) : 0, hrs = computeHours(o.timeFrom,o.timeTo,d1,d2);
   const st = orderState(o, todayStr());
-  const cancelled = (o.status||'active')==='cancelled';
+  const cancelled = isCancelledOrder(o);
   const canEdit = currentRole === 'admin' || currentRole === 'user';
+  const hist = (state.auditLog||[]).filter(a=>a.orderId===o.id).sort((a,b)=>b.at-a.at);
+  const fmtAt = t=>{ const d=new Date(t); return `${fmtDate(dateToISO(d))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  const cxBy = hist.find(a=>a.action==='cancel' || (a.action==='status' && a.note==='الغيت'));
   const benef = o.benef ? [['الطلاب',o.benef.students],['المعلمون',o.benef.teachers],['أولياء الأمور',o.benef.parents],['آخرون',o.benef.others]].filter(x=>x[1]) : [];
   const card = (ic, t, inner, cls)=>`<section class="ev-c${cls?' '+cls:''}"><header><span class="ic">${icon(ic,16)}</span><b>${t}</b></header><div class="bd">${inner}</div></section>`;
   const kv = (k,v)=>`<div class="kv"><i>${k}</i><span>${v}</span></div>`;
@@ -10376,7 +10407,7 @@ function viewOrderReadOnly(id){
       </div>
     </div>
     ${o.status==='postponed' && o.postponedFrom ? `<div class="ev-note pp">${icon('refresh',15)}<span>رُحّلت من <b>${fmtDate(o.postponedFrom)}</b>${o.postponedFromTime?` (${escapeHtml(o.postponedFromTime)})`:''} إلى <b>${fmtDate(o.date)}</b>${o.postponedAt?` — بتاريخ ${fmtDate(o.postponedAt)}`:''}</span></div>`:''}
-    ${cancelled ? `<div class="ev-note off">${icon('ban',15)}<span>هذه الفعالية <b>ملغاة</b> — لا تظهر في الجداول والتقارير.</span></div>`:''}
+    ${cancelled ? `<div class="ev-note off">${icon('ban',15)}<span>هذه الفعالية <b>ملغاة</b> — لا تظهر في الجداول والتقارير.${cxBy?`<br><small>ألغاها: <b>${escapeHtml(cxBy.user||'—')}</b> بتاريخ ${fmtAt(cxBy.at)}${cxBy.note?` — ${escapeHtml(cxBy.note)}`:''}</small>`:(o.completionStatus==='الغيت'?'<br><small>سُجّل الإنجاز «أُلغيت».</small>':'<br><small>لا يوجد في سجل التعديلات من ألغاها (أُلغيت قبل بدء التسجيل).</small>')}</span></div>`:''}
     <div class="ev-grid">
       ${card('school', o.venue?'الجهة الطالبة ومكان التنفيذ':'مكان التنفيذ', `
         <div class="big">${sc?escapeHtml(sc.name):'—'}</div>
@@ -10393,6 +10424,7 @@ function viewOrderReadOnly(id){
         ${!benef.length && o.gender?kv('الفئة', escapeHtml(o.gender)):''}`)}
       ${res.length?card('truck','الموارد المحجوزة', `<div class="ev-tags">${res.map(r=>`<span>${escapeHtml(r)}</span>`).join('')}</div>`):''}
       ${(o.requesterNote||o.adminNote)?card('fileText','الملاحظات', `${o.requesterNote?kv('الجهة الطالبة', escapeHtml(o.requesterNote)):''}${o.adminNote?kv('الإدارة', escapeHtml(o.adminNote)):''}`,'wide'):''}
+      ${hist.length?card('history','سجل الفعالية', `<div class="ev-hist">${hist.slice(0,12).map(a=>`<div><span class="t">${fmtAt(a.at)}</span><b>${escapeHtml((typeof AUDIT_LABEL!=='undefined'&&AUDIT_LABEL[a.action])||a.action)}</b><span>${escapeHtml(a.user||'—')}</span>${a.note?`<small>${escapeHtml(a.note)}</small>`:''}</div>`).join('')}</div>`,'wide'):''}
     </div>
     ${canEdit ? `<div class="ev-acts">
       <button type="button" class="pk-btn pri" id="roEdit">${icon('edit',15)} تعديل الطلب</button>
@@ -10439,9 +10471,9 @@ async function deleteOrder(id){
 }
 async function toggleCancelOrder(id){
   const o = state.orders.find(x=>x.id===id); if(!o) return;
-  if(o.status==='cancelled'){
+  if(isCancelledOrder(o)){
     if(!confirm('هل تريد التراجع عن إلغاء هذه الفعالية؟')) return;
-    o.status='active'; logAudit('uncancel', o); await saveState(); toast('تم التراجع عن الإلغاء'); render(); return;
+    o.status='active'; if(o.completionStatus==='الغيت') o.completionStatus=''; logAudit('uncancel', o); await saveState(); toast('تم التراجع عن الإلغاء'); render(); return;
   }
   if(!confirm('هل تريد إلغاء هذه الفعالية؟ ستبقى مسجلة لكن بحالة "ملغاة".')) return;
   o.status='cancelled'; logAudit('cancel', o); await saveState(); toast('تم إلغاء الفعالية'); render();
@@ -12008,6 +12040,7 @@ function renderAdminPage(c){
        مع الفترة المطلوبة — وليس فقط إذا كان تاريخ بدايتها داخلها. هذا يضمن ظهور الفعاليات
        متعددة الأيام التي تبدأ قبل الفترة وتمتد داخلها. */
     return {list: state.orders.filter(o=>{
+      if(!isLiveOrder(o)) return false;
       const s = o.date || '';
       const e = orderEnd(o);
       if(!s && !e) return false;
@@ -12157,7 +12190,7 @@ function renderAdminRequestsReportPage(c){
         to = addDaysISO(nx, -1);                     // بدون toISOString (يزيح اليوم في توقيت قطر)
       }
     }
-    const list = state.orders.filter(o=> (o.adminRequests||[]).length>0 && (!from||o.date>=from) && (!to||o.date<=to))
+    const list = state.orders.filter(o=> isLiveOrder(o) && (o.adminRequests||[]).length>0 && (!from||o.date>=from) && (!to||o.date<=to))
       .sort((a,b)=> (a.date||'').localeCompare(b.date||'') || a.serial-b.serial);
     return {list, from, to};
   }
@@ -13097,6 +13130,7 @@ function renderReportsPage(c){
       const wDone = document.getElementById('mr_done').checked, wNot = document.getElementById('mr_notDone').checked;
       return state.orders.filter(o=>{
         if(o.status==='cancelled' || o.completionStatus==='الغيت') return false;
+        if(!isLiveOrder(o)) return false;
         const isDone = o.completionStatus==='تم';
         if(isDone && !wDone) return false;
         if(!isDone && !wNot) return false;
@@ -13353,6 +13387,7 @@ function renderReportsPage(c){
         if(!map.has(k)) map.set(k, {k, sk, n:0, days:0, hours:0, people:0,
           reqs:0, schools:new Set(), trainers:new Set(), done:0, cancelled:0, postponed:0, items:[]});
         const r = map.get(k);
+        if(isCancelledOrder(o)){ r.cancelled++; return; }
         r.n++; r.items.push(o);
         r.days   += daysCount(o.date, o.dateTo);
         r.hours  += computeHours(o.timeFrom, o.timeTo, o.date, o.dateTo);
@@ -13361,7 +13396,6 @@ function renderReportsPage(c){
         if(o.schoolId) r.schools.add(o.schoolId);
         (o.trainerIds||[]).forEach(t=>r.trainers.add(t));
         if(o.completionStatus==='تم') r.done++;
-        if(o.status==='cancelled') r.cancelled++;
         if(o.status==='postponed') r.postponed++;
       });
       const rows = Array.from(map.values()).sort((a,b)=>a.sk.localeCompare(b.sk));
@@ -13498,7 +13532,7 @@ function renderReportsPage(c){
       const to   = document.getElementById('tp_to').value;
       const TH   = parseFloat(document.getElementById('tp_sim').value);
       const list = (state.orders||[]).filter(o=>{
-        if((o.status||'active')==='cancelled') return false;
+        if(isCancelledOrder(o)) return false;
         const s=o.date||'', e=orderEnd(o);
         if(from && e && e<from) return false;
         if(to && s && s>to) return false;
@@ -13687,7 +13721,7 @@ function renderReportsPage(c){
       const sel = picked();
       /* التقاطع مع الفترة — حتى تُحتسب الفعالية الممتدة على عدة أيام */
       const base = (state.orders||[]).filter(o=>{
-        if(!withCancel && (o.status||'active')==='cancelled') return false;
+        if(!withCancel && isCancelledOrder(o)) return false;
         const s=o.date||'', e=orderEnd(o);
         if(!s && !e) return false;
         if(from && e && e<from) return false;
@@ -13857,6 +13891,7 @@ function renderReportsPage(c){
       const wNot=document.getElementById('fs_notDone').checked;
       /* التقاطع مع الفترة حتى تُحتسب الفعاليات متعددة الأيام */
       const base = state.orders.filter(o=>{
+        if(!isLiveOrder(o)) return false;
         const isDone = o.completionStatus==='تم';
         if(isDone && !wDone) return false;
         if(!isDone && !wNot) return false;
@@ -14124,7 +14159,7 @@ function renderReportsPage(c){
     function gen(){
       const type=document.getElementById('gn_type').value, from=document.getElementById('gn_from').value, to=document.getElementById('gn_to').value;
       if(type==='orders'){
-        const list = state.orders.filter(o=>(!from||o.date>=from)&&(!to||o.date<=to));
+        const list = state.orders.filter(o=>isLiveOrder(o)&&(!from||o.date>=from)&&(!to||o.date<=to));
         return {headers:['م','العنوان','التاريخ (من — إلى)','المدرسة','مقدم المبادرة','الإنجاز'],
           rows:list.map(o=>{const s=state.schools.find(x=>x.id===o.schoolId); return [o.serial, o.title, dateRangeStr(o), s?s.name:'', trainerNames(o), o.completionStatus||'لم تنجز'];})};
       }
@@ -14132,7 +14167,7 @@ function renderReportsPage(c){
         return {headers:['اسم المدرسة','المرحلة','عدد المشرفين'], rows:state.schools.map(s=>[s.name, s.level, s.supervisors.length])};
       }
       if(type==='trainers'){
-        return {headers:['الاسم','الجوال','عدد الفعاليات'], rows:state.trainers.map(t=>[t.name, t.phone||'', state.orders.filter(o=>(o.trainerIds||[]).includes(t.id)).length])};
+        return {headers:['الاسم','الجوال','عدد الفعاليات'], rows:state.trainers.map(t=>[t.name, t.phone||'', state.orders.filter(o=>isLiveOrder(o)&&(o.trainerIds||[]).includes(t.id)).length])};
       }
       const list = state.tasks.filter(t=>(!from||(t.due&&t.due>=from))&&(!to||(t.due&&t.due<=to)));
       return {headers:['المهمة','البدء','الاستحقاق','الأولوية','الحالة'], rows:list.map(t=>[t.title, t.start||'', t.due||'', t.priority||'', t.status||''])};
@@ -14162,7 +14197,7 @@ function renderReportsPage(c){
     function gen(){
       const from=document.getElementById('ev_from').value, to=document.getElementById('ev_to').value;
       const today=todayStr();
-      const executed = state.orders.filter(o=>o.date && o.date<today && (!from||o.date>=from) && (!to||o.date<=to));
+      const executed = state.orders.filter(o=>isLiveOrder(o) && o.date && o.date<today && (!from||o.date>=from) && (!to||o.date<=to));
       const evaluated = executed.filter(o=>o.completionStatus);
       const notEvaluated = executed.filter(o=>!o.completionStatus);
       return {evaluated, notEvaluated, from, to};
@@ -14210,7 +14245,7 @@ function renderReportsPage(c){
   function drawTrainer(){
     const box=document.getElementById('reportContent');
     const tCounts = {};
-    (state.orders||[]).forEach(o=>(o.trainerIds||[]).forEach(id=>{ tCounts[id]=(tCounts[id]||0)+1; }));
+    (state.orders||[]).filter(isLiveOrder).forEach(o=>(o.trainerIds||[]).forEach(id=>{ tCounts[id]=(tCounts[id]||0)+1; }));
     box.innerHTML = `<div class="split-rep">
       <aside class="sp-side">
         <div class="sp-head">مقدمو الفعاليات</div>
@@ -14310,7 +14345,7 @@ function renderReportsPage(c){
       const columns = columnsFor(modes);
       const groups = (tIds.length?tIds:state.trainers.map(t=>t.id)).map(tId=>{
         const trainer = state.trainers.find(t=>t.id===tId);
-        const list = state.orders.filter(o=>(o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+        const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         return {trainer, list};
       }).filter(g=>g.list.length>0 && g.trainer);
       return {groups, columns, from, to};
@@ -14356,7 +14391,7 @@ function renderReportsPage(c){
   function drawSchool(){
     const box=document.getElementById('reportContent');
     const sCounts = {};
-    (state.orders||[]).forEach(o=>{ if(o.schoolId) sCounts[o.schoolId]=(sCounts[o.schoolId]||0)+1; });
+    (state.orders||[]).filter(isLiveOrder).forEach(o=>{ if(o.schoolId) sCounts[o.schoolId]=(sCounts[o.schoolId]||0)+1; });
     box.innerHTML = `<div class="split-rep">
       <aside class="sp-side">
         <div class="sp-head">المدارس والجهات</div>
@@ -14429,7 +14464,7 @@ function renderReportsPage(c){
       const sIds = Array.from(document.querySelectorAll('.rp_schoolChk:checked')).map(cb=>cb.value);
       const groups = (sIds.length?sIds:state.schools.map(s=>s.id)).map(sId=>{
         const school = state.schools.find(s=>s.id===sId);
-        const list = state.orders.filter(o=>o.schoolId===sId && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+        const list = state.orders.filter(o=>isLiveOrder(o) && o.schoolId===sId && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         return {school, list};
       }).filter(g=>g.list.length>0 && g.school);
       return {groups, from, to};
@@ -14494,7 +14529,7 @@ function renderReportsPage(c){
     function gen(){
       const tId=document.getElementById('hr_trainer').value;
       const from=document.getElementById('hr_from').value, to=document.getElementById('hr_to').value;
-      const list = state.orders.filter(o=>(o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       let totalHours=0;
       const rows = list.map(o=>{ let hrs=0; if(o.timeFrom && o.timeTo){ const s=parseDT(o.date,o.timeFrom), e=parseDT(o.date,o.timeTo); hrs = Math.max(0,(e-s)/3600000)*daysCount(o.date,o.dateTo); } totalHours+=hrs; return {o,hrs}; });
       const trainer=state.trainers.find(t=>t.id===tId);
@@ -14507,7 +14542,7 @@ function renderReportsPage(c){
     document.getElementById('hr_excel').onclick=()=>{
       const tId=document.getElementById('hr_trainer').value;
       const from=document.getElementById('hr_from').value, to=document.getElementById('hr_to').value;
-      const list = state.orders.filter(o=>(o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       const trainer=state.trainers.find(t=>t.id===tId);
       let totalHours=0;
       const rows = list.map(o=>{ let hrs=0; if(o.timeFrom && o.timeTo){ const s=parseDT(o.date,o.timeFrom), e=parseDT(o.date,o.timeTo); hrs=Math.max(0,(e-s)/3600000)*daysCount(o.date,o.dateTo); } totalHours+=hrs; return [o.serial, o.title, dateRangeStr(o), fullTimeRange(o.timeFrom,o.timeTo), hrs.toFixed(1)]; });
@@ -14517,7 +14552,7 @@ function renderReportsPage(c){
     document.getElementById('hr_print').onclick=()=>{
       const tId=document.getElementById('hr_trainer').value;
       const from=document.getElementById('hr_from').value, to=document.getElementById('hr_to').value;
-      const list = state.orders.filter(o=>(o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(tId) && (!from||o.date>=from) && (!to||o.date<=to)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       const trainer=state.trainers.find(t=>t.id===tId);
       let totalHours=0;
       const rows = list.map(o=>{ let hrs=0; if(o.timeFrom && o.timeTo){ const s=parseDT(o.date,o.timeFrom), e=parseDT(o.date,o.timeTo); hrs = Math.max(0,(e-s)/3600000)*daysCount(o.date,o.dateTo); } totalHours+=hrs;
@@ -14582,7 +14617,7 @@ function renderStatsPage(c){
   <div id="st_level_card" class="card" style="display:none;"></div>`;
   function compute(){
     const from=document.getElementById('st_from').value, to=document.getElementById('st_to').value;
-    const inRange = state.orders.filter(o=>(!from||o.date>=from) && (!to||o.date<=to));
+    const inRange = state.orders.filter(o=>isLiveOrder(o) && (!from||o.date>=from) && (!to||o.date<=to));
     const byField = state.fields.map(f=>{
       const rel = inRange.filter(o=>o.fieldId===f.id);
       const schoolsSet = new Set(rel.map(o=>o.schoolId).filter(Boolean));
@@ -14755,7 +14790,7 @@ function renderResultsPage(c){
 
   function getList(){
     const from=document.getElementById('res_from').value, to=document.getElementById('res_to').value, f=document.getElementById('res_filter').value;
-    let list = state.orders.filter(o=>(!from||o.date>=from) && (!to||o.date<=to));
+    let list = state.orders.filter(o=>isLiveOrder(o) && (!from||o.date>=from) && (!to||o.date<=to));
     if(f==='evaluated') list=list.filter(o=>o.completionStatus);
     else if(f==='notEvaluated') list=list.filter(o=>!o.completionStatus);
     return list.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
@@ -14894,7 +14929,7 @@ function renderDistributionsTabContent(c){
     const period=document.getElementById('dist_period').value, dateStr=document.getElementById('dist_date').value || today;
     const {start,end} = periodBounds(period, dateStr);
     const sheets = state.trainers.map(t=>{
-      const list = state.orders.filter(o=>(o.trainerIds||[]).includes(t.id) && o.date>=start && o.date<=end).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(t.id) && o.date>=start && o.date<=end).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       return {name:t.name, headers:['العنوان','من تاريخ','إلى تاريخ','عدد الأيام','الوقت','عدد الساعات','المدرسة','الإنجاز'], rows:list.map(o=>{ const s=state.schools.find(x=>x.id===o.schoolId); return [o.title, fmtDate(o.date), fmtDate(orderEnd(o)), daysCount(o.date,o.dateTo), fullTimeRange(o.timeFrom,o.timeTo), computeHours(o.timeFrom,o.timeTo,o.date,o.dateTo), s?s.name:'', o.completionStatus||'لم تنجز']; })};
     });
     exportToExcelMultiSheet('التوزيعات.xlsx', sheets, `التوزيعات (${fmtDate(start)} إلى ${fmtDate(end)})`);
@@ -14903,7 +14938,7 @@ function renderDistributionsTabContent(c){
     const period=document.getElementById('dist_period').value, dateStr=document.getElementById('dist_date').value || today;
     const {start,end} = periodBounds(period, dateStr);
     return {start, end, groups: state.trainers.map(t=>{
-      const list = state.orders.filter(o=>(o.trainerIds||[]).includes(t.id) && o.date>=start && o.date<=end).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      const list = state.orders.filter(o=>isLiveOrder(o) && (o.trainerIds||[]).includes(t.id) && o.date>=start && o.date<=end).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       return {t, list, stats: statsFor(list)};
     })};
   }
@@ -15033,7 +15068,7 @@ function renderAvailabilityCalendar(box){
     /* فعاليات المقدّم في ذلك اليوم (نشطة فقط) */
     function eventsOn(tid, dISO){
       return (state.orders||[]).filter(o=>{
-        if((o.status||'active')==='cancelled') return false;
+        if(isCancelledOrder(o)) return false;
         if(!(o.trainerIds||[]).includes(tid)) return false;
         const s=o.date||'', e=orderEnd(o);
         return s && dISO>=s && dISO<=e;
@@ -17313,6 +17348,114 @@ const PATH_HINT_RULES = [
   [/ترفي/,          'ترفيه ترفيهي ترفيهية مرح فعاليات ترفيهية مهرجان'],
   [/إرشاد|ارشاد|دعو|وعظ/,'خطبة موعظة دعوة دعوي إرشاد ارشاد درس ديني'],
 ];
+/* ══════ مجموعة مقدّمين في جدول إتاحة واحد + كشف للجهات ══════ */
+const GRP_DEFAULT_NAMES = ['غشيمه','الشربيني','البكري'];
+function grpGetIds(){
+  let ids = null;
+  try{ ids = JSON.parse(localStorage.getItem('avGroupIds')||'null'); }catch(e){}
+  const valid = new Set((state.trainers||[]).map(t=>t.id));
+  if(Array.isArray(ids)) ids = ids.filter(id=>valid.has(id));
+  if(!ids || !ids.length){
+    ids = GRP_DEFAULT_NAMES.map(n=>{ const t=(state.trainers||[]).find(x=>_pnz(x.name).includes(_pnz(n))); return t&&t.id; }).filter(Boolean);
+  }
+  return ids;
+}
+function grpSetIds(ids){ try{ localStorage.setItem('avGroupIds', JSON.stringify(ids)); }catch(e){} }
+function grpStatus(tid, d){
+  const dw = new Date(d+'T00:00:00').getDay();
+  if(dw===5 || dw===6) return {k:'off', l:'عطلة'};
+  try{ const lv = trainerLeaveOn(tid, d); if(lv) return {k:'leave', l:'إجازة'}; }catch(e){}
+  const evs = (state.orders||[]).filter(o=>isLiveOrder(o) && o.date && (o.trainerIds||[]).includes(tid) && d>=o.date && d<=orderEnd(o));
+  if(evs.length) return {k:'busy', l:'مشغول', evs};
+  return {k:'free', l:'متاح'};
+}
+function grpCompute(ids, F, T, workOnly){
+  const rows = []; let cur = F, g = 0;
+  while(cur<=T && g<370){
+    const dw = new Date(cur+'T00:00:00').getDay();
+    if(!(workOnly && (dw===5||dw===6))){
+      const st = ids.map(id=>grpStatus(id, cur));
+      rows.push({d:cur, st, free:st.filter(x=>x.k==='free').length});
+    }
+    cur = addDaysISO(cur,1); g++;
+  }
+  return rows;
+}
+function openTrainerGroup(){
+  const today = todayStr();
+  const G = window.__grp = window.__grp || {
+    F: window.__schedFrom || today, T: window.__schedTo || addDaysISO(today, 29), work:true, flt:'any' };
+  let ids = grpGetIds();
+  const allT = (state.trainers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  showInfoModal(`${icon('users',17)} إتاحة مجموعة المقدّمين`, `<div class="grp">
+      <div class="grp-chips" id="grp_chips"></div>
+      <div class="grp-bar">
+        <label>من <input type="date" id="grp_F" value="${G.F}"></label>
+        <label>إلى <input type="date" id="grp_T" value="${G.T}"></label>
+        <label class="grp-ck"><input type="checkbox" id="grp_work" ${G.work?'checked':''}> أيام العمل فقط</label>
+        <span class="pk-seg" id="grp_flt">${[['any','كل الأيام'],['some','فيها متاح'],['all','الجميع متاح']].map(x=>`<button type="button" data-f="${x[0]}" class="${G.flt===x[0]?'on':''}">${x[1]}</button>`).join('')}</span>
+      </div>
+      <div class="grp-sum" id="grp_sum"></div>
+      <div class="grp-tbl" id="grp_tbl"></div>
+      <div class="grp-acts">
+        <button type="button" class="pk-btn pri" id="grp_pub">${icon('printer',15)} طباعة كشف للجهات</button>
+        <button type="button" class="pk-btn" id="grp_int">${icon('clipboard',15)} كشف داخلي بالتفاصيل</button>
+        <button type="button" class="pk-btn" id="grp_xls">${icon('sheet',15)} Excel</button>
+      </div></div>`, box=>{
+    box.style.maxWidth = '980px';
+    const tName = id=>{ const t=allT.find(x=>x.id===id); return t?t.name:''; };
+    const visible = rows => G.flt==='some' ? rows.filter(r=>r.free>0) : G.flt==='all' ? rows.filter(r=>r.free===ids.length && ids.length) : rows;
+    function chips(){
+      box.querySelector('#grp_chips').innerHTML = `<span class="lb">المقدّمون في المجموعة:</span>` +
+        ids.map(id=>`<button type="button" class="grp-chip on" data-rm="${id}" title="إزالة">${escapeHtml(tName(id))} ${icon('x',12)}</button>`).join('') +
+        `<select id="grp_add" aria-label="إضافة مقدّم"><option value="">+ إضافة مقدّم</option>${allT.filter(t=>!ids.includes(t.id)).map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}</select>`;
+      box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ ids = ids.filter(x=>x!==b.dataset.rm); grpSetIds(ids); chips(); draw(); });
+      box.querySelector('#grp_add').onchange = e=>{ if(e.target.value){ ids.push(e.target.value); grpSetIds(ids); chips(); draw(); } };
+    }
+    function cell(s, detail){
+      if(s.k==='free') return `<span class="gs free">${icon('check',13)} متاح</span>`;
+      if(s.k==='busy') return `<span class="gs busy">مشغول</span>${detail?s.evs.map(o=>`<small>${escapeHtml(o.title||'')}${o.timeFrom?` · ${escapeHtml(o.timeFrom)}`:''}</small>`).join(''):''}`;
+      if(s.k==='leave') return `<span class="gs leave">إجازة</span>`;
+      return `<span class="gs off">عطلة</span>`;
+    }
+    function draw(){
+      const rows = visible(grpCompute(ids, G.F, G.T, G.work)); window.__grpRows = rows;
+      const all = rows.filter(r=>r.free===ids.length).length, some = rows.filter(r=>r.free>0).length;
+      box.querySelector('#grp_sum').innerHTML = ids.length ? `<span><b>${rows.length}</b> يوم معروض</span><span class="g"><b>${some}</b> يوم فيه متاح</span><span class="g2"><b>${all}</b> يوم الجميع متاح</span>` : '';
+      box.querySelector('#grp_tbl').innerHTML = !ids.length ? `<div class="pk-empty">أضف مقدّمًا واحدًا على الأقل</div>` : !rows.length ? `<div class="pk-empty">لا توجد أيام مطابقة في هذه الفترة</div>` :
+        `<table class="pk-tbl"><thead><tr><th>التاريخ</th><th>اليوم</th>${ids.map(id=>`<th class="c">${escapeHtml(tName(id))}</th>`).join('')}<th class="c">المتاحون</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td class="nw">${fmtDate(r.d)}</td><td>${escapeHtml(dayNameOf(r.d))}</td>${r.st.map(s=>`<td class="c">${cell(s,true)}</td>`).join('')}<td class="c"><b>${r.free}</b> / ${ids.length}</td></tr>`).join('')}
+        </tbody></table>`;
+    }
+    const rd = ()=>{ G.F = box.querySelector('#grp_F').value||G.F; G.T = box.querySelector('#grp_T').value||G.T; if(G.T<G.F) G.T=G.F; draw(); };
+    box.querySelector('#grp_F').onchange = rd; box.querySelector('#grp_T').onchange = rd;
+    box.querySelector('#grp_work').onchange = e=>{ G.work = e.target.checked; draw(); };
+    box.querySelectorAll('#grp_flt [data-f]').forEach(b=>b.onclick=()=>{ G.flt=b.dataset.f; box.querySelectorAll('#grp_flt [data-f]').forEach(x=>x.classList.toggle('on',x===b)); draw(); });
+    const printIt = detail=>{
+      const rows = window.__grpRows||[]; if(!rows.length||!ids.length){ toast('لا توجد بيانات للطباعة'); return; }
+      const pc = s => s.k==='free' ? '<b style="color:#1E7A46">متاح</b>'
+        : detail && s.k==='busy' ? `<span style="color:#8A8A8A">مشغول</span><br><small>${s.evs.map(o=>escapeHtml(o.title||'')).join('، ')}</small>`
+        : `<span style="color:#9A9A9A">${s.k==='busy'?'غير متاح':s.l}</span>`;
+      doPrintDoc(buildReportDoc({
+        titleAr: detail ? 'إتاحة مقدّمي المبادرات — كشف داخلي' : 'كشف إتاحة مقدّمي المبادرات',
+        subtitle: `الفترة من ${fmtDate(G.F)} إلى ${fmtDate(G.T)}`,
+        kpis:[{v:ids.length,l:'المقدّمون'},{v:rows.length,l:'الأيام'},{v:rows.filter(r=>r.free>0).length,l:'أيام فيها متاح'}],
+        headers:['التاريخ','اليوم', ...ids.map(tName), 'عدد المتاحين'],
+        rows: rows.map(r=>[fmtDate(r.d), escapeHtml(dayNameOf(r.d)), ...r.st.map(pc), `${r.free} / ${ids.length}`])
+      }), false, 'A4');
+    };
+    box.querySelector('#grp_pub').onclick = ()=>printIt(false);
+    box.querySelector('#grp_int').onclick = ()=>printIt(true);
+    box.querySelector('#grp_xls').onclick = ()=>{
+      const rows = window.__grpRows||[]; if(!rows.length){ toast('لا توجد بيانات'); return; }
+      exportToExcel('إتاحة_المجموعة.xlsx', ['التاريخ','اليوم', ...ids.map(tName), 'عدد المتاحين'],
+        rows.map(r=>[fmtDate(r.d), dayNameOf(r.d), ...r.st.map(s=>s.k==='busy'?'مشغول: '+s.evs.map(o=>o.title).join('، '):s.l), r.free]),
+        `إتاحة مقدّمي المبادرات ${fmtDate(G.F)} — ${fmtDate(G.T)}`);
+    };
+    chips(); draw();
+  });
+}
+
 function _pnz(s){ return String(s||'').replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').toLowerCase().trim(); }
 function _ptoks(s){ return _pnz(s).split(/[^ء-يa-z0-9]+/).filter(w=>w.length>1).map(w=>w.replace(/^(وال|بال|لل|ال)/,'')).filter(w=>w.length>1); }
 function pathKeywords(p){
