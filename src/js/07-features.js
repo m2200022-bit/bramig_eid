@@ -1064,6 +1064,7 @@ async function doLoginSecure(u, p, match, fail, done){
       if(!isMem){ await A.signOut(); return fail('كلمة المرور قديمة — استخدم كلمة المرور الحالية'); }
       r2.authUid = cred.user.uid; saveState();
     }
+    if(realEmail && r2.email !== realEmail){ r2.email = realEmail; saveState(); }
     if(!r2.authUid){ r2.authUid = cred.user.uid; r2.authGen = gen; try{ await addMember(cred.user.uid); }catch(e){} saveState(); }
     return done(r2);
   }catch(e){
