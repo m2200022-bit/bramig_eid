@@ -2471,6 +2471,7 @@ function quickAddUser(){
     {name:'displayName', label:'الاسم الظاهر', required:true},
     {name:'username', label:'اسم المستخدم', required:true},
     {name:'password', label:'كلمة المرور', required:true},
+    {name:'email', label:'البريد الإلكتروني (لاسترجاع كلمة المرور)'},
     {name:'role', label:'الدور', type:'select', options:[
       {value:'admin', label:'مدير نظام'},{value:'user', label:'مستخدم'},{value:'trainer', label:'مقدم فعالية'}]},
     {name:'trainerId', label:'ربط بمقدم فعالية (فقط إن كان الدور مقدم فعالية)', type:'select', options:[{value:'', label:'— بدون —'}, ...state.trainers.map(t=>({value:t.id, label:t.name}))]},
@@ -2478,8 +2479,8 @@ function quickAddUser(){
     if(state.users.some(u=>u.username===v.username)){ toast('اسم المستخدم مستخدم بالفعل'); return; }
     const nu = {id:uid(), username:v.username, role:v.role, trainerId:v.role==='trainer'?v.trainerId:'', displayName:v.displayName, active:true};
     if(state.authMode!=='firebase') nu.password = v.password;
-    try{ await setUserPassword(nu, v.password); }
-    catch(e){ if(state.authMode==='firebase'){ toast('تعذّر إنشاء الحساب: '+(e.code||e.message)); return; } }
+    try{ if(String(v.email||'').trim()) await linkRecoveryEmail(nu, v.email, v.password); else await setUserPassword(nu, v.password); }
+    catch(e){ if(state.authMode==='firebase'){ toast('تعذّر إنشاء الحساب: '+(e.message||e.code)); return; } }
     state.users.push(nu);
     await saveState(); toast('تم إضافة المستخدم'); render();
   });
@@ -2490,6 +2491,7 @@ function editUser(id){
     {name:'displayName', label:'الاسم الظاهر', required:true},
     {name:'username', label:'اسم المستخدم', required:true},
     {name:'password', label:'كلمة مرور جديدة (اتركها فارغة لعدم التغيير)'},
+    {name:'email', label:'البريد الإلكتروني (لاسترجاع كلمة المرور)'},
     {name:'role', label:'الدور', type:'select', options:[
       {value:'admin', label:'مدير نظام'},{value:'user', label:'مستخدم'},{value:'trainer', label:'مقدم فعالية'}]},
     {name:'trainerId', label:'ربط بمقدم فعالية (فقط إن كان الدور مقدم فعالية)', type:'select', options:[{value:'', label:'— بدون —'}, ...state.trainers.map(t=>({value:t.id, label:t.name}))]},
@@ -2497,7 +2499,12 @@ function editUser(id){
     if(state.users.some(x=>x.id!==id && x.username===v.username)){ toast('اسم المستخدم مستخدم بالفعل'); return; }
     if(v.username!==u.username && u.authUid){ toast('لا يمكن تغيير اسم مستخدم مُرحَّل — أنشئ مستخدمًا جديدًا وعطّل القديم'); return; }
     const newPw = String(v.password||'').trim();
-    if(newPw && newPw!==(u.password||'')){
+    const newEm = String(v.email||'').trim().toLowerCase();
+    if(newEm && newEm!==(u.email||'')){
+      try{ await linkRecoveryEmail(u, newEm, newPw||'');
+        toast(newPw ? 'رُبط البريد وكلمة المرور الجديدة' : 'أُرسل رابط تأكيد إلى البريد — بعد فتحه يصبح البريد مربوطًا بحسابك'); }
+      catch(e){ toast('تعذّر ربط البريد: '+(e.message||e.code)); return; }
+    } else if(newPw && newPw!==(u.password||'')){
       try{ await setUserPassword(u, newPw); }
       catch(e){ if(state.authMode==='firebase'){ toast('تعذّر تغيير كلمة المرور: '+(e.code||e.message)); return; } u.password = newPw; }
     }
@@ -2508,6 +2515,7 @@ function editUser(id){
     const f=document.getElementById('mf_displayName'); if(f) f.value=u.displayName||'';
     const un=document.getElementById('mf_username'); if(un) un.value=u.username||'';
     const pw=document.getElementById('mf_password'); if(pw) pw.value=(state.authMode==='firebase'?'':(u.password||''));
+    const em=document.getElementById('mf_email'); if(em){ em.value=u.email||''; em.dir='ltr'; }
     const rl=document.getElementById('mf_role'); if(rl) rl.value=u.role;
     const tr=document.getElementById('mf_trainerId'); if(tr) tr.value=u.trainerId||'';
   },0);

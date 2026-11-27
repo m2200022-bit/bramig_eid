@@ -344,3 +344,72 @@ async function bookingMarkApproved(reqId, order){
   }, 3000);
 })();
 
+
+
+/* ══════ استرجاع كلمة المرور بالبريد ══════ */
+const RECOV_DOC = h => getDb().collection('appLogin').doc('u_'+h);
+async function readRecoveryEmail(h){ try{ const s = await RECOV_DOC(h).get(); return (s.exists && s.data().email) || ''; }catch(e){ return ''; } }
+/* يجرّب البريد/الكلمة بالترتيب: الكلمة المحوّلة ثم الخام (بعد إعادة التعيين من رابط البريد) */
+async function signInAny(A, emails, p){
+  let last = null;
+  for(const em of emails){ if(!em) continue;
+    for(const pw of [authPw(p), p]){
+      if(pw.length < 6) continue;
+      try{ return await A.signInWithEmailAndPassword(em, pw); }
+      catch(e){ last = e; if(!/invalid-credential|wrong-password|user-not-found|invalid-email/.test(e.code||'')) throw e; }
+    }
+  }
+  throw last || {code:'auth/invalid-credential'};
+}
+function maskEmail(e){ const [a,b] = String(e).split('@'); return (a.length<=2 ? a[0]+'*' : a.slice(0,2)+'*'.repeat(Math.min(6,a.length-2))) + '@' + b; }
+function openForgotPassword(){
+  const pre = ((document.getElementById('lg_user')||{}).value||'').trim();
+  showInfoModal(`${icon('mail',17)} نسيت كلمة المرور`, `<div class="fp">
+    <p>اكتب اسم المستخدم أو البريد المسجّل، وسنرسل رابط إعادة تعيين كلمة المرور إلى بريدك.</p>
+    <label>اسم المستخدم أو البريد<input id="fp_u" value="${escapeHtml(pre)}" autocomplete="username"></label>
+    <div class="fp-msg" id="fp_msg"></div>
+    <button class="btn btn-primary" id="fp_go">${icon('mail',15)} إرسال رابط إعادة التعيين</button>
+    <p class="helper">بعد فتح الرابط اكتب كلمة المرور الجديدة (6 أحرف على الأقل)، ثم ادخل بها إلى النظام. إن لم يكن لحسابك بريد مسجّل فتواصل مع مدير النظام.</p></div>`, box=>{
+    box.style.maxWidth = '440px';
+    const go = box.querySelector('#fp_go'), msg = box.querySelector('#fp_msg');
+    go.onclick = async ()=>{
+      const v = box.querySelector('#fp_u').value.trim(); if(!v){ msg.textContent='اكتب اسم المستخدم أو البريد'; return; }
+      go.disabled = true; msg.className='fp-msg'; msg.textContent='جارٍ الإرسال…';
+      try{
+        const em = v.includes('@') ? v : await readRecoveryEmail(await userHash(v));
+        if(!em){ msg.className='fp-msg bad'; msg.textContent='لا يوجد بريد مسجّل لهذا الحساب — تواصل مع مدير النظام لإعادة التعيين.'; go.disabled=false; return; }
+        try{ fbAuth().languageCode = 'ar'; }catch(e){}
+        await fbAuth().sendPasswordResetEmail(em);
+        msg.className='fp-msg ok'; msg.innerHTML = `${icon('checkCircle',15)} أُرسل الرابط إلى <b dir="ltr">${escapeHtml(maskEmail(em))}</b> — افحص البريد الوارد ومجلد الرسائل غير المرغوبة.`;
+      }catch(e){
+        msg.className='fp-msg bad';
+        msg.textContent = e && e.code==='auth/user-not-found' ? 'هذا البريد غير مربوط بأي حساب في النظام.' : e && e.code==='auth/too-many-requests' ? 'محاولات كثيرة — انتظر قليلًا ثم أعد المحاولة.' : 'تعذّر الإرسال: '+((e&&e.code)||e);
+        go.disabled = false;
+      }
+    };
+  });
+}
+/* ربط بريد حقيقي بحساب: للمستخدم نفسه (تحقّق عبر البريد) أو للمدير عند وضع كلمة مرور جديدة */
+async function linkRecoveryEmail(u, email, newPw){
+  email = String(email||'').trim().toLowerCase();
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('البريد غير صحيح');
+  const h = await userHash(u.username);
+  const me = fbAuth().currentUser;
+  if(newPw){
+    /* إنشاء حساب بالبريد الحقيقي وكلمة المرور الجديدة (يحلّ محل الحساب السابق) */
+    const A = auxAuth(); let cred;
+    try{ cred = await A.createUserWithEmailAndPassword(email, authPw(newPw)); }
+    catch(e){ if(e.code==='auth/email-already-in-use') throw new Error('هذا البريد مستخدم لحساب آخر'); throw e; }
+    const uid = cred.user.uid; await A.signOut().catch(()=>{});
+    await addMember(uid); if(u.authUid && u.authUid!==uid && !(me && me.uid===u.authUid)) await removeMember(u.authUid);
+    if(me && me.uid===u.authUid){ /* المستخدم الحالي: نُبقي حسابه القديم عضوًا حتى يخرج */ }
+    u.authUid = uid;
+  } else if(me && me.uid===u.authUid){
+    await me.verifyBeforeUpdateEmail(email);   /* يُرسل رابط تأكيد؛ بعد التأكيد يصبح البريد بريد الدخول */
+  } else {
+    throw new Error('لربط بريد مستخدم آخر اكتب له كلمة مرور جديدة أيضًا');
+  }
+  await RECOV_DOC(h).set({email});
+  u.email = email;
+}
+

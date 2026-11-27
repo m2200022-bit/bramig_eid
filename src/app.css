@@ -4312,3 +4312,9 @@ table.av-tbl td.sum, table.av-tbl th.sum{ min-width:40px !important; font-size:1
 .bk-tbl.wk input[type=number]{width:72px !important;}
 table.bk-tbl{display:table !important;} table.bk-tbl thead{display:table-header-group !important;} table.bk-tbl tbody{display:table-row-group !important;}
 table.bk-tbl tr{display:table-row !important;} table.bk-tbl th, table.bk-tbl td{display:table-cell !important;}
+
+
+.fp{display:flex;flex-direction:column;gap:10px;font-size:13.5px;} .fp p{margin:0;}
+.fp label{display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:12.5px;}
+.fp-msg{font-size:13px;min-height:18px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;} .fp-msg.ok{color:#1E7A46;} .fp-msg.bad{color:#B3261E;}
+

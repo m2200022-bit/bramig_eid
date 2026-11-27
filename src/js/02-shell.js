@@ -29,7 +29,7 @@ function renderNav(){
   if(sr) sr.textContent = currentRole==='admin' ? 'مدير النظام' : currentRole==='user' ? 'مستخدم' : 'مقدم فعالية';
 }
 /* مربع معلومات المستخدم + حالة المزامنة الحقيقية */
-const APP_VERSION = '5.0';
+const APP_VERSION = '5.1';
 function renderUserBox(){
   const pill = document.getElementById('syncPill');
   if(pill){

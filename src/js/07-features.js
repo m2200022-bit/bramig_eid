@@ -1043,7 +1043,9 @@ async function doLoginSecure(u, p, match, fail, done){
   const genMap = await readGenMap();
   const h = await userHash(u);
   const gen = (rec && rec.authGen) || genMap[h] || 1;
-  const email = await authEmailFor(u, gen);
+  let email = await authEmailFor(u, gen);
+  /* حساب مربوط ببريد حقيقي (للاسترجاع): نجرّبه أولًا */
+  const realEmail = (u.includes('@') ? u : await readRecoveryEmail(h));
   let A = null;
   try{ A = fbAuth(); }catch(e){}
   if(!A || typeof A.signInWithEmailAndPassword!=='function'){
@@ -1051,12 +1053,17 @@ async function doLoginSecure(u, p, match, fail, done){
     return match ? done(match) : fail('تعذّر تحميل خدمة الدخول — حدّث الصفحة');
   }
   try{
-    const cred = await A.signInWithEmailAndPassword(email, authPw(p));
+    const cred = await signInAny(A, realEmail ? [realEmail, email] : [email], p);
     /* بعد الدخول: حمّل البيانات إن كانت مقفلة */
     if(__locked || __readFailed || !users.length){ __locked=false; __readFailed=false; await loadState(); }
     const r2 = (state.users||[]).find(x=>String(x.username||'').trim().toLowerCase()===u.toLowerCase());
     if(!r2){ await A.signOut(); return fail('هذا الحساب غير موجود في قائمة المستخدمين'); }
-    if(r2.authUid && r2.authUid!==cred.user.uid){ await A.signOut(); return fail('كلمة المرور قديمة — استخدم كلمة المرور الحالية'); }
+    if(r2.authUid && r2.authUid!==cred.user.uid){
+      /* حساب جديد أُضيف للأعضاء (استرجاع من لوحة Firebase أو ربط بريد): نعتمده */
+      let isMem = false; try{ const m = await ACCESS_DOC().get(); isMem = ((m.data()||{}).uids||[]).includes(cred.user.uid); }catch(e){}
+      if(!isMem){ await A.signOut(); return fail('كلمة المرور قديمة — استخدم كلمة المرور الحالية'); }
+      r2.authUid = cred.user.uid; saveState();
+    }
     if(!r2.authUid){ r2.authUid = cred.user.uid; r2.authGen = gen; try{ await addMember(cred.user.uid); }catch(e){} saveState(); }
     return done(r2);
   }catch(e){

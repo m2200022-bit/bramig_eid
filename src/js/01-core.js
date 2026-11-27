@@ -1071,7 +1071,7 @@ function renderGate(root){
     eyeBtn.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
     p.focus();
   };
-  document.getElementById('lg_forgot').onclick = ()=>alert('تواصل مع مدير النظام لإعادة تعيين كلمة المرور.');
+  document.getElementById('lg_forgot').onclick = ()=>openForgotPassword();
   /* تذكّرني */
   try{
     const rem = localStorage.getItem('rememberUser');
