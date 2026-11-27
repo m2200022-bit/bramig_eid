@@ -2391,6 +2391,22 @@ function bkIdb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('bramig
 async function bkGetDir(){ try{ const db=await bkIdb(); return await new Promise(res=>{ const q=db.transaction('h').objectStore('h').get('dir'); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
 async function bkSetDir(h){ const db=await bkIdb(); await new Promise(res=>{ const t=db.transaction('h','readwrite'); t.objectStore('h').put(h,'dir'); t.oncomplete=res; t.onerror=res; }); }
 function bkSupported(){ return typeof window.showDirectoryPicker==='function'; }
+/* يكتب: الملف الأحدث (نفس الاسم دائمًا) + السابقة + نسخة يومية بالتاريخ، ويحتفظ بآخر 30 نسخة يومية */
+async function bkWriteAll(dir){
+  try{ const old = await dir.getFileHandle(BK_FILE); const txt = await (await old.getFile()).text();
+       if(txt){ const pv = await dir.getFileHandle(BK_PREV, {create:true}); const w = await pv.createWritable(); await w.write(txt); await w.close(); } }catch(e){}
+  const data = bkPayload();
+  for(const name of [BK_FILE, `نسخة-احتياطية-طلبات-الفعاليات-${todayStr()}.json`]){
+    const fh = await dir.getFileHandle(name, {create:true}); const w = await fh.createWritable(); await w.write(data); await w.close();
+  }
+  try{ const L=[]; for await (const [n,hd] of dir.entries()) if(hd.kind==='file' && /^نسخة-احتياطية-طلبات-الفعاليات-\d{4}-\d{2}-\d{2}\.json$/.test(n)) L.push(n);
+       L.sort().reverse().slice(30).forEach(n=>dir.removeEntry(n).catch(()=>{})); }catch(e){}
+  try{ localStorage.setItem('backup_dl_at', new Date().toISOString()); localStorage.setItem('backup_dir_name', dir.name); }catch(e){}
+}
+function bkStampMsg(dirName){
+  const d = new Date();
+  return `✅ تم تحديث النسخة الاحتياطية بتاريخ ${fmtDate(todayStr())} الساعة ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — في مجلد «${dirName}»`;
+}
 function bkPayload(){
   const src = __archMode ? Object.assign({}, state, {orders: __archMode.savedOrders, auditLog: __archMode.savedAudit}) : state;
   return JSON.stringify(src, null, 2);
@@ -2419,13 +2435,8 @@ async function backupNow(opts){
       if(p!=='granted') dir = null;
     }
     if(!dir) dir = await bkChooseDir();
-    /* الاحتفاظ بالنسخة السابقة قبل التحديث */
-    try{ const old = await dir.getFileHandle(BK_FILE); const txt = await (await old.getFile()).text();
-         if(txt){ const pv = await dir.getFileHandle(BK_PREV, {create:true}); const w = await pv.createWritable(); await w.write(txt); await w.close(); } }catch(e){}
-    const fh = await dir.getFileHandle(BK_FILE, {create:true});
-    const w = await fh.createWritable(); await w.write(bkPayload()); await w.close();
-    try{ localStorage.setItem('backup_dl_at', new Date().toISOString()); localStorage.setItem('backup_dir_name', dir.name); }catch(e){}
-    toast(`✅ تم تحديث النسخة الاحتياطية في مجلد «${dir.name}»`);
+    await bkWriteAll(dir);
+    toast(bkStampMsg(dir.name));
     return 'folder';
   }catch(e){
     if(e && e.name==='AbortError'){ toast('لم يُختر مجلد — لم تُحفظ النسخة'); return 'cancel'; }
@@ -2553,10 +2564,7 @@ async function bkTrySilent(){
   try{
     const dir = await bkGetDir(); if(!dir) return false;
     if((await dir.queryPermission({mode:'readwrite'}))!=='granted') return false;
-    try{ const old = await dir.getFileHandle(BK_FILE); const txt = await (await old.getFile()).text();
-         if(txt){ const pv = await dir.getFileHandle(BK_PREV, {create:true}); const w = await pv.createWritable(); await w.write(txt); await w.close(); } }catch(e){}
-    const fh = await dir.getFileHandle(BK_FILE, {create:true}); const w = await fh.createWritable(); await w.write(bkPayload()); await w.close();
-    try{ localStorage.setItem('backup_dl_at', new Date().toISOString()); localStorage.setItem('backup_dir_name', dir.name); }catch(e){}
+    await bkWriteAll(dir);
     return dir.name;
   }catch(e){ console.warn('silent backup', e); return false; }
 }
@@ -2579,14 +2587,14 @@ async function autoOnLogin(){
       }
     }catch(e){ console.error('auto archive', e); toast('تعذّرت الأرشفة التلقائية — ستُعاد المحاولة عند الدخول القادم'); }
   }
-  /* النسخة اليومية: صامتة إن أمكن، وإلا الرسالة */
+  /* النسخة الاحتياطية عند كل فتح: صامتة إن كان الإذن قائمًا، وإلا تظهر الرسالة مرة واحدة في اليوم */
   if(currentRole==='admin' || currentRole==='user'){
     const today = todayStr();
-    let shown=''; try{ shown = localStorage.getItem('dailyBackupShown')||''; }catch(e){}
-    if(shown===today) return;
     const dirName = await bkTrySilent();
     if(dirName){ try{ localStorage.setItem('dailyBackupShown', today); }catch(e){}
-      toast(`✅ حُدّثت النسخة الاحتياطية اليومية تلقائيًا في مجلد «${dirName}»`); return; }
+      toast(bkStampMsg(dirName)); return; }
+    let shown=''; try{ shown = localStorage.getItem('dailyBackupShown')||''; }catch(e){}
+    if(shown===today) return;
     dailyBackupPrompt();
   }
 }
