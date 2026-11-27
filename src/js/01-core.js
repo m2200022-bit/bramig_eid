@@ -694,7 +694,10 @@ const EMOJI_ICON = {
   '📥':'upload','🔄':'refresh','🔁':'refresh','📌':'pin','⏩':'forward','🏢':'building','🏛':'landmark',
   '⚠':'alert','⏳':'hourglass','🛡':'shield','📖':'bookOpen','📈':'trendingUp','💐':'gift',
   '💾':'save','⏸':'pause','▶':'play','✉':'mail','🔲':'qr','⛔':'ban','ℹ':'info','⚡':'zap',
-  '🏁':'flag','✍':'penLine','📎':'paperclip','☰':'menu','🧑‍🏫':'users'
+  '🏁':'flag','✍':'penLine','📎':'paperclip','☰':'menu','🧑‍🏫':'users',
+  '📍':'mapPin','👤':'user','🎤':'megaphone','📣':'megaphone','⭐':'star','📤':'download','🧾':'fileText','📦':'inbox',
+  '🔒':'shield','🔑':'shield','💡':'sparkles','🕒':'clock','✔':'check','✘':'x','✖':'x','🗺':'mapPin','🏆':'star',
+  '📞':'phone','💬':'message','🔗':'paperclip','❗':'alert','❓':'info','🎯':'flag','🧭':'mapPin','📢':'megaphone','🗄':'folder'
 };
 const EMOJI_TONE = { '⚠':'warn','⛔':'dan','✅':'ok','ℹ':'info','⏳':'warn' };
 const EMOJI_RE = /(🧑‍🏫|[ℹ⌨⏩-⏺☀-➿⬀-⯿]|[\uD83C-\uDBFF][\uDC00-\uDFFF])️?/g;

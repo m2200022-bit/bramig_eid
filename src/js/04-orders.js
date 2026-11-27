@@ -181,6 +181,7 @@ function renderOrderPage(c){
           <button type="button" data-ov="list" class="${ordersView==='list'?'on':''}">${icon('list',14)} قائمة</button>
           <button type="button" data-ov="cal" class="${ordersView==='cal'?'on':''}">${icon('calendar',14)} تقويم</button>
         </span>
+        <button class="pk-btn" type="button" onclick="openBookingInbox()" title="طلبات الحجز من بوابة الجهات">${icon('globe',15)} طلبات الحجز <span class="bk-badge" ${typeof __bkNew!=='undefined'&&__bkNew.length?'':'hidden'}>${typeof __bkNew!=='undefined'?__bkNew.length:0}</span></button>
         <button class="pk-btn" type="button" onclick="openYearArchive()" title="الأعوام الدراسية المؤرشفة">${icon('inbox',15)} الأرشيف</button>
         <button class="pk-btn" type="button" id="ord_exportBtn" aria-haspopup="menu">${icon('download',15)} طباعة وتصدير ${icon('chevronDown',13,'caret')}</button>
         <button class="pk-btn ic" type="button" id="ord_stageBtn" title="فرز حسب نوع المدرسة" aria-label="فرز حسب نوع المدرسة">${icon('school',16)}</button>
@@ -1673,9 +1674,10 @@ function renderOrderForm(sub){
       requesterNote: document.getElementById('f_reqNote').value, adminNote: document.getElementById('f_adminNote').value,
       adminRequests: checkedReqs, resourceIds, benef: benefTxt.benef, gender: benefTxt.gender,
     };
-    if(editing){ Object.assign(editing, orderData); logAudit('edit', editing); }
+    if(editing){ if(window.__catProgId!=null) orderData.programId = window.__catProgId||editing.programId||''; Object.assign(editing, orderData); logAudit('edit', editing); }
     else {
       orderData.id = uid(); orderData.createdAt = Date.now();
+      if(window.__catProgId) orderData.programId = window.__catProgId;
       const maxSerialThisYear = nextOrderSerial() - 1;
       orderData.serial = maxSerialThisYear + 1;
       orderData.completionStatus=''; orderData.notDoneReason=''; orderData.supervisorRating=0; orderData.schoolRating=0; orderData.studentsRating=0; orderData.recommendSchool=''; orderData.evaluatedBy=''; orderData.status='active';
@@ -1683,6 +1685,7 @@ function renderOrderForm(sub){
       logAudit('create', orderData);
     }
     await saveState();
+    if(!editing && window.__bookingReqId){ const rq = window.__bookingReqId; window.__bookingReqId = null; try{ bookingMarkApproved(rq, orderData); }catch(e){} }
     if(!editing) clearOrderDraft();
     toast(editing?'تم حفظ التعديلات':'تم حفظ الطلب');
     const savedId = editing ? editing.id : orderData.id;

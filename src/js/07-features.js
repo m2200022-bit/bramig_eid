@@ -214,7 +214,7 @@ function renderSettingsHub(c){
   const pending = state.trainerRequests.filter(r=>r.status==='pending').length;
   const tabs = currentRole==='admin'
     ? [['lists','القوائم والبيانات','settings',0],['approvals','الموافقات','checkCircle',pending],
-       ['targets','المستهدفات السنوية','flag',0],['occasions','تقويم المناسبات','calendar',0],['portal','بوابة مقدّم الفعالية','users',0],['audit','سجل التعديلات','history',0],['security','الأمان','shield',0]]
+       ['targets','المستهدفات السنوية','flag',0],['occasions','تقويم المناسبات','calendar',0],['portal','بوابة مقدّم الفعالية','users',0],['catalog','كتالوج البرامج والمواعيد','layers',0],['audit','سجل التعديلات','history',0],['security','الأمان','shield',0]]
     : [['portal','بوابة مقدّم الفعالية','users',0],['occasions','تقويم المناسبات','calendar',0]];
   if(!tabs.find(t=>t[0]===settingsTab)) settingsTab = tabs[0][0];
   c.innerHTML = `<div class="hub-tabs" role="tablist">
@@ -228,6 +228,7 @@ function renderSettingsHub(c){
   else if(settingsTab==='audit') body.innerHTML = auditCardHtml();
   else if(settingsTab==='targets') renderTargetsEditor(body);
   else if(settingsTab==='security') renderSecurityTab(body);
+  else if(settingsTab==='catalog') renderCatalogTab(body);
   else if(settingsTab==='occasions') renderOccasionsTab(body);
   c.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{ settingsTab=b.dataset.hub; render(); });
 }

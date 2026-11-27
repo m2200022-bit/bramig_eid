@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حجز برنامج — مركز عيد الثقافي</title>
+<meta name="description" content="احجز برنامجًا أو فعالية لجهتك واختر الموعد المتاح">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{ --m:#8A1F42; --m2:#6B1834; --m50:#F7EBEF; --g:#B08D57; --ink:#231A1E; --ink2:#5B4F55; --ink3:#8C8086; --line:#E9E0E4; --bg:#FAF7F8;
+    --ok:#1E7A46; --ok50:#E8F5EE; --warn:#9A6A00; --warn50:#FFF4DE; --bad:#B3261E; --bad50:#FDECEA; }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6}
+  button,input,select,textarea{font:inherit;color:inherit}
+  .lu{width:18px;height:18px;flex:none}
+  header{background:linear-gradient(135deg,var(--m2),var(--m));color:#fff;padding:22px 16px 56px;position:relative;overflow:hidden}
+  header::after{content:'';position:absolute;inset:auto -60px -80px auto;width:260px;height:260px;border-radius:50%;border:28px solid rgba(176,141,87,.18)}
+  .hd{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+  .mark{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#E9D3A8}
+  .hd h1{margin:0;font-size:21px} .hd p{margin:2px 0 0;color:#F1DCE4;font-size:13.5px}
+  main{max-width:960px;margin:-36px auto 40px;padding:0 14px;position:relative;z-index:2}
+  .steps{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:12px;box-shadow:0 6px 20px rgba(60,20,35,.06)}
+  .steps div{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;border-radius:10px;font-size:13px;font-weight:700;color:var(--ink3)}
+  .steps div i{font-style:normal;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#F1ECEE;font-size:12px}
+  .steps div.on{background:var(--m50);color:var(--m)} .steps div.on i{background:var(--m);color:#fff}
+  .steps div.done{color:var(--ok)} .steps div.done i{background:var(--ok);color:#fff}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(60,20,35,.05);margin-bottom:12px}
+  .card h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px} .sub{color:var(--ink3);font-size:13px;margin:0 0 12px}
+  .note{background:var(--warn50);border:1px solid #F2D79B;color:#6E4B00;border-radius:12px;padding:9px 12px;font-size:13px;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;color:var(--ink3)}
+  .search input{border:0;outline:0;flex:1;min-height:42px;background:transparent;color:var(--ink)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap} .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .chip.on{background:var(--m);border-color:var(--m);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .prog{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;transition:.15s}
+  .prog:hover{border-color:var(--m);box-shadow:0 8px 22px rgba(138,31,66,.12);transform:translateY(-2px)}
+  .prog .ic{width:38px;height:38px;border-radius:11px;background:var(--m50);color:var(--m);display:flex;align-items:center;justify-content:center}
+  .prog b{font-size:15.5px} .prog .d{color:var(--ink2);font-size:13px}
+  .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto} .meta span{display:inline-flex;align-items:center;gap:4px;background:#F6F2F4;border-radius:999px;padding:2px 9px;font-size:12px;color:var(--ink2)}
+  .meta span.p{background:#F3EBDD;color:#7A5A22}
+  .sel{display:flex;align-items:center;gap:10px;background:var(--m50);border:1px solid #EAD3DC;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px;flex-wrap:wrap}
+  .sel b{color:var(--m)} .sel button{margin-inline-start:auto}
+  .days{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
+  .day{all:unset;box-sizing:border-box;cursor:pointer;flex:none;width:76px;scroll-snap-align:start;border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;background:#fff}
+  .day span{display:block;font-size:11.5px;color:var(--ink3)} .day b{display:block;font-size:20px;line-height:1.2} .day small{display:block;font-size:11px;color:var(--ok);font-weight:700}
+  .day.on{background:var(--m);border-color:var(--m);color:#fff} .day.on span,.day.on small{color:#F4DDE5}
+  .times{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .time{all:unset;cursor:pointer;direction:ltr;unicode-bidi:isolate;display:inline-block;border:1px solid #BfE3CD;background:var(--ok50);color:var(--ok);border-radius:10px;padding:8px 14px;font-weight:700}
+  .time.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .who{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .empty{text-align:center;color:var(--ink3);padding:26px 10px}
+  form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px}
+  input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff;min-height:42px;width:100%;font-weight:500}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--m50);border-color:var(--m)}
+  textarea{min-height:80px;resize:vertical}
+  .req{color:var(--bad)}
+  .btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:10px 18px;font-weight:700;font-size:14px}
+  .btn.pri{background:var(--m);color:#fff} .btn.pri:hover{background:var(--m2)} .btn.pri[disabled]{opacity:.6;cursor:wait}
+  .btn.out{border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .bar{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:6px}
+  .err{color:var(--bad);font-size:13px;margin-top:6px;min-height:18px}
+  .status{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:10px}
+  .status .big{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .status .big .lu{width:32px;height:32px}
+  .st-new .big{background:var(--warn50);color:var(--warn)} .st-approved .big{background:var(--ok50);color:var(--ok)} .st-rejected .big{background:var(--bad50);color:var(--bad)}
+  .sum{width:100%;max-width:520px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-align:right;font-size:14px}
+  .sum div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)} .sum div:last-child{border:0} .sum span{color:var(--ink3)}
+  .link{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;background:#FBF8F9;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;direction:ltr;word-break:break-all}
+  footer{text-align:center;color:var(--ink3);font-size:12px;padding:10px 0 26px}
+  @media (max-width:640px){ form .row{grid-template-columns:1fr} .steps div span{display:none} .hd h1{font-size:18px} }
+</style>
+</head>
+<body>
+<header><div class="hd">
+  <div class="mark"><svg class="lu" style="width:28px;height:28px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></div>
+  <div><h1>حجز برنامج لجهتك</h1><p id="org">مركز عيد الثقافي — قسم البرامج المجتمعية</p></div>
+</div></header>
+<main id="app"><div class="card empty">جارٍ التحميل…</div></main>
+<footer>مؤسسة عيد الخيرية — مركز عيد الثقافي</footer>
+<script>
+const firebaseConfig = { apiKey:"AIzaSyAYn7DzTC03I7Q_My7xuJD33ELQwwuhe84", authDomain:"droub-55931.firebaseapp.com", projectId:"droub-55931",
+  storageBucket:"droub-55931.firebasestorage.app", messagingSenderId:"183460755575", appId:"1:183460755575:web:7c17ff7ed58249da8b2e72" };
+firebase.initializeApp(firebaseConfig);
+const fsdb = firebase.firestore();
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const I = {
+  cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>', hour:'<path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+  x:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>', info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  arrow:'<path d="M5 12h14M12 5l7 7-7 7"/>', copy:'<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  user:'<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+};
+const ic = (n,z)=>`<svg class="lu" ${z?`style="width:${z}px;height:${z}px"`:''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${I[n]||''}</svg>`;
+const DAY = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const WORK_DEFAULT = { days:[0,1,2,3,4], from:'07:30', to:'13:30', max:2, buffer:30 };
+const pad = n=>String(n).padStart(2,'0');
+const iso = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addD = (s,n)=>{ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); };
+const fmt = s=>s?`${s.slice(8,10)}/${s.slice(5,7)}/${s.slice(0,4)}`:'';
+const tMin = s=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(s||'')); return m?(+m[1])*60+(+m[2]):null; };
+const tStr = n=>`${pad(Math.floor(n/60))}:${pad(n%60)}`;
+const durTxt = m=>{ const h=Math.floor(m/60), r=m%60; return (h?`${h} ساعة`:'')+(h&&r?' و':'')+(r?`${r} دقيقة`:''); };
+let S = null, st = { step:1, prog:null, day:null, time:null, tid:null, path:'' };
+
+/* نفس محرّك المواعيد المستخدم داخل النظام */
+function slotEngine(day, dur, trainers, busyOf, isLeave){
+  const out=[], dw=new Date(day+'T00:00:00').getDay();
+  for(const t of trainers){
+    const w=Object.assign({},WORK_DEFAULT,t.work||{});
+    if(!(w.days||[]).includes(dw) || isLeave(t.id,day)) continue;
+    const busy=busyOf(t.id,day); if(busy.length >= (+w.max||2)) continue;
+    const s=tMin(w.from), e=tMin(w.to), buf=+w.buffer||0, starts=[];
+    if(s==null||e==null) continue;
+    for(let x=s; x+dur<=e; x+=30) if(busy.every(([a,b])=>x+dur+buf<=a || x>=b+buf)) starts.push(x);
+    if(starts.length) out.push({tid:t.id, name:t.name, starts});
+  }
+  return out;
+}
+function slots(prog, day){
+  if((S.blocked||[]).includes(day)) return [];
+  const trs = S.trainers.filter(t=>!prog.trs.length || prog.trs.includes(t.id));
+  return slotEngine(day, prog.dur, trs,
+    (tid,d)=>S.busy.filter(b=>b.t===tid && d>=b.d1 && d<=b.d2).map(b=>{ const a=tMin(b.f), c=tMin(b.to); return a==null?[0,1440]:[a, c==null||c<=a?a+60:c]; }),
+    (tid,d)=>S.leaves.some(l=>l.t===tid && l.d===d));
+}
+function stepsBar(){
+  const L=['البرنامج','الموعد','بيانات الجهة'];
+  return `<div class="steps">${L.map((l,i)=>`<div class="${st.step===i+1?'on':st.step>i+1?'done':''}"><i>${st.step>i+1?'✓':i+1}</i><span>${l}</span></div>`).join('')}</div>`;
+}
+function draw(){
+  const app=$('#app');
+  if(st.step===1){
+    const paths=[...new Set(S.programs.map(p=>p.path).filter(Boolean))];
+    app.innerHTML = stepsBar() + (S.note?`<div class="note">${ic('info')}<span>${esc(S.note)}</span></div>`:'') + `<div class="card">
+      <h2>${ic('layers')} اختر البرنامج</h2><p class="sub">اختر البرنامج المناسب لجهتك، وسنعرض لك المواعيد المتاحة فقط.</p>
+      <div class="tools"><div class="search">${ic('search')}<input id="q" placeholder="ابحث عن برنامج..." autocomplete="off"></div>
+        ${paths.length>1?`<div class="chips"><button class="chip ${!st.path?'on':''}" data-p="">الكل</button>${paths.map(p=>`<button class="chip ${st.path===p?'on':''}" data-p="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}</div>
+      <div class="grid" id="grid"></div></div>`;
+    const grid=()=>{ const q=($('#q').value||'').trim();
+      const L=S.programs.filter(p=>(!st.path||p.path===st.path) && (!q || (p.name+' '+p.desc+' '+p.aud).includes(q)));
+      $('#grid').innerHTML = L.length ? L.map(p=>`<button class="prog" data-id="${p.id}"><span class="ic">${ic('layers')}</span><b>${esc(p.name)}</b>${p.desc?`<span class="d">${esc(p.desc)}</span>`:''}
+        <span class="meta">${p.path?`<span class="p">${esc(p.path)}</span>`:''}<span>${ic('clock',13)} ${durTxt(p.dur)}</span>${p.aud?`<span>${ic('users',13)} ${esc(p.aud)}</span>`:''}${p.max?`<span>حتى ${p.max}</span>`:''}</span></button>`).join('')
+        : `<div class="empty">لا توجد برامج مطابقة</div>`;
+      document.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{ st.prog=S.programs.find(p=>p.id===b.dataset.id); st.step=2; st.day=null; st.time=null; draw(); scrollTo(0,0); }); };
+    $('#q').oninput=grid; document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ st.path=b.dataset.p; draw(); }); grid();
+  }
+  else if(st.step===2){
+    const p=st.prog, start=addD(iso(new Date()), S.lead||0), days=[];
+    for(let d=start, g=0; g<(S.horizon||60); d=addD(d,1), g++){ const sl=slots(p,d); if(sl.length) days.push({d, sl, n:new Set(sl.flatMap(r=>r.starts)).size}); }
+    if(!st.day && days.length) st.day=days[0].d;
+    const cur=days.find(x=>x.d===st.day);
+    const times = cur ? [...new Set(cur.sl.flatMap(r=>r.starts))].sort((a,b)=>a-b) : [];
+    const whoAt = x=> cur ? cur.sl.filter(r=>r.starts.includes(x)) : [];
+    app.innerHTML = stepsBar() + `<div class="sel">${ic('layers')} <span>البرنامج: <b>${esc(p.name)}</b> · ${durTxt(p.dur)}</span><button class="btn out" id="back">تغيير</button></div>
+      <div class="card"><h2>${ic('cal')} اختر اليوم والوقت</h2><p class="sub">تظهر الأيام التي فيها مواعيد متاحة فقط.</p>
+      ${!days.length?`<div class="empty">${ic('hour',28)}<div>لا توجد مواعيد متاحة لهذا البرنامج في الفترة القادمة. يُرجى التواصل مع القسم.</div></div>`:`
+      <div class="days">${days.map(x=>{ const d=new Date(x.d+'T00:00:00'); return `<button class="day ${x.d===st.day?'on':''}" data-d="${x.d}"><span>${DAY[d.getDay()]}</span><b>${d.getDate()}</b><span>${pad(d.getMonth()+1)}/${d.getFullYear()}</span><small>${x.n} موعد</small></button>`; }).join('')}</div>
+      <div style="margin-top:8px;font-weight:700">${ic('clock')} الأوقات المتاحة يوم ${DAY[new Date(st.day+'T00:00:00').getDay()]} ${fmt(st.day)}</div>
+      <div class="times">${times.map(x=>`<button class="time ${st.time===x?'on':''}" data-t="${x}"><span dir="ltr">${tStr(x)} – ${tStr(x+p.dur)}</span></button>`).join('')}</div>
+      ${st.time!=null && whoAt(st.time).length>1 ? `<div style="margin-top:12px;font-size:13px;font-weight:700;color:var(--ink2)">${ic('user',15)} المقدّم (اختياري)</div><div class="who"><button class="chip ${!st.tid?'on':''}" data-w="">أي مقدّم متاح</button>${whoAt(st.time).map(r=>`<button class="chip ${st.tid===r.tid?'on':''}" data-w="${r.tid}">${esc(r.name)}</button>`).join('')}</div>`:''}
+      <div class="bar"><span></span><button class="btn pri" id="next" ${st.time==null?'disabled':''}>التالي ${ic('arrow')}</button></div>`}</div>`;
+    $('#back').onclick=()=>{ st.step=1; draw(); };
+    document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{ st.day=b.dataset.d; st.time=null; st.tid=null; draw(); });
+    document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ st.time=+b.dataset.t; const w=whoAt(st.time); st.tid = w.length===1 ? w[0].tid : null; draw(); });
+    document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{ st.tid=b.dataset.w||null; draw(); });
+    const n=$('#next'); if(n) n.onclick=()=>{ if(st.time==null) return; st.step=3; draw(); scrollTo(0,0); };
+  }
+  else if(st.step===3){
+    const p=st.prog;
+    app.innerHTML = stepsBar() + `<div class="sel">${ic('cal')} <span><b>${esc(p.name)}</b> · ${DAY[new Date(st.day+'T00:00:00').getDay()]} ${fmt(st.day)} · <span dir="ltr">${tStr(st.time)} – ${tStr(st.time+p.dur)}</span></span><button class="btn out" id="back">تغيير</button></div>
+      <form class="card" id="f" novalidate><h2>${ic('user')} بيانات الجهة</h2><p class="sub">سيتواصل معك القسم لتأكيد الحجز.</p>
+        <div class="row"><label>الجهة / المدرسة <span class="req">*</span><select id="sc"><option value="">— اختر —</option>${S.schools.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}<option value="__other">جهة أخرى…</option></select></label>
+          <label id="scoW" hidden>اسم الجهة <span class="req">*</span><input id="sco" maxlength="120"></label></div>
+        <div class="row"><label>اسم المنسّق <span class="req">*</span><input id="ct" maxlength="70" autocomplete="name"></label>
+          <label>رقم الجوال <span class="req">*</span><input id="ph" inputmode="tel" maxlength="15" placeholder="مثال: 55123456" dir="ltr" autocomplete="tel"></label></div>
+        <div class="row"><label>العدد المتوقع للمستفيدين<input id="cn" type="number" min="1" max="5000" ${p.max?`max="${p.max}" placeholder="حتى ${p.max}"`:''}></label>
+          <label>نوع المكان<select id="pt"><option value="">—</option>${(S.placeTypes||[]).map(x=>`<option>${esc(x)}</option>`).join('')}</select></label></div>
+        <label>موعد بديل إن لم يتوفر هذا الموعد (اختياري)<input id="al" maxlength="120" placeholder="مثال: أي يوم ثلاثاء صباحًا"></label>
+        <label>ملاحظات (اختياري)<textarea id="nt" maxlength="900"></textarea></label>
+        <div class="err" id="er"></div>
+        <div class="bar"><button type="button" class="btn out" id="back2">السابق</button><button class="btn pri" id="go">${ic('check')} إرسال طلب الحجز</button></div></form>`;
+    $('#back').onclick=$('#back2').onclick=()=>{ st.step=2; draw(); };
+    $('#sc').onchange=()=>{ $('#scoW').hidden = $('#sc').value!=='__other'; };
+    $('#f').onsubmit = async e=>{ e.preventDefault();
+      const scv=$('#sc').value, other=$('#sco').value.trim(), ct=$('#ct').value.trim(), ph=$('#ph').value.replace(/[^\d+]/g,'');
+      const er=m=>{ $('#er').textContent=m; };
+      if(!scv || (scv==='__other' && other.length<2)) return er('يرجى اختيار الجهة أو كتابة اسمها');
+      if(ct.length<2) return er('يرجى كتابة اسم المنسّق');
+      if(!/^(\+?974)?[3-7]\d{7}$/.test(ph)) return er('يرجى كتابة رقم جوال قطري صحيح (8 أرقام)');
+      const school = S.schools.find(s=>s.id===scv);
+      /* إعادة التحقق من أن الموعد ما زال متاحًا */
+      const fresh = await loadSnap().catch(()=>null); if(fresh) S=fresh;
+      const still = slots(p, st.day).some(r=>r.starts.includes(st.time) && (!st.tid || r.tid===st.tid));
+      if(!still){ er('عذرًا، حُجز هذا الموعد للتو — يرجى اختيار موعد آخر'); setTimeout(()=>{ st.step=2; st.time=null; draw(); }, 1600); return; }
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(15))).map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('') + Date.now().toString(36).slice(-5);
+      const doc = { status:'new', programId:p.id, programName:p.name, date:st.day, timeFrom:tStr(st.time), timeTo:tStr(st.time+p.dur), trainerId:st.tid||'',
+        schoolId: school?school.id:'', schoolName: school?school.name:other, contact:ct, phone:ph, count:+$('#cn').value||0, placeType:$('#pt').value||'',
+        note:$('#nt').value.trim(), alt:$('#al').value.trim(), createdAt:Date.now() };
+      $('#go').disabled = true; $('#go').textContent='جارٍ الإرسال…';
+      try{ await fsdb.collection('bookingRequests').doc(id).set(doc);
+        try{ const my=JSON.parse(localStorage.getItem('myBookings')||'[]'); my.unshift({id, p:p.name, d:st.day}); localStorage.setItem('myBookings', JSON.stringify(my.slice(0,20))); }catch(x){}
+        history.replaceState(null,'','?r='+id); showStatus(id, doc, true);
+      }catch(x){ $('#go').disabled=false; $('#go').innerHTML=`${ic('check')} إرسال طلب الحجز`; er('تعذّر الإرسال، حاول مرة أخرى ('+(x.code||'')+')'); }
+    };
+  }
+}
+function showStatus(id, r, fresh){
+  const link = location.origin + location.pathname + '?r=' + id;
+  const T = { new:['بانتظار الاعتماد','hour','تم استلام طلبك وسيتواصل معك القسم لتأكيده. احتفظ برابط المتابعة أدناه.'],
+    approved:['تم اعتماد الحجز','check','تم اعتماد حجزك وصدر له أمر تكليف.'], rejected:['تعذّر اعتماد الطلب','x','نعتذر، لم يُعتمد هذا الطلب.'] }[r.status] || ['—','info',''];
+  $('#app').innerHTML = `<div class="card status st-${esc(r.status)}"><div class="big">${ic(T[1])}</div><h2 style="justify-content:center">${fresh?'تم إرسال طلب الحجز':T[0]}</h2>
+    <p class="sub" style="max-width:520px">${T[2]}</p>
+    <div class="sum"><div><span>الحالة</span><b>${T[0]}</b></div><div><span>البرنامج</span><b>${esc(r.programName)}</b></div>
+      <div><span>الموعد</span><b>${DAY[new Date(r.date+'T00:00:00').getDay()]} ${fmt(r.date)} · <span dir="ltr">${esc(r.timeFrom)}–${esc(r.timeTo)}</span></b></div>
+      <div><span>الجهة</span><b>${esc(r.schoolName)}</b></div><div><span>المنسّق</span><b>${esc(r.contact)}</b></div>
+      ${r.status==='approved'&&r.orderSerial?`<div><span>رقم أمر التكليف</span><b>${esc(r.orderSerial)}</b></div>`:''}
+      ${r.status==='rejected'&&r.reason?`<div><span>السبب</span><b>${esc(r.reason)}</b></div>`:''}</div>
+    <div style="font-size:13px;color:var(--ink3);margin-top:6px">رابط متابعة الطلب:</div>
+    <div class="link"><span>${esc(link)}</span><button class="btn out" id="cp" style="padding:5px 10px">${ic('copy',15)} نسخ</button></div>
+    <div class="bar" style="justify-content:center"><a class="btn out" href="${location.pathname}">حجز برنامج آخر</a></div></div>`;
+  $('#cp').onclick=()=>navigator.clipboard.writeText(link).then(()=>{ $('#cp').textContent='تم النسخ'; });
+}
+async function loadSnap(){
+  const s = await fsdb.collection('bookingPublic').doc('catalog').get();
+  if(!s.exists) return null; return JSON.parse(s.data().json||'{}');
+}
+(async ()=>{
+  const r = new URLSearchParams(location.search).get('r');
+  try{
+    if(r){ const d = await fsdb.collection('bookingRequests').doc(r).get();
+      if(d.exists){ showStatus(r, d.data(), false); return; }
+      $('#app').innerHTML = `<div class="card empty">لم يُعثر على الطلب. تأكد من الرابط.</div>`; return; }
+    S = await loadSnap();
+    if(S && S.org) $('#org').textContent = S.org + ' — قسم البرامج المجتمعية';
+    if(!S || !S.enabled){ $('#app').innerHTML = `<div class="card empty">${ic('hour',28)}<div>بوابة الحجز غير متاحة حاليًا. يُرجى التواصل مع القسم.</div></div>`; return; }
+    if(!S.programs || !S.programs.length){ $('#app').innerHTML = `<div class="card empty">لا توجد برامج متاحة للحجز حاليًا.</div>`; return; }
+    draw();
+  }catch(e){ console.error(e); $('#app').innerHTML = `<div class="card empty">تعذّر التحميل، حاول لاحقًا (${esc(e.code||'')})</div>`; }
+})();
+</script>
+</body>
+</html>
